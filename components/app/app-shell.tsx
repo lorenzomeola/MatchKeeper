@@ -164,7 +164,7 @@ export function AppShell({
           </div>
         </aside>
 
-        <div ref={scrollerRef} className={`min-h-0 flex-1 overflow-y-auto overscroll-contain lg:overflow-visible lg:pl-64 ${inMap ? "flex flex-col lg:block" : ""}`}>
+        <div ref={scrollerRef} className={`min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain lg:overflow-visible lg:pl-64 ${inMap ? "flex flex-col lg:block" : ""}`}>
           {/* Móvil: barra superior */}
           <header className={`pl-glass sticky top-0 z-40 items-center justify-between gap-3 rounded-none border-x-0 border-t-0 px-4 pb-2.5 pt-[calc(0.625rem+env(safe-area-inset-top,0px))] ${inThread ? "hidden" : "flex lg:hidden"}`}>
             <Link

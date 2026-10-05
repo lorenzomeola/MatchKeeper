@@ -64,6 +64,18 @@
 html {
   scroll-behavior: smooth;
   -webkit-tap-highlight-color: transparent;
+  /* Sin zoom por doble toque (el pellizco sigue funcionando) y sin rebote lateral en iOS. */
+  touch-action: manipulation;
+  overscroll-behavior: none;
+  overflow-x: clip;
+  /* iOS agranda el texto al girar a horizontal y rompe el layout. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  overflow-x: clip;
+  overscroll-behavior: none;
 }
 
 body {
