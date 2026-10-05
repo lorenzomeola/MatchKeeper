@@ -41,7 +41,7 @@ export default async function SignupPage({
         You can tell us the rest after you have an account.
       </p>
 
-      <ul className="mt-8 grid gap-3">
+      <ul className="mt-8 grid grid-cols-1 gap-3">
         {LANES.map(({ href, icon: Icon, title, body }) => (
           <li key={href}>
             <Link

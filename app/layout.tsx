@@ -6,6 +6,7 @@ import {
 } from "next/font/google";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
+import { themeInitScript } from "@/components/platform/theme-config";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 
 const geistSans = Geist({
@@ -62,6 +63,9 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${geistSans.variable} ${chakra.variable} ${jetbrains.variable} h-full`}
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body className="min-h-full antialiased">
         {children}
         <Analytics />

@@ -58,14 +58,14 @@ export default async function OnboardingPage() {
       </header>
 
       <main className="mx-auto max-w-[1000px] px-5 pb-20 pt-4 sm:px-8 sm:pt-10">
-        <p className="pl-eyebrow">{role === "goalkeeper" ? "Goalkeeper profile" : "Team profile"}</p>
+        <p className="pl-eyebrow">{role === "goalkeeper" ? "Goalkeeper profile" : "Player profile"}</p>
         <h1 className="pl-display mt-3 text-fg [font-size:var(--t-5xl)]">
-          {isComplete ? "Your profile" : role === "goalkeeper" ? "Build your keeper profile" : "Set up your team"}
+          {isComplete ? "Your profile" : role === "goalkeeper" ? "Build your keeper profile" : "Set up your profile"}
         </h1>
         <p className="pl-prose mt-4 max-w-[34rem] [font-size:var(--t-lg)]">
           {role === "goalkeeper"
             ? "Teams choose between keepers. A photo, a real bio and your experience are what they read first."
-            : "Tell keepers who they will be playing for. It takes a minute and you can change it later."}
+            : "Tell keepers who they will be playing with. It takes a minute and you can change it later."}
         </p>
 
         <div className="mt-12">

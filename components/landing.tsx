@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { CTAButton } from "@/components/cta-button";
 import { FacebookIcon, InstagramIcon, Logo } from "@/components/logo";
 import { PitchBackground } from "@/components/pitch-background";
@@ -86,7 +87,7 @@ export function Landing() {
             >
               {t.hero.titleTop}
               <br />
-              <span className="text-accent">{t.hero.titleBottom}</span>
+              <span className="text-accent-strong">{t.hero.titleBottom}</span>
             </h1>
             <p
               className="rise-in mx-auto mt-6 max-w-md text-lg leading-relaxed text-muted md:mx-0"
@@ -306,7 +307,7 @@ export function Landing() {
               target="_blank"
               rel="noopener noreferrer"
               aria-label="MatchKeeper on Instagram"
-              className="text-muted transition-colors hover:text-accent-strong"
+              className="inline-flex h-11 w-11 items-center justify-center text-muted transition-colors hover:text-accent-strong"
             >
               <InstagramIcon />
             </a>
@@ -315,11 +316,19 @@ export function Landing() {
               target="_blank"
               rel="noopener noreferrer"
               aria-label="MatchKeeper on Facebook"
-              className="text-muted transition-colors hover:text-accent-strong"
+              className="inline-flex h-11 w-11 items-center justify-center text-muted transition-colors hover:text-accent-strong"
             >
               <FacebookIcon />
             </a>
           </div>
+          <nav aria-label="Legal" className="flex items-center gap-4 text-xs">
+            <Link href="/privacy" className="inline-flex min-h-11 items-center transition-colors hover:text-accent-strong">
+              Privacy
+            </Link>
+            <Link href="/terms" className="inline-flex min-h-11 items-center transition-colors hover:text-accent-strong">
+              Terms
+            </Link>
+          </nav>
           <span className="font-mono text-xs">{t.footerTagline}</span>
         </div>
       </footer>
@@ -342,7 +351,7 @@ function HowItWorks() {
             delay={i * 110}
             className="flex gap-5 bg-bg-2 p-6 sm:block md:p-8"
           >
-            <span className="font-display text-3xl font-bold text-accent sm:text-4xl sm:text-accent/35">
+            <span className="font-display text-3xl font-bold text-accent-strong sm:text-4xl sm:text-accent/35">
               {s.n}
             </span>
             <div>

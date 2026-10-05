@@ -1,4 +1,7 @@
 -- Permisos + políticas RLS para MatchKeeper.
+-- AVISO: este archivo es el punto de partida. Los permisos por columna de profiles, applications,
+-- matches y messages los endurece db/admin.sql (y db/messaging.sql). Si vuelves a correr este archivo,
+-- corre después db/messaging.sql y db/admin.sql, en ese orden, o se restauran permisos demasiado amplios.
 -- No se genera con Drizzle (no modela RLS); se versiona aquí y se aplica a
 -- mano en el SQL Editor de Supabase, igual que la migración de esquema.
 -- Idempotente: se puede volver a correr entero sin error (drop if exists

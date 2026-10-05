@@ -33,6 +33,17 @@ const ASIDE: Record<AuthAside, { eyebrow: string; title: string; points: string[
   },
 };
 
+const KEEPER_PHOTO = { src: "/hero-keeper.jpg", position: "object-[52%_42%]", filter: "saturate(0.72) contrast(1.06)" };
+// Cancha vista desde arriba: el registro de equipos no debe parecerse al de porteros.
+const PITCH_PHOTO = { src: "/signup-pitch.jpg", position: "object-center", filter: "saturate(0.85) contrast(1.04)" };
+
+const PHOTO: Record<AuthAside, typeof KEEPER_PHOTO> = {
+  login: KEEPER_PHOTO,
+  join: KEEPER_PHOTO,
+  goalkeeper: KEEPER_PHOTO,
+  player: PITCH_PHOTO,
+};
+
 /**
  * Marco de /login y /signup: columna de formulario a la izquierda y panel con
  * foto a la derecha (solo escritorio), igual que el hero de /home. En móvil la
@@ -46,6 +57,7 @@ export function AuthShell({
   children: ReactNode;
 }) {
   const copy = ASIDE[aside];
+  const photo = PHOTO[aside];
 
   return (
     <div className="relative min-h-dvh bg-bg text-fg">
@@ -59,7 +71,7 @@ export function AuthShell({
           <ThemeToggle />
         </header>
 
-        <div className="grid flex-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.92fr)] lg:gap-16">
+        <div className="grid flex-1 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.92fr)] lg:gap-16">
           <div className="flex flex-col">
             <main className="flex flex-1 flex-col justify-center pb-10 sm:pb-14">
               <div className="mx-auto w-full max-w-[28rem] lg:mx-0">{children}</div>
@@ -91,13 +103,13 @@ export function AuthShell({
             <div className="sticky top-8 h-[calc(100dvh-7.5rem)] max-h-[52rem]">
               <div className="relative h-full overflow-hidden rounded-[var(--r-2xl)] border border-line shadow-[var(--shadow-4)]">
                 <Image
-                  src="/hero-keeper.jpg"
+                  src={photo.src}
                   alt=""
                   fill
                   priority
                   sizes="(min-width: 1024px) 46vw, 0px"
-                  className="object-cover object-[52%_42%]"
-                  style={{ filter: "saturate(0.72) contrast(1.06)" }}
+                  className={`object-cover ${photo.position}`}
+                  style={{ filter: photo.filter }}
                 />
                 <div className="absolute inset-0 mix-blend-overlay" style={{ background: "var(--accent)", opacity: 0.16 }} />
                 <div

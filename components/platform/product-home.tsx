@@ -155,7 +155,7 @@ function Hero() {
 
           <h1 className="pl-display text-fg [font-size:var(--t-6xl)] lg:mt-6">
             Never cancel a match for lack of a{" "}
-            <span className="relative inline-block text-accent">
+            <span className="relative inline-block text-accent-strong">
               keeper
               <svg
                 aria-hidden
@@ -366,7 +366,7 @@ function TrackCard({
           <li key={s.title} className="relative">
             <span
               aria-hidden
-              className="pl-tnum absolute -left-11 top-0 grid h-8 w-8 place-items-center rounded-full border border-accent/40 bg-bg text-xs font-bold text-accent"
+              className="pl-tnum absolute -left-11 top-0 grid h-8 w-8 place-items-center rounded-full border border-accent/40 bg-bg text-xs font-bold text-accent-strong"
             >
               {i + 1}
             </span>
@@ -469,7 +469,7 @@ function Pricing() {
         <div className="grid gap-10 lg:grid-cols-[auto_1fr] lg:items-center lg:gap-16">
           <div className="shrink-0">
             <p className="pl-eyebrow">What it costs</p>
-            <p className="pl-display pl-tnum mt-4 text-accent [font-size:var(--t-6xl)]">15%</p>
+            <p className="pl-display pl-tnum mt-4 text-accent-strong [font-size:var(--t-6xl)]">15%</p>
             <p className="mt-2 max-w-[14rem] text-sm text-muted">
               Platform fee on a confirmed match. That is the whole pricing page.
             </p>

@@ -5,7 +5,7 @@ Source of truth for the **authenticated platform** (`/home`, the legal pages
 `/dashboard`, `/matches`, `/admin`).
 
 **Out of scope:** the public validation landing at `/` ([components/landing.tsx](../../components/landing.tsx)).
-It keeps the old `:root` tokens and must not be touched.
+It keeps the old `:root` tokens and must not be touched, apart from the Privacy and Terms links added to its footer.
 
 Implemented in [app/globals.css](../../app/globals.css) (section "PLATFORM DESIGN SYSTEM")
 and [components/platform/](../../components/platform/).
@@ -14,8 +14,9 @@ and [components/platform/](../../components/platform/).
 
 ## Status board (read this first)
 
-Last audited: **2026-10-02**. All documents were reconciled that day:
-this file, [PAYMENTS_SPEC.md](../../PAYMENTS_SPEC.md),
+Last audited: **2026-10-05**. Section A2 below was built that week; the rest of
+the board was reconciled on 2026-10-02 with this file,
+[PAYMENTS_SPEC.md](../../PAYMENTS_SPEC.md),
 [PRODUCT_PLAN.md](../../PRODUCT_PLAN.md) and [TECH_STACK.md](../../TECH_STACK.md).
 
 Naming: "phase 1" and "phase 2" in this file are the **visual redesign** phases.
@@ -31,18 +32,40 @@ The Fase 1, 2 and 3 in PRODUCT_PLAN.md are **product roadmap** phases.
   TECH_STACK.md and the Supabase database (applied by hand on 2026-10-02).
 - Payments, cancellations, check-in and disputes fully specified in PAYMENTS_SPEC.md.
 
-### B. To build, in this order (phase 2, details in section 10)
+### A2. Done (phase 2, redesign of the logged-in app)
 
-1. Goalkeeper onboarding and profile (item 8). Do first.
-2. Auth: `/login` and `/signup` (item 1).
-3. App shell (3), dashboards (2), matches list and detail (4) including the
-   pre-acceptance chat (12), admin pages.
-4. Toasts, modals and dropdowns (5, 6).
-5. Structured match form fields: format and surface (11).
-6. Reviews, matches-played counter, public keeper profile, distance on applicants
-   (section E).
-7. Approval email through Resend (9).
-8. Payments, cancellations, check-in and disputes (item 10, PAYMENTS_SPEC.md). **Last.**
+All in the Floodlight theme, mobile first, checked at 390px.
+
+- App shell: bottom tab bar on mobile, sidebar on desktop, one nav per role.
+- Home dashboards for players, teams and keepers.
+- Login, signup and profile: London-only city, required and optional fields with a
+  completeness rating, level info, two player kinds (individual and team).
+- Matches: two-step post form (format, surface, level, budget, notes, map pin),
+  list with tabs, detail with applicants compared by rate, experience and date.
+- Pre-acceptance chat: one thread per application, contact details blocked until a
+  keeper is booked, rate limit, report and block, seen marks, unread badge.
+- Map (keeper filters, near me) and a real month calendar.
+- Admin: overview, keeper approval, users, matches, reports with the conversation,
+  payments placeholder. Column-level grants stop users editing `approved`,
+  `is_admin` or application and match status (`db/admin.sql`).
+- Public keeper profile at `/keepers/[id]` with games played, average rate and
+  reviews (`db/keeper-profile.sql`).
+- Reviews: the player rates the keeper once the match has ended
+  (`db/reviews.sql`). The policy accepts a held or released booking, since Stripe
+  does not exist yet. Tighten it to released when payments are built.
+- SQL to run by hand, in this order: `policies.sql`, `dashboards.sql`,
+  `messaging.sql`, `admin.sql`, `keeper-profile.sql`, `reviews.sql`,
+  `surface-futsal.sql`. Do not re-run
+  `policies.sql` alone, it restores broad grants.
+
+### B. Still to build
+
+Items 1 to 6 of the old list (onboarding, auth, shell and dashboards, UI primitives,
+structured match fields, reviews and public keeper profile) are done, see A2.
+
+1. Approval email through Resend (9). Needs a verified domain.
+2. Payments, cancellations, check-in and disputes (item 10, PAYMENTS_SPEC.md). **Last.**
+3. Distance on applicants, which needs a keeper base location (not built, undecided).
 
 ### C. Decisions pending
 
@@ -78,8 +101,8 @@ PAYMENTS_SPEC.md section 16.
 - Confirm the right to use the hero photo (`/hero-keeper.jpg`). It came from the
   public landing and I could not verify its source or licence.
 - Check Stripe's brand guidelines for showing its wordmark. I did not verify them.
-- The public landing `/` collects data through forms but links to no Privacy
-  Policy. Decide when it is replaced.
+- The public landing `/` collects data through forms. Its footer now links to the
+  Privacy Policy and Terms. Decide when `/home` replaces it.
 - VAT on the platform fee. Ask an accountant.
 
 ### E. Claims on the site that need a feature behind them
@@ -91,15 +114,15 @@ not true, so none of this should go public before it is built.
 |---|---|---|
 | "Every keeper is reviewed by a human" (marquee, trust card, Safety) | Admin approval | Built (`/admin/goalkeepers`) |
 | "In-app chat" | Chat on the match page | Built, but only after a keeper is accepted |
-| "Message them before you accept" (FAQ) | One thread per application, started by the team (item 12). Today the `messages` policies in `db/policies.sql` only allow the match owner and the accepted keeper | Decided (option B), not built |
+| "Message them before you accept" (FAQ) | One thread per application, started by the team | Built |
 | "Free to join as a keeper" | Nothing to charge | True today |
 | "Identity confirmed" (trust chip, Safety) | Stripe Connect identity check before a keeper can be chosen | Not built (payments) |
-| "Experience checked" (trust chip) | Experience field and admin review | Not built (onboarding) |
+| "Experience checked" (trust chip) | Experience field and admin review | Field built, admin sees it at approval |
 | "Removed after no-shows" and strikes | Strike logic and removal | Not built (payments) |
-| Ratings, "matches played", "Public rating and match history" | Reviews UI, counter, keeper profile page. The `reviews` table exists | Not built |
-| "Compare by rating, matches played, distance and price" | Applicant list with those fields | Not built |
-| "Read their bio", keeper photo | Profile page and upload | Not built |
-| "Date, pitch, format and level" | Format and surface fields. Only a free-text level exists | Not built |
+| Ratings, "matches played", "Public rating and match history" | Reviews UI, counter, keeper profile page | Built (`/keepers/[id]`, review form on a played match) |
+| "Compare by rating, matches played, distance and price" | Applicant list with those fields | Rate, experience and level built. Rating and distance not on the list yet |
+| "Read their bio", keeper photo | Profile page and upload | Built |
+| "Date, pitch, format and level" | Format and surface fields | Built |
 | "You see the full price, rate plus fee, before you book" | Checkout summary | Not built |
 | "Goalkeepers receive 100% of their rate" | Transfer logic | Not built (payments) |
 | Payments held by Stripe, cancellations, check-in, 3-day release, refunds | PAYMENTS_SPEC.md | Not built |
@@ -107,13 +130,14 @@ not true, so none of this should go public before it is built.
 
 ### F. Clean-up and technical debt
 
-- 4 lint errors that predate the redesign, in
-  `app/(app)/admin/goalkeepers/page.tsx` and `app/(app)/calendar/page.tsx`
-  (unescaped quotes, an impure call during render).
-- Dead code: `components/audience-hero.tsx` and `components/goal-frame.tsx` are not
-  used by any page. Delete after sign-off.
-- Login, signup, dashboard, matches, calendar, map and admin still use the old
-  light styling. The theme only applies to `/home` and the legal pages.
+- Lint is clean (`npx eslint app components lib`). The 4 older errors are fixed.
+- UI audit 2026-10-05 (390, 768 and 1280px, dark and light): no horizontal overflow,
+  one `h1` per page, labelled inputs, text contrast at least 4.5:1 except text over
+  photos. Orange text on light backgrounds uses `--accent-strong`, never `--accent`.
+  Single-column `grid` lists need `grid-cols-1`, or a long address widens the page.
+- Dead code removed (`audience-hero.tsx`, `goal-frame.tsx`).
+- Login, signup, dashboard, matches, calendar, map and admin now use the Floodlight
+  theme.
 - Migration `0002` was applied by hand in the Supabase SQL Editor, so Drizzle's own
   history does not list it. That is the normal route here (TECH_STACK.md 1.1).
 - `next build` failed once while the dev server was running (prerender error on

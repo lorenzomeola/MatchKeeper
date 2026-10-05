@@ -2,8 +2,15 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { londonLocalToIso } from "@/lib/format";
+import { FORMATS, NOTES_MAX, SURFACES, isLevel } from "@/lib/match-options";
 
-export type MatchActionState = { error: string | null };
+export type MatchActionState = {
+  error: string | null;
+  fieldErrors?: Partial<
+    Record<"date" | "startTime" | "endTime" | "address" | "format" | "surface" | "budget" | "notes", string>
+  >;
+};
 
 export async function createMatchAction(
   _prevState: MatchActionState,
@@ -13,41 +20,78 @@ export async function createMatchAction(
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (!user) return { error: "You need to be logged in." };
 
-  if (!user) {
-    return { error: "You need to be logged in." };
-  }
-
-  const startsAt = String(formData.get("startsAt") ?? "");
-  const endsAt = String(formData.get("endsAt") ?? "");
-  const address = String(formData.get("address") ?? "").trim();
+  const text = (k: string) => String(formData.get(k) ?? "").trim();
+  const date = text("date");
+  const startTime = text("startTime");
+  const endTime = text("endTime");
+  const address = text("address");
   const lat = Number(formData.get("lat"));
   const lng = Number(formData.get("lng"));
-  const level = String(formData.get("level") ?? "").trim() || null;
-  const budgetRaw = String(formData.get("budgetSuggested") ?? "").trim();
-  const budgetSuggested = budgetRaw ? Number(budgetRaw) : null;
+  const format = Number(text("format"));
+  const surface = text("surface");
+  const level = text("level");
+  const budgetRaw = text("budget");
+  const notes = text("notes");
 
-  if (!startsAt || !endsAt || !address || Number.isNaN(lat) || Number.isNaN(lng)) {
-    return { error: "Please fill in all required fields." };
-  }
-  if (new Date(endsAt) <= new Date(startsAt)) {
-    return { error: "End time must be after start time." };
-  }
+  const fe: NonNullable<MatchActionState["fieldErrors"]> = {};
+  if (!date) fe.date = "Pick a date.";
+  if (!startTime) fe.startTime = "Pick a start time.";
+  if (!endTime) fe.endTime = "Pick an end time.";
+  if (!address) fe.address = "Add the pitch name or address.";
+  if (!FORMATS.includes(format as (typeof FORMATS)[number])) fe.format = "Choose the format.";
+  if (!(SURFACES as readonly string[]).includes(surface)) fe.surface = "Choose the surface.";
+  if (notes.length > NOTES_MAX) fe.notes = `Keep it under ${NOTES_MAX} characters.`;
 
-  const { error } = await supabase.from("matches").insert({
-    created_by: user.id,
-    starts_at: new Date(startsAt).toISOString(),
-    ends_at: new Date(endsAt).toISOString(),
-    address,
-    lat,
-    lng,
-    level,
-    budget_suggested: budgetSuggested,
-  });
-
-  if (error) {
-    return { error: error.message };
+  let budget: number | null = null;
+  if (budgetRaw) {
+    budget = Number(budgetRaw);
+    if (Number.isNaN(budget) || budget < 0 || budget > 1000) fe.budget = "Enter an amount between £0 and £1,000.";
   }
 
-  redirect("/matches");
+  const startsIso = date && startTime ? londonLocalToIso(`${date}T${startTime}`) : null;
+  const endsIso = date && endTime ? londonLocalToIso(`${date}T${endTime}`) : null;
+  if (startsIso && endsIso) {
+    if (Date.parse(endsIso) <= Date.parse(startsIso)) fe.endTime = "The end time must be after the start.";
+    else if (Date.parse(startsIso) < Date.now()) fe.date = "That time has already passed.";
+  }
+
+  if (Number.isNaN(lat) || Number.isNaN(lng)) return { error: "Set the pitch location on the map.", fieldErrors: fe };
+  if (Object.keys(fe).length > 0) return { error: "Check the highlighted fields.", fieldErrors: fe };
+
+  // Si el jugador tiene equipo, el partido se publica a su nombre.
+  const { data: team } = await supabase
+    .from("teams")
+    .select("id")
+    .eq("owner_id", user.id)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  const { data: created, error } = await supabase
+    .from("matches")
+    .insert({
+      created_by: user.id,
+      team_id: team?.id ?? null,
+      starts_at: startsIso,
+      ends_at: endsIso,
+      address,
+      lat,
+      lng,
+      format,
+      surface,
+      level: isLevel(level) ? level : null,
+      budget_suggested: budget,
+      notes: notes || null,
+    })
+    .select("id")
+    .single();
+
+  if (error || !created) {
+    console.error("createMatchAction failed", error);
+    return { error: "We couldn't post your match. Please try again." };
+  }
+
+  redirect(`/matches/${created.id}?posted=1`);
 }

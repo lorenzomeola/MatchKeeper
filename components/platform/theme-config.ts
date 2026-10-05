@@ -12,8 +12,10 @@ export type Theme = "dark" | "light";
  * Corre antes del primer paint para evitar el flash de tema equivocado.
  * Solo escribe un atributo a partir de un valor de `localStorage` validado
  * contra una lista blanca: nada que provenga del usuario llega al DOM.
+ * Se inyecta una sola vez en el <head> del layout raíz; la landing de "/" tiene
+ * sus propios tokens y no lleva `data-theme`.
  */
-export const themeInitScript = `(function(){try{var t=localStorage.getItem(${JSON.stringify(
+export const themeInitScript = `(function(){if(location.pathname==="/")return;try{var t=localStorage.getItem(${JSON.stringify(
   THEME_STORAGE_KEY,
 )});document.documentElement.dataset.theme=(t==="light"||t==="dark")?t:${JSON.stringify(
   DEFAULT_THEME,

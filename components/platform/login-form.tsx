@@ -19,7 +19,7 @@ export function LoginForm({ notice }: { notice?: string }) {
         Log in to see your matches and applications.
       </p>
 
-      <form action={formAction} className="mt-8 grid gap-5">
+      <form action={formAction} className="mt-8 grid grid-cols-1 gap-5">
         {message && <FormError>{message}</FormError>}
 
         <TextField
@@ -49,9 +49,9 @@ export function LoginForm({ notice }: { notice?: string }) {
         </div>
       </form>
 
-      <p className="mt-8 text-sm text-muted">
-        New to MatchKeeper?{" "}
-        <Link href="/signup" className="pl-focus font-semibold text-accent-strong underline underline-offset-4">
+      <p className="mt-6 flex flex-wrap items-center gap-x-1.5 text-sm text-muted">
+        New to MatchKeeper?
+        <Link href="/signup" className="pl-focus inline-flex min-h-11 items-center font-semibold text-accent-strong underline underline-offset-4">
           Create an account
         </Link>
       </p>

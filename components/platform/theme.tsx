@@ -113,21 +113,20 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
         strokeLinecap="round"
         strokeLinejoin="round"
       >
-        {/* Núcleo: círculo lleno en claro, media luna en oscuro */}
+        {/* Sol en claro, luna en oscuro; cada uno se desvanece, sin máscaras que dependan del fondo */}
         <circle
           cx="12"
           cy="12"
           r="5"
           stroke="currentColor"
           strokeWidth="1.6"
-          className="transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
-          style={{ transformOrigin: "center", transform: isDark ? "scale(0.82)" : "scale(1)" }}
+          className="transition-opacity duration-300"
+          style={{ opacity: isDark ? 0 : 1 }}
         />
-        <circle
-          cx="16.5"
-          cy="8.5"
-          r="5"
-          fill="var(--bg)"
+        <path
+          d="M20.5 13.2A8.5 8.5 0 1 1 10.8 3.5a6.8 6.8 0 0 0 9.7 9.7Z"
+          stroke="currentColor"
+          strokeWidth="1.6"
           className="transition-opacity duration-300"
           style={{ opacity: isDark ? 1 : 0 }}
         />

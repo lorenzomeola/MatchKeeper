@@ -7,6 +7,7 @@ import {
   doublePrecision,
   numeric,
   integer,
+  smallint,
   boolean,
   primaryKey,
   uniqueIndex,
@@ -48,6 +49,8 @@ export const profiles = pgTable("profiles", {
   experienceYears: integer("experience_years"),
   // porteros: nivel al que juegan. Equipos: nivel habitual de sus partidos.
   level: text("level"),
+  // jugadores: "individual" (un jugador que organiza con amigos) o "team" (equipo con nombre).
+  playerKind: text("player_kind"),
   baseLat: doublePrecision("base_lat"),
   baseLng: doublePrecision("base_lng"),
   // solo aplica a porteros: se activa tras revisión manual del admin.
@@ -98,6 +101,11 @@ export const matches = pgTable("matches", {
   lng: doublePrecision("lng").notNull(),
   address: text("address"),
   level: text("level"),
+  // 5 a 11 jugadores por lado.
+  format: smallint("format"),
+  // grass | artificial | indoor | futsal
+  surface: text("surface"),
+  notes: text("notes"),
   budgetSuggested: numeric("budget_suggested", { precision: 10, scale: 2 }),
   status: matchStatus("status").notNull().default("open"),
   createdAt: timestamp("created_at", { withTimezone: true })
@@ -182,10 +190,66 @@ export const messages = pgTable("messages", {
   matchId: uuid("match_id")
     .notNull()
     .references(() => matches.id, { onDelete: "cascade" }),
+  // hilo 1 a 1: una conversación por aplicación.
+  applicationId: uuid("application_id").references(() => applications.id, {
+    onDelete: "cascade",
+  }),
   senderId: uuid("sender_id")
     .notNull()
     .references(() => profiles.id, { onDelete: "cascade" }),
   body: text("body").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const messageReads = pgTable(
+  "message_reads",
+  {
+    applicationId: uuid("application_id")
+      .notNull()
+      .references(() => applications.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    lastReadAt: timestamp("last_read_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.applicationId, t.userId] })],
+);
+
+export const blocks = pgTable(
+  "blocks",
+  {
+    blockerId: uuid("blocker_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    blockedId: uuid("blocked_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.blockerId, t.blockedId] })],
+);
+
+export const reports = pgTable("reports", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  reporterId: uuid("reporter_id")
+    .notNull()
+    .references(() => profiles.id, { onDelete: "cascade" }),
+  reportedId: uuid("reported_id")
+    .notNull()
+    .references(() => profiles.id, { onDelete: "cascade" }),
+  applicationId: uuid("application_id").references(() => applications.id, {
+    onDelete: "set null",
+  }),
+  reason: text("reason").notNull(),
+  details: text("details"),
+  // open | reviewed | dismissed
+  status: text("status").notNull().default("open"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

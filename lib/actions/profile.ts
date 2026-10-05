@@ -2,11 +2,13 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { BIO_MAX, KEEPER_BIO_MIN, LEVELS } from "@/lib/profile";
+import { BIO_MAX, KEEPER_BIO_MIN, LEVELS, PLAYER_KINDS, isAvailableCity, type PlayerKind } from "@/lib/profile";
 
 export type ProfileActionState = {
   error: string | null;
-  fieldErrors?: Partial<Record<"displayName" | "city" | "bio" | "experienceYears" | "teamName" | "avatarUrl", string>>;
+  fieldErrors?: Partial<
+    Record<"displayName" | "city" | "bio" | "experienceYears" | "teamName" | "avatarUrl" | "playerKind", string>
+  >;
 };
 
 export async function saveProfileAction(
@@ -36,15 +38,18 @@ export async function saveProfileAction(
   const teamName = text("teamName");
   const experienceRaw = text("experienceYears");
   const avatarUrl = text("avatarUrl");
+  const playerKind = text("playerKind") as PlayerKind;
 
   const fieldErrors: NonNullable<ProfileActionState["fieldErrors"]> = {};
   if (!displayName) fieldErrors.displayName = "Enter your name.";
-  if (!city) fieldErrors.city = "Enter your city.";
+  if (!isAvailableCity(city)) fieldErrors.city = "Choose one of the available cities.";
   if (bio.length > BIO_MAX) fieldErrors.bio = `Keep it under ${BIO_MAX} characters.`;
   if (isKeeper && bio.length < KEEPER_BIO_MIN) {
     fieldErrors.bio = `Write at least ${KEEPER_BIO_MIN} characters so teams know who they are booking.`;
   }
-  if (!isKeeper && !teamName) fieldErrors.teamName = "Enter your team name.";
+  if (!isKeeper && !PLAYER_KINDS.includes(playerKind)) fieldErrors.playerKind = "Choose one option.";
+  // Un equipo necesita nombre; un jugador suelto puede dejarlo vacío.
+  if (playerKind === "team" && !teamName) fieldErrors.teamName = "Enter your team name.";
 
   let experienceYears: number | null = null;
   if (isKeeper && experienceRaw !== "") {
@@ -75,6 +80,7 @@ export async function saveProfileAction(
       level: (LEVELS as readonly string[]).includes(level) ? level : null,
       experience_years: experienceYears,
       avatar_url: avatarUrl || null,
+      ...(isKeeper ? {} : { player_kind: playerKind }),
     })
     .eq("id", user.id);
 
@@ -83,7 +89,7 @@ export async function saveProfileAction(
     return { error: "We couldn't save your profile. Please try again." };
   }
 
-  if (!isKeeper) {
+  if (playerKind === "team" && teamName) {
     const { data: team } = await supabase
       .from("teams")
       .select("id")

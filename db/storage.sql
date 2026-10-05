@@ -5,6 +5,7 @@
 
 alter table public.profiles add column if not exists experience_years integer;
 alter table public.profiles add column if not exists level text;
+alter table public.profiles add column if not exists player_kind text;
 
 -- Bucket público de lectura: las fotos de los porteros las ven los equipos
 -- antes de aceptar. Límite de 5 MB y solo JPEG/PNG/WebP (MASTER.md, decisión 7).

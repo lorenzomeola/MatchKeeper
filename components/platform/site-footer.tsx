@@ -66,7 +66,7 @@ function FooterLink({ href, children }: { href: string; children: React.ReactNod
   return (
     <Link
       href={href}
-      className="pl-focus w-fit rounded-[var(--r-xs)] py-1 text-muted transition-colors duration-200 hover:text-accent-strong"
+      className="pl-focus inline-flex min-h-10 w-fit items-center rounded-[var(--r-xs)] text-muted transition-colors duration-200 hover:text-accent-strong"
     >
       {children}
     </Link>

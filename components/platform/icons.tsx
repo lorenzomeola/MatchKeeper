@@ -138,6 +138,149 @@ export function CloseIcon({ className = "h-5 w-5" }: IconProps) {
   );
 }
 
+export function HomeIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M4 10.4 12 4l8 6.4V19a1.5 1.5 0 0 1-1.5 1.5H15v-5.2a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v5.2H5.5A1.5 1.5 0 0 1 4 19Z" />
+    </svg>
+  );
+}
+
+export function ListIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <rect x="4" y="4.5" width="16" height="15" rx="3.2" />
+      <path d="M8 9.5h8M8 13h8M8 16.5h4.4" />
+    </svg>
+  );
+}
+
+export function CalendarIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <rect x="3.8" y="5.4" width="16.4" height="14.8" rx="3.2" />
+      <path d="M3.8 10h16.4M8.4 3.4v3.6M15.6 3.4v3.6" />
+    </svg>
+  );
+}
+
+export function MapIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="m3.8 6.4 5.1-2 6.2 2.2 5.1-2v13l-5.1 2-6.2-2.2-5.1 2Z" />
+      <path d="M8.9 4.4v13M15.1 6.6v13" />
+    </svg>
+  );
+}
+
+export function PlusIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+
+export function UserIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <circle cx="12" cy="8.6" r="3.6" />
+      <path d="M4.8 20c.6-3.6 3.5-5.6 7.2-5.6s6.6 2 7.2 5.6" />
+    </svg>
+  );
+}
+
+export function UsersIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <circle cx="9.2" cy="8.8" r="3.2" />
+      <path d="M3.2 19.4c.5-3.2 3-5 6-5s5.5 1.8 6 5" />
+      <path d="M15.6 5.8a3.1 3.1 0 0 1 0 6M17.6 14.6c1.8.6 3 2.2 3.3 4.4" />
+    </svg>
+  );
+}
+
+export function FlagIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M6 21V4M6 4.6h11.4l-2 4 2 4H6" />
+    </svg>
+  );
+}
+
+export function GridIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <rect x="4" y="4" width="6.6" height="6.6" rx="1.8" />
+      <rect x="13.4" y="4" width="6.6" height="6.6" rx="1.8" />
+      <rect x="4" y="13.4" width="6.6" height="6.6" rx="1.8" />
+      <rect x="13.4" y="13.4" width="6.6" height="6.6" rx="1.8" />
+    </svg>
+  );
+}
+
+export function WalletIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M4 8.2A2.2 2.2 0 0 1 6.2 6H18v3.2M4 8.2V17a2.2 2.2 0 0 0 2.2 2.2H19a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1H6.2A2.2 2.2 0 0 1 4 8.2Z" />
+      <circle cx="15.8" cy="14" r="1.1" />
+    </svg>
+  );
+}
+
+export function LogOutIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M9.5 4.5H6.2A1.7 1.7 0 0 0 4.5 6.2v11.6a1.7 1.7 0 0 0 1.7 1.7h3.3M15 8l4 4-4 4M19 12H9.5" />
+    </svg>
+  );
+}
+
+export function ArrowLeftIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M20 12H5M11 6l-6 6 6 6" />
+    </svg>
+  );
+}
+
+export function SendIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M20.6 3.4 3.8 10.2c-.8.3-.8 1.4 0 1.7l6.2 2.2 2.2 6.2c.3.8 1.4.8 1.7 0Z" />
+      <path d="m10 14.1 10.6-10.7" />
+    </svg>
+  );
+}
+
+export function MoreIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <circle cx="5.5" cy="12" r="1.2" />
+      <circle cx="12" cy="12" r="1.2" />
+      <circle cx="18.5" cy="12" r="1.2" />
+    </svg>
+  );
+}
+
+export function BlockIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <circle cx="12" cy="12" r="8.4" />
+      <path d="m6.2 6.2 11.6 11.6" />
+    </svg>
+  );
+}
+
+export function InfoIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <circle cx="12" cy="12" r="8.6" />
+      <path d="M12 11v5M12 7.8v.1" />
+    </svg>
+  );
+}
+
 /** Logotipo de Stripe (marca registrada de Stripe, Inc.) para la fila de
  *  confianza. Se renderiza en `currentColor` para adaptarse a ambos temas. */
 export function StripeWordmark({ className = "h-4" }: IconProps) {

@@ -1,14 +1,23 @@
-import Link from "next/link";
+import type { Viewport } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { signOutAction } from "@/lib/actions/auth";
-import { Logo } from "@/components/logo";
+import { AppShell } from "@/components/app/app-shell";
+import type { NavVariant } from "@/components/app/nav-config";
+import { ThemeScope } from "@/components/platform/theme";
+import { loadUnreadCount } from "@/lib/data/messages";
 
-export default async function AppLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+// viewport-fit=cover deja pintar bajo la muesca; el shell compensa con env(safe-area-inset-*).
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#0a0c0b" },
+    { media: "(prefers-color-scheme: light)", color: "#faf7f3" },
+  ],
+};
+
+export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -16,77 +25,49 @@ export default async function AppLayout({
 
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("display_name, is_admin")
-    .eq("id", user.id)
-    .maybeSingle();
+  // "*" para no romper si una migración reciente aún no se ha aplicado.
+  const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
 
-  const navLinks = [
-    { href: "/matches", label: "Matches" },
-    { href: "/calendar", label: "Calendar" },
-    { href: "/map", label: "Map" },
-  ];
+  const isAdmin = profile?.is_admin === true;
+  const isKeeper = profile?.role === "goalkeeper";
+  const variant: NavVariant = isKeeper ? "goalkeeper" : "player";
+
+  let pending = 0;
+  let reports = 0;
+  if (isAdmin) {
+    const { count } = await supabase
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .eq("role", "goalkeeper")
+      .eq("approved", false);
+    pending = count ?? 0;
+    const { count: openReports } = await supabase
+      .from("reports")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "open");
+    reports = openReports ?? 0;
+  }
+
+  const roleLabel = isKeeper ? "Goalkeeper" : profile?.player_kind === "team" ? "Team" : "Player";
+  const unread = await loadUnreadCount();
 
   return (
-    <div className="min-h-screen bg-bg">
-      <header className="border-b border-line">
-        <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-4">
-          <Link href="/dashboard">
-            <Logo iconClassName="h-8 w-8" wordmarkClassName="text-lg" />
-          </Link>
-
-          <nav className="hidden items-center gap-6 font-mono text-sm text-muted sm:flex">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="transition-colors hover:text-accent-strong"
-              >
-                {link.label}
-              </Link>
-            ))}
-            {profile?.is_admin && (
-              <Link
-                href="/admin/goalkeepers"
-                className="text-amber transition-colors hover:text-accent-strong"
-              >
-                Admin
-              </Link>
-            )}
-          </nav>
-
-          <div className="flex items-center gap-4">
-            <span className="hidden text-sm text-muted sm:inline">
-              {profile?.display_name ?? user.email}
-            </span>
-            <form action={signOutAction}>
-              <button
-                type="submit"
-                className="text-sm text-muted underline hover:text-fg"
-              >
-                Log out
-              </button>
-            </form>
-          </div>
-        </div>
-
-        {/* Nav mobile: se muestra siempre debajo en pantallas chicas. */}
-        <nav className="flex items-center gap-5 overflow-x-auto border-t border-line px-6 py-2 font-mono text-xs text-muted sm:hidden">
-          {navLinks.map((link) => (
-            <Link key={link.href} href={link.href} className="hover:text-accent-strong">
-              {link.label}
-            </Link>
-          ))}
-          {profile?.is_admin && (
-            <Link href="/admin/goalkeepers" className="text-amber hover:text-accent-strong">
-              Admin
-            </Link>
-          )}
-        </nav>
-      </header>
-
-      {children}
-    </div>
+    <>
+      <ThemeScope>
+        <AppShell
+          variant={variant}
+          isAdmin={isAdmin}
+          userId={user.id}
+          user={{
+            name: profile?.display_name ?? user.email ?? "You",
+            avatarUrl: profile?.avatar_url ?? null,
+            roleLabel,
+          }}
+          badges={{ unread, pending, reports }}
+        >
+          {children}
+        </AppShell>
+      </ThemeScope>
+    </>
   );
 }

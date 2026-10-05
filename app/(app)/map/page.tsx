@@ -1,31 +1,21 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { ExploreMap } from "@/components/app/explore-map";
+import { loadExplore } from "@/lib/data/explore";
 import { createClient } from "@/lib/supabase/server";
-import MatchesMap from "./matches-map";
+
+export const metadata: Metadata = { title: "Map", robots: { index: false } };
 
 export default async function MapPage() {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
   if (!user) redirect("/login");
 
-  const { data: matches } = await supabase
-    .from("matches")
-    .select("id, address, lat, lng, starts_at")
-    .eq("status", "open")
-    .order("starts_at", { ascending: true });
+  const { data: me } = await supabase.from("profiles").select("role, approved").eq("id", user.id).maybeSingle();
+  const isKeeper = me?.role === "goalkeeper";
+  const matches = await loadExplore(user.id, isKeeper);
 
-  return (
-    <main className="mx-auto max-w-3xl px-6 py-16">
-      <h1 className="font-display text-3xl font-bold tracking-tight text-fg">Match map</h1>
-      <p className="mt-2 text-muted">
-        Open matches near you — click a pin to see the details.
-      </p>
-
-      <div className="mt-6">
-        <MatchesMap matches={matches ?? []} />
-      </div>
-    </main>
-  );
+  return <ExploreMap matches={matches} isKeeper={isKeeper} approved={me?.approved === true} />;
 }

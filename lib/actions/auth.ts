@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { isAvailableCity } from "@/lib/profile";
 
 export type AuthActionState = {
   error: string | null;
@@ -52,12 +53,15 @@ export async function signUpAction(
   const password = String(formData.get("password") ?? "");
   const displayName = String(formData.get("displayName") ?? "").trim();
   const role = formData.get("role") === "goalkeeper" ? "goalkeeper" : "player";
-  const city = String(formData.get("city") ?? "").trim() || null;
+  const city = String(formData.get("city") ?? "").trim();
 
-  const values = { displayName, city: city ?? "", email };
+  const values = { displayName, city, email };
 
   if (!email || !password || !displayName) {
     return { error: "Please fill in your name, email and password.", values };
+  }
+  if (!isAvailableCity(city)) {
+    return { error: "Choose one of the available cities.", values };
   }
   if (password.length < 8) {
     return { error: "Password must be at least 8 characters.", values };

@@ -1,7 +1,21 @@
 "use client";
 
-import { useId, useState, type InputHTMLAttributes, type ReactNode } from "react";
+import { useId, useState, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from "react";
 import { CtaAction } from "@/components/platform/cta-button";
+import { ChevronDownIcon } from "@/components/platform/icons";
+
+export type FieldTag = "required" | "recommended" | "optional";
+
+const TAG_STYLE: Record<FieldTag, { label: string; className: string }> = {
+  required: { label: "Required", className: "font-semibold text-accent-strong" },
+  recommended: { label: "Recommended", className: "font-medium text-fg-2" },
+  optional: { label: "Optional", className: "font-normal text-muted" },
+};
+
+export function RequirementTag({ tag }: { tag: FieldTag }) {
+  const { label, className } = TAG_STYLE[tag];
+  return <span className={`text-xs ${className}`}>{label}</span>;
+}
 
 export function FormError({ children }: { children: ReactNode }) {
   return (
@@ -36,6 +50,7 @@ export function Field({
   hint,
   error,
   optional,
+  tag,
   aside,
   children,
 }: {
@@ -44,17 +59,20 @@ export function Field({
   hint?: string;
   error?: string;
   optional?: boolean;
+  /** Etiqueta explícita de obligatoriedad; tiene prioridad sobre `optional`. */
+  tag?: FieldTag;
   /** Elemento a la derecha de la etiqueta (p. ej. un enlace). Fuera del <label>. */
   aside?: ReactNode;
   children: ReactNode;
 }) {
+  const shownTag = tag ?? (optional ? "optional" : undefined);
   return (
-    <div className="grid gap-1.5">
+    <div className="grid min-w-0 gap-1.5">
       <div className="flex items-baseline justify-between gap-3">
         <label htmlFor={htmlFor} className="text-sm font-medium text-fg-2">
           {label}
         </label>
-        {aside ?? (optional && <span className="text-xs font-normal text-muted">Optional</span>)}
+        {aside ?? (shownTag && <RequirementTag tag={shownTag} />)}
       </div>
       {children}
       {error ? (
@@ -77,12 +95,13 @@ type TextFieldProps = Omit<InputHTMLAttributes<HTMLInputElement>, "id" | "classN
   hint?: string;
   error?: string;
   optional?: boolean;
+  tag?: FieldTag;
 };
 
-export function TextField({ label, hint, error, optional, name, ...props }: TextFieldProps) {
+export function TextField({ label, hint, error, optional, tag, name, ...props }: TextFieldProps) {
   const id = useId();
   return (
-    <Field label={label} htmlFor={id} hint={hint} error={error} optional={optional}>
+    <Field label={label} htmlFor={id} hint={hint} error={error} optional={optional} tag={tag}>
       <input
         id={id}
         name={name}
@@ -91,6 +110,42 @@ export function TextField({ label, hint, error, optional, name, ...props }: Text
         aria-describedby={error ? `${id}-error` : hint ? `${id}-hint` : undefined}
         {...props}
       />
+    </Field>
+  );
+}
+
+type SelectFieldProps = Omit<SelectHTMLAttributes<HTMLSelectElement>, "id" | "className" | "children"> & {
+  label: string;
+  hint?: string;
+  error?: string;
+  tag?: FieldTag;
+  placeholder: string;
+  options: readonly { value: string; label: string; disabled?: boolean }[];
+};
+
+export function SelectField({ label, hint, error, tag, placeholder, options, ...props }: SelectFieldProps) {
+  const id = useId();
+  return (
+    <Field label={label} htmlFor={id} hint={hint} error={error} tag={tag}>
+      <div className="relative">
+        <select
+          id={id}
+          className="pl-input min-w-0 appearance-none pr-11"
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? `${id}-error` : hint ? `${id}-hint` : undefined}
+          {...props}
+        >
+          <option value="" disabled>
+            {placeholder}
+          </option>
+          {options.map((o) => (
+            <option key={o.value} value={o.value} disabled={o.disabled}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+        <ChevronDownIcon className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+      </div>
     </Field>
   );
 }

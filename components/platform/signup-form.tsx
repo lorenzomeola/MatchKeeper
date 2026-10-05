@@ -3,9 +3,9 @@
 import { useActionState } from "react";
 import Link from "next/link";
 import { signUpAction, type AuthActionState } from "@/lib/actions/auth";
-import { FormError, PasswordField, SubmitButton, TextField } from "@/components/platform/form-fields";
+import { FormError, PasswordField, SelectField, SubmitButton, TextField } from "@/components/platform/form-fields";
 import { ChatIcon } from "@/components/platform/icons";
-import type { Role } from "@/lib/profile";
+import { CITY_OPTIONS, DEFAULT_CITY, type Role } from "@/lib/profile";
 
 const initialState: AuthActionState = { error: null };
 
@@ -84,7 +84,7 @@ export function SignupForm({ role }: { role: Role }) {
       <h1 className="pl-display mt-3 text-fg [font-size:var(--t-4xl)]">{copy.title}</h1>
       <p className="pl-prose mt-3 [font-size:var(--t-base)]">{copy.body}</p>
 
-      <form action={formAction} className="mt-8 grid gap-5">
+      <form action={formAction} className="mt-8 grid grid-cols-1 gap-5">
         <input type="hidden" name="role" value={role} />
 
         {state.error && <FormError>{state.error}</FormError>}
@@ -98,14 +98,15 @@ export function SignupForm({ role }: { role: Role }) {
           autoComplete="name"
           defaultValue={state.values?.displayName}
         />
-        <TextField
+        <SelectField
           label="City"
           name="city"
-          type="text"
+          required
           autoComplete="address-level2"
-          placeholder="London"
-          optional
-          defaultValue={state.values?.city}
+          placeholder="Select your city"
+          options={CITY_OPTIONS}
+          hint="We are live in London. More cities coming soon."
+          defaultValue={state.values?.city || DEFAULT_CITY}
         />
         <TextField
           label="Email"
@@ -122,7 +123,7 @@ export function SignupForm({ role }: { role: Role }) {
           minLength={8}
         />
 
-        <div className="grid gap-3 pt-1">
+        <div className="grid grid-cols-1 gap-3 pt-1">
           <SubmitButton pending={pending} pendingLabel="Creating account…">
             {copy.cta}
           </SubmitButton>
@@ -140,16 +141,16 @@ export function SignupForm({ role }: { role: Role }) {
         </div>
       </form>
 
-      <div className="mt-8 grid gap-2 border-t border-line pt-6 text-sm text-muted">
-        <p>
-          Already have an account?{" "}
-          <Link href="/login" className="pl-focus font-semibold text-accent-strong underline underline-offset-4">
+      <div className="mt-8 grid gap-1 border-t border-line pt-4 text-sm text-muted">
+        <p className="flex flex-wrap items-center gap-x-1.5">
+          Already have an account?
+          <Link href="/login" className="pl-focus inline-flex min-h-11 items-center font-semibold text-accent-strong underline underline-offset-4">
             Log in
           </Link>
         </p>
-        <p>
-          {copy.switchPrompt}{" "}
-          <Link href={copy.switchHref} className="pl-focus font-semibold text-accent-strong underline underline-offset-4">
+        <p className="flex flex-wrap items-center gap-x-1.5">
+          {copy.switchPrompt}
+          <Link href={copy.switchHref} className="pl-focus inline-flex min-h-11 items-center font-semibold text-accent-strong underline underline-offset-4">
             {copy.switchLabel}
           </Link>
         </p>

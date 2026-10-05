@@ -29,6 +29,27 @@
       "when": 1790951268426,
       "tag": "0003_keen_skin",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791186301743,
+      "tag": "0004_familiar_exiles",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791188772342,
+      "tag": "0005_broad_hannibal_king",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791190623030,
+      "tag": "0006_typical_harrier",
+      "breakpoints": true
     }
   ]
 }

@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { CtaAction } from "@/components/platform/cta-button";
+import { RequirementTag, type FieldTag } from "@/components/platform/form-fields";
 import { AVATAR_MAX_BYTES, AVATAR_TYPES } from "@/lib/profile";
 
 const EXT: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
@@ -21,6 +22,7 @@ export function AvatarUpload({
   label,
   hint,
   error,
+  tag,
   onChange,
 }: {
   userId: string;
@@ -29,6 +31,7 @@ export function AvatarUpload({
   label: string;
   hint: string;
   error?: string;
+  tag?: FieldTag;
   onChange: (url: string) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -76,7 +79,10 @@ export function AvatarUpload({
 
   return (
     <div className="grid gap-1.5">
-      <span className="text-sm font-medium text-fg-2">{label}</span>
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="text-sm font-medium text-fg-2">{label}</span>
+        {tag && <RequirementTag tag={tag} />}
+      </div>
       <div className="flex items-center gap-5">
         <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-[var(--r-xl)] border border-line-strong bg-surface shadow-[var(--ring-inset)]">
           {src ? (

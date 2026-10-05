@@ -42,7 +42,7 @@ export function ForgotPasswordForm({ notice }: { notice?: string }) {
         Enter the email you signed up with and we will send you a link.
       </p>
 
-      <form action={formAction} className="mt-8 grid gap-5">
+      <form action={formAction} className="mt-8 grid grid-cols-1 gap-5">
         {message && <FormError>{message}</FormError>}
 
         <TextField

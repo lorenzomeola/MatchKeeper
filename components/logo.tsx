@@ -51,7 +51,7 @@ export function Logo({
       <LogoMark className={iconClassName} />
       <span className={`font-display font-bold tracking-tight ${wordmarkClassName}`}>
         <span className="text-fg">Match</span>
-        <span className="text-accent">Keeper</span>
+        <span className="text-accent-strong">Keeper</span>
       </span>
     </span>
   );

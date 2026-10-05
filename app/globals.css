@@ -16,7 +16,7 @@
   --fg: #17140f;
   --muted: #6b645c;
   --accent: #ff7a1a; /* naranja señal, mismo del logo */
-  --accent-strong: #e05d00;
+  --accent-strong: #c2410c; /* 4.8:1 sobre --bg, apto para texto */
   --accent-ink: #ffffff; /* texto sobre botones naranjas */
   --accent-glow: rgba(255, 122, 26, 0.3);
   --amber: #a35a00; /* avisos — solo detalles puntuales */
@@ -321,7 +321,7 @@ body {
   --muted: #5f594f; /* 6.6:1 sobre --bg */
 
   --accent: #ff7a1a;
-  --accent-strong: #c2410c; /* 5.1:1 sobre blanco — apto para texto */
+  --accent-strong: #b43a08; /* 5.0:1 sobre --accent-soft — apto para texto */
   --accent-soft: rgba(255, 122, 26, 0.12);
   /* Tinta oscura sobre naranja: blanco sobre #ff7a1a da 2.6:1 y NO pasa
      WCAG AA. Con esta tinta el contraste sube a ~6.5:1 en ambos temas. */
@@ -759,6 +759,14 @@ body {
     background-color var(--d-2) var(--e-out),
     color var(--d-2) var(--e-out);
 }
+/* En móvil una etiqueta larga baja de línea en vez de ensanchar la página. */
+@media (max-width: 480px) {
+  .pl-cta {
+    white-space: normal;
+    letter-spacing: 0.1em;
+    line-height: 1.25;
+  }
+}
 .pl-cta::before {
   content: "";
   position: absolute;
@@ -996,6 +1004,17 @@ textarea.pl-input {
   resize: vertical;
   line-height: 1.55;
 }
+select.pl-input {
+  cursor: pointer;
+}
+/* Las opciones nativas no heredan el fondo del campo en tema oscuro. */
+select.pl-input option {
+  background-color: var(--bg-2);
+  color: var(--fg);
+}
+select.pl-input option:disabled {
+  color: var(--muted);
+}
 
 /* Opción seleccionable (radio nativo oculto + etiqueta): teclado y lector OK. */
 .pl-chip {
@@ -1149,3 +1168,27 @@ input:focus-visible + .pl-chip {
 }
 }
 
+
+/* ── Comportamiento nativo en móvil (solo plataforma) ───────────────────── */
+@layer components {
+  [data-theme] {
+    -webkit-tap-highlight-color: transparent;
+  }
+  html[data-theme] {
+    overscroll-behavior-y: none;
+  }
+  [data-theme] a,
+  [data-theme] button,
+  [data-theme] [role="button"],
+  [data-theme] summary,
+  [data-theme] label {
+    touch-action: manipulation;
+  }
+  /* Los controles no se seleccionan al mantener pulsado; el texto de contenido sí. */
+  [data-theme] button,
+  [data-theme] [role="button"] {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+}

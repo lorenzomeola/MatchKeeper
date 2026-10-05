@@ -18,7 +18,7 @@ export function ResetPasswordForm() {
         You will be logged in once it is saved.
       </p>
 
-      <form action={formAction} className="mt-8 grid gap-5">
+      <form action={formAction} className="mt-8 grid grid-cols-1 gap-5">
         {state.error && (
           <FormError>
             {state.error}{" "}

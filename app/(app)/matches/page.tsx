@@ -1,73 +1,156 @@
-import Link from "next/link";
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { Avatar } from "@/components/app/avatar";
+import { EmptyState } from "@/components/app/empty-state";
+import { MatchCard } from "@/components/app/match-card";
+import { PageHeader } from "@/components/app/page-header";
+import { APPLICATION_STATUS, MATCH_STATUS, StatusBadge } from "@/components/app/status-badge";
+import { Tabs } from "@/components/app/tabs";
+import { Button } from "@/components/platform/button";
+import { ListIcon, MapIcon } from "@/components/platform/icons";
+import { loadKeeperGames, loadPlayerMatches, TABS, type MatchTab } from "@/lib/data/matches";
+import { money } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
-export default async function MatchesPage() {
+export const metadata: Metadata = { title: "Matches", robots: { index: false } };
+
+const LABELS: Record<MatchTab, string> = { open: "Open", booked: "Booked", past: "Past" };
+const KEEPER_LABELS: Record<MatchTab, string> = { open: "Waiting", booked: "Booked", past: "Past" };
+
+export default async function MatchesPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
+  const { data: me } = await supabase.from("profiles").select("role, player_kind").eq("id", user.id).maybeSingle();
+  const isKeeper = me?.role === "goalkeeper";
+  const posterLabel = me?.player_kind === "team" ? "Team" : "Player";
 
-  const { data: matches, error } = await supabase
-    .from("matches")
-    .select("id, starts_at, ends_at, address, level, budget_suggested, status, created_by")
-    .order("starts_at", { ascending: true });
+  const { tab: rawTab } = await searchParams;
+  const tab: MatchTab = TABS.includes(rawTab as MatchTab) ? (rawTab as MatchTab) : "open";
+
+  if (isKeeper) {
+    const data = await loadKeeperGames(user.id);
+    const items = data[tab];
+    return (
+      <>
+        <PageHeader eyebrow="Goalkeeper" title="My games" description="Matches you applied to and the ones you are booked for." />
+        <Tabs
+          base="/matches"
+          active={tab}
+          tabs={TABS.map((t) => ({ value: t, label: KEEPER_LABELS[t], count: data[t].length }))}
+        />
+        {items.length === 0 ? (
+          <EmptyState
+            icon={MapIcon}
+            title={tab === "open" ? "No applications waiting" : tab === "booked" ? "No games booked" : "Nothing here yet"}
+            body={
+              tab === "past"
+                ? "Games you have played and applications that did not go ahead show up here."
+                : "Find open matches near you and apply with your own rate."
+            }
+            action={
+              tab === "past" ? undefined : (
+                <Button href="/map" size="md" withArrow>
+                  Find matches
+                </Button>
+              )
+            }
+          />
+        ) : (
+          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {items.map(({ application: a, match, poster }) => {
+              const s = APPLICATION_STATUS[a.status] ?? { label: a.status, tone: "neutral" as const };
+              return (
+                <li key={a.id}>
+                  <MatchCard
+                    match={match}
+                    href={`/matches/${match.id}`}
+                    by={poster}
+                    footer={
+                      <>
+                        <span className="font-medium text-fg-2">Your rate {money(a.rate)}</span>
+                        <StatusBadge tone={s.tone}>{s.label}</StatusBadge>
+                      </>
+                    }
+                  />
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </>
+    );
+  }
+
+  const data = await loadPlayerMatches(user.id);
+  const items = data[tab];
 
   return (
-    <main className="mx-auto max-w-2xl px-6 py-16">
-      <div className="flex items-center justify-between">
-        <h1 className="font-display text-2xl font-bold tracking-tight text-fg">Matches</h1>
-        {profile?.role !== "goalkeeper" && (
-          <Link
-            href="/matches/new"
-            className="rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-ink transition-colors hover:bg-accent-strong"
-          >
-            + Post a match
-          </Link>
-        )}
-      </div>
-
-      {error && <p className="mt-6 text-sm text-red-600">{error.message}</p>}
-
-      {!error && matches?.length === 0 && (
-        <p className="mt-6 text-sm text-muted">No matches yet.</p>
+    <>
+      <PageHeader eyebrow={posterLabel} title="My matches" description="Everything you posted, from the first application to the final whistle." />
+      <Tabs
+        base="/matches"
+        active={tab}
+        tabs={TABS.map((t) => ({ value: t, label: LABELS[t], count: data[t].length }))}
+      />
+      {items.length === 0 ? (
+        <EmptyState
+          icon={ListIcon}
+          title={tab === "open" ? "No open matches" : tab === "booked" ? "No keepers booked yet" : "No past matches"}
+          body={
+            tab === "past"
+              ? "Matches you have played show up here."
+              : "Post a match with the date, the pitch and the level. Keepers nearby apply with their rate."
+          }
+          action={
+            tab === "past" ? undefined : (
+              <Button href="/matches/new" size="md" withArrow>
+                Post a match
+              </Button>
+            )
+          }
+        />
+      ) : (
+        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {items.map(({ match, pending, keeper }) => {
+            const status = MATCH_STATUS[match.status] ?? MATCH_STATUS.open;
+            return (
+              <li key={match.id}>
+                <MatchCard
+                  match={match}
+                  href={`/matches/${match.id}`}
+                  footer={
+                    keeper ? (
+                      <>
+                        <span className="flex min-w-0 items-center gap-2">
+                          <Avatar name={keeper.name} src={keeper.avatarUrl} size="sm" className="!h-7 !w-7" />
+                          <span className="truncate font-medium text-fg">{keeper.name}</span>
+                        </span>
+                        <StatusBadge tone="success">Booked</StatusBadge>
+                      </>
+                    ) : tab === "past" ? (
+                      <>
+                        <span className="text-muted">Played</span>
+                        <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
+                      </>
+                    ) : (
+                      <>
+                        <span className={pending > 0 ? "font-medium text-warning" : "text-muted"}>
+                          {pending > 0 ? `${pending} ${pending === 1 ? "keeper" : "keepers"} applied` : "No applications yet"}
+                        </span>
+                        <span className="font-semibold text-accent-strong">{pending > 0 ? "Review" : "View"}</span>
+                      </>
+                    )
+                  }
+                />
+              </li>
+            );
+          })}
+        </ul>
       )}
-
-      <ul className="mt-6 flex flex-col gap-3">
-        {matches?.map((m) => (
-          <li key={m.id} className="card-surface rounded-2xl p-5 transition-colors hover:border-accent/50">
-            <Link href={`/matches/${m.id}`} className="block">
-              <div className="flex items-center justify-between">
-                <p className="font-display font-semibold text-fg">{m.address}</p>
-                <span className="rounded-full bg-surface-2 px-3 py-1 text-xs uppercase tracking-wide text-muted">
-                  {m.status}
-                </span>
-              </div>
-              <p className="mt-1 text-sm text-muted">
-                {new Date(m.starts_at).toLocaleString("en-GB")} —{" "}
-                {new Date(m.ends_at).toLocaleTimeString("en-GB")}
-              </p>
-              {m.level && <p className="mt-1 text-sm text-muted">Level: {m.level}</p>}
-              {m.budget_suggested && (
-                <p className="mt-1 text-sm text-muted">
-                  Suggested budget: £{m.budget_suggested}
-                </p>
-              )}
-              {m.created_by === user.id && (
-                <span className="mt-2 inline-block text-xs text-accent">Your match</span>
-              )}
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </main>
+    </>
   );
 }
