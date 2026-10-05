@@ -182,7 +182,7 @@ export function NewMatchForm({ initialDate = "" }: { initialDate?: string }) {
         <input type="hidden" name="lng" value={pos.lng} />
 
         {/* Los dos pasos permanecen montados para que ambos viajen en el formulario. */}
-        <div className={step === 1 ? "grid gap-6" : "hidden"}>
+        <div className={step === 1 ? "grid grid-cols-1 gap-6" : "hidden"}>
           <TextField
             label="Date"
             name="date"

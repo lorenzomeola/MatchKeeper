@@ -999,6 +999,19 @@ body {
 .pl-input[aria-invalid="true"]:focus {
   box-shadow: 0 0 0 3px color-mix(in oklab, var(--danger) 22%, transparent);
 }
+/* iOS ignora el ancho de date/time salvo con appearance:none y desbordaba el formulario. */
+.pl-input[type="date"],
+.pl-input[type="time"] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+}
+.pl-input[type="date"]::-webkit-date-and-time-value,
+.pl-input[type="time"]::-webkit-date-and-time-value {
+  text-align: left;
+}
 textarea.pl-input {
   min-height: 7.5rem;
   resize: vertical;

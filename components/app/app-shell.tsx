@@ -211,7 +211,7 @@ export function AppShell({
         {/* Móvil: barra inferior */}
         <nav
           aria-label="Main"
-          className={`pl-glass fixed inset-x-0 bottom-0 z-50 rounded-none border-x-0 border-b-0 pb-[env(safe-area-inset-bottom,0px)] ${inThread ? "hidden" : "lg:hidden"}`}
+          className={`pl-glass bg-[color-mix(in_oklab,var(--bg-2)_94%,transparent)] fixed inset-x-0 bottom-0 z-50 rounded-none border-x-0 border-b-0 pb-[env(safe-area-inset-bottom,0px)] ${inThread ? "hidden" : "lg:hidden"}`}
         >
           <ul className="mx-auto grid max-w-md" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}>
             {tabs.map((item) => {

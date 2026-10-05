@@ -6,11 +6,10 @@ import type { NavVariant } from "@/components/app/nav-config";
 import { ThemeScope } from "@/components/platform/theme";
 import { loadUnreadCount } from "@/lib/data/messages";
 
-// viewport-fit=cover deja pintar bajo la muesca; el shell compensa con env(safe-area-inset-*).
+// Sin viewport-fit=cover: con él, iOS Safari ancla la barra fija inferior bajo su propia barra de herramientas y queda oculta al hacer scroll hacia arriba.
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: dark)", color: "#0a0c0b" },
     { media: "(prefers-color-scheme: light)", color: "#faf7f3" },
