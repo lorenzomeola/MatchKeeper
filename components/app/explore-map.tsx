@@ -247,7 +247,7 @@ export function ExploreMap({
   );
 
   return (
-    <div className="relative h-[calc(100dvh-4rem-3.75rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))] lg:grid lg:h-[calc(100dvh-3rem)] lg:grid-cols-[24rem_minmax(0,1fr)] lg:gap-5">
+    <div className="relative h-full lg:grid lg:h-[calc(100dvh-3rem)] lg:grid-cols-[24rem_minmax(0,1fr)] lg:gap-5">
       {/* Lista: columna en escritorio, pantalla completa en móvil */}
       <section
         className={`${view === "list" ? "absolute inset-0 z-20 flex" : "hidden"} min-h-0 flex-col bg-bg px-5 pb-4 pt-5 lg:static lg:z-auto lg:flex lg:px-0 lg:pt-0`}

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useMemo, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, type ReactNode } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { signOutAction } from "@/lib/actions/auth";
 import { Logo, LogoMark } from "@/components/logo";
@@ -61,6 +61,12 @@ export function AppShell({
   const tabs = items.filter((i) => i.tab);
   const primary = items.find((i) => i.primary);
   const sidebarItems = items.filter((i) => !i.primary);
+  const scrollerRef = useRef<HTMLDivElement>(null);
+
+  // Next solo restaura el scroll de la ventana; el contenedor interno de móvil hay que subirlo a mano.
+  useEffect(() => {
+    scrollerRef.current?.scrollTo(0, 0);
+  }, [pathname]);
 
   // Un mensaje nuevo de otra persona refresca el contador sin recargar la página.
   useEffect(() => {
@@ -77,7 +83,8 @@ export function AppShell({
 
   return (
     <ToastProvider>
-      <div className="relative isolate min-h-dvh bg-bg text-fg">
+      {/* Móvil: solo hace scroll el contenido, no el body; así la barra de Safari iOS nunca tapa la barra inferior. */}
+      <div className="relative isolate flex h-dvh flex-col overflow-hidden bg-bg text-fg lg:block lg:h-auto lg:min-h-dvh lg:overflow-visible">
         <FloodlightBackdrop />
 
         {/* Escritorio: barra lateral fija */}
@@ -157,7 +164,7 @@ export function AppShell({
           </div>
         </aside>
 
-        <div className="lg:pl-64">
+        <div ref={scrollerRef} className={`min-h-0 flex-1 overflow-y-auto overscroll-contain lg:overflow-visible lg:pl-64 ${inMap ? "flex flex-col lg:block" : ""}`}>
           {/* Móvil: barra superior */}
           <header className={`pl-glass sticky top-0 z-40 items-center justify-between gap-3 rounded-none border-x-0 border-t-0 px-4 pb-2.5 pt-[calc(0.625rem+env(safe-area-inset-top,0px))] ${inThread ? "hidden" : "flex lg:hidden"}`}>
             <Link
@@ -198,8 +205,8 @@ export function AppShell({
               inThread
                 ? "p-0 lg:px-8 lg:pb-6 lg:pt-6"
                 : inMap
-                  ? "p-0 lg:px-8 lg:pb-6 lg:pt-6"
-                  : `px-5 pb-[calc(7rem+env(safe-area-inset-bottom,0px))] pt-5 sm:px-8 ${
+                  ? "min-h-0 flex-1 p-0 lg:px-8 lg:pb-6 lg:pt-6"
+                  : `px-5 pb-10 pt-5 sm:px-8 ${
                     inMessages ? "lg:pb-6 lg:pt-6" : "lg:pb-16 lg:pt-10"
                   }`
             }`}
@@ -211,7 +218,7 @@ export function AppShell({
         {/* Móvil: barra inferior */}
         <nav
           aria-label="Main"
-          className={`pl-glass bg-[color-mix(in_oklab,var(--bg-2)_94%,transparent)] fixed inset-x-0 bottom-0 z-50 rounded-none border-x-0 border-b-0 pb-[env(safe-area-inset-bottom,0px)] ${inThread ? "hidden" : "lg:hidden"}`}
+          className={`pl-glass relative z-50 shrink-0 rounded-none border-x-0 border-b-0 bg-[color-mix(in_oklab,var(--bg-2)_94%,transparent)] pb-[env(safe-area-inset-bottom,0px)] ${inThread ? "hidden" : "lg:hidden"}`}
         >
           <ul className="mx-auto grid max-w-md" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}>
             {tabs.map((item) => {

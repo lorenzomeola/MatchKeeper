@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { cookieOptions } from "./cookie-options";
 
 // Cliente para Server Components / Route Handlers / Server Actions.
 export async function createClient() {
@@ -9,6 +10,7 @@ export async function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      cookieOptions,
       cookies: {
         getAll() {
           return cookieStore.getAll();
