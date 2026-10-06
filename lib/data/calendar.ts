@@ -37,7 +37,9 @@ export async function loadCalendarEvents(userId: string, isKeeper: boolean): Pro
     return [
       ...t.booked.map((i) => ev(i.application.id, i.match, "booked", i.poster)),
       ...t.open.map((i) => ev(i.application.id, i.match, "waiting", `Waiting for ${i.poster}`)),
-      ...t.past.filter((i) => i.application.status === "accepted").map((i) => ev(i.application.id, i.match, "played", i.poster)),
+      ...t.past
+        .filter((i) => i.application.status === "accepted" && i.match.status !== "cancelled")
+        .map((i) => ev(i.application.id, i.match, "played", i.poster)),
     ];
   }
   const t = await loadPlayerMatches(userId);

@@ -1,13 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { Avatar } from "@/components/app/avatar";
-import { Sheet } from "@/components/app/sheet";
 import { StatusBadge } from "@/components/app/status-badge";
-import { useToast } from "@/components/app/toast";
 import { ChatIcon } from "@/components/platform/icons";
-import { acceptApplicationAction } from "@/lib/actions/applications";
 import { money } from "@/lib/format";
 
 export type Applicant = {
@@ -33,10 +30,7 @@ const SORTS = [
 type Sort = (typeof SORTS)[number]["value"];
 
 export function ApplicantList({ matchId, applicants }: { matchId: string; applicants: Applicant[] }) {
-  const { toast } = useToast();
   const [sort, setSort] = useState<Sort>("rate");
-  const [target, setTarget] = useState<Applicant | null>(null);
-  const [pending, startTransition] = useTransition();
 
   const sorted = [...applicants].sort((a, b) => {
     if (sort === "experience") return (b.experienceYears ?? -1) - (a.experienceYears ?? -1) || a.rate - b.rate;
@@ -44,20 +38,6 @@ export function ApplicantList({ matchId, applicants }: { matchId: string; applic
     return a.rate - b.rate;
   });
   const lowest = Math.min(...applicants.map((a) => a.rate));
-
-  function confirm() {
-    if (!target) return;
-    const chosen = target;
-    startTransition(async () => {
-      const res = await acceptApplicationAction(chosen.id, matchId);
-      if (res.error) {
-        toast(res.error, "error");
-        return;
-      }
-      setTarget(null);
-      toast(`${chosen.name} is booked.`);
-    });
-  }
 
   return (
     <div>
@@ -137,46 +117,16 @@ export function ApplicantList({ matchId, applicants }: { matchId: string; applic
                 <ChatIcon className="h-[18px] w-[18px]" />
                 Message
               </Link>
-              <button
-                type="button"
-                onClick={() => setTarget(a)}
+              <Link
+                href={`/matches/${matchId}/book?application=${a.id}`}
                 className="inline-flex min-h-12 items-center justify-center rounded-[var(--r-md)] bg-accent text-[15px] font-semibold text-accent-ink transition-[transform,background-color] duration-150 hover:bg-accent-strong active:scale-[0.98]"
               >
                 Book
-              </button>
+              </Link>
             </div>
           </li>
         ))}
       </ul>
-
-      <Sheet open={target !== null} title={target ? `Book ${target.name}?` : "Book"} onClose={() => !pending && setTarget(null)}>
-        {target && (
-          <>
-            <p className="pl-prose text-[15px]">
-              {target.name} will keep goal for {money(target.rate)}. Booking closes the other applications. You can keep
-              chatting with {target.name.split(" ")[0]} in Messages.
-            </p>
-            <div className="mt-5 grid gap-2">
-              <button
-                type="button"
-                onClick={confirm}
-                disabled={pending}
-                className="inline-flex min-h-12 items-center justify-center rounded-[var(--r-md)] bg-accent px-5 text-[15px] font-semibold text-accent-ink transition-[transform,opacity] duration-150 active:scale-[0.98] disabled:opacity-50"
-              >
-                {pending ? "Booking…" : `Book for ${money(target.rate)}`}
-              </button>
-              <button
-                type="button"
-                onClick={() => setTarget(null)}
-                disabled={pending}
-                className="inline-flex min-h-12 items-center justify-center rounded-[var(--r-md)] px-5 text-[15px] font-medium text-fg-2"
-              >
-                Cancel
-              </button>
-            </div>
-          </>
-        )}
-      </Sheet>
     </div>
   );
 }

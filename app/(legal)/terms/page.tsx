@@ -92,10 +92,16 @@ export default function TermsPage() {
         <li>More than 24 hours before kick-off: no penalty, and the team is refunded in full.</li>
         <li>
           Later than that, or if the goalkeeper does not show up: the team is refunded in full
-          and the goalkeeper receives a strike. Repeated strikes can lead to removal from the
-          platform.
+          and the goalkeeper receives a strike.
         </li>
       </ul>
+      <p>
+        <strong>Strikes.</strong> A no-show counts as 3 points for 12 months. A late cancellation
+        counts as 1 point for 90 days. At 3 points or more the goalkeeper cannot apply to new
+        matches until the points expire or we cancel a strike made by mistake. Matches already
+        booked are not affected automatically. Two no-shows within 12 months can lead to removal
+        from the platform.
+      </p>
       <p>
         Weather does not change this schedule. If the venue closes the pitch on the day, contact
         us at <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> and we will review it case
@@ -122,9 +128,12 @@ export default function TermsPage() {
       </p>
       <p>
         If a team disputes a payment with its bank and the dispute results from the goalkeeper not
-        providing the service, MatchKeeper may recover the disputed amount from the goalkeeper&apos;s
-        payouts. MatchKeeper does not recover it from goalkeepers in other cases, such as card
-        fraud or a team disputing in bad faith.
+        providing the service, MatchKeeper may recover from the goalkeeper the amount it paid out
+        for that match. It does so by reversing the payout or by deducting that amount from the
+        goalkeeper&apos;s future payouts, and the goalkeeper can see any amount owed in the app. If
+        the dispute is later won, the amount recovered is returned to the goalkeeper.
+        MatchKeeper does not recover it from goalkeepers in other cases, such as card fraud or a
+        team disputing in bad faith.
       </p>
 
       <h2>6. Liability</h2>

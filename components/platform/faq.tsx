@@ -81,8 +81,9 @@ const TEAM_FAQ: QA[] = [
     a: (
       <>
         You get a full refund and the goalkeeper receives a strike. Report it within three days of
-        the match so we can sort the refund. Repeated strikes get a goalkeeper removed from the
-        platform. The full rules are in the <a href="#cancellations">cancellation table</a> above
+        the match so we can sort the refund. A no-show suspends the goalkeeper from new matches,
+        and a second one within 12 months can get them removed from the platform. The full rules
+        are in the <a href="#cancellations">cancellation table</a> above
         and on the <Link href="/safety">Safety page</Link>.
       </>
     ),
@@ -170,8 +171,9 @@ const KEEPER_FAQ: QA[] = [
       <>
         Cancel more than 24 hours before kick-off and nothing happens to your profile. Cancel
         later than that, or miss the match without telling anyone, and the team gets a full refund
-        and you get a strike. Repeated strikes mean removal from the platform. If something comes
-        up, cancel as early as you can.
+        and you get a strike. A no-show suspends you from new matches straight away. Three late
+        cancellations within 90 days do the same. If something comes up, cancel as early as you
+        can.
       </>
     ),
   },
@@ -211,7 +213,7 @@ const KEEPER_CANCELS: Row[] = [
     when: "Cancels later, or does not show",
     outcome: "Strike",
     tone: "keeper",
-    note: "The team gets a full refund. Repeated strikes mean removal.",
+    note: "The team gets a full refund. A no-show suspends the keeper.",
   },
 ];
 

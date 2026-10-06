@@ -68,7 +68,11 @@ export async function loadExplore(userId: string, isKeeper: boolean): Promise<Ex
   ]);
 
   const apps = ((appData ?? []) as unknown as KeeperApplication[]).filter(
-    (a) => a.matches && Date.parse(a.matches.ends_at) >= Date.now() && (a.status === "pending" || a.status === "accepted"),
+    (a) =>
+      a.matches &&
+      a.matches.status !== "cancelled" &&
+      Date.parse(a.matches.ends_at) >= Date.now() &&
+      (a.status === "pending" || a.status === "accepted"),
   );
   const mineIds = new Map(apps.map((a) => [a.match_id, a.status === "accepted" ? "booked" : "applied"] as const));
 

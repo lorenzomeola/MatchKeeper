@@ -50,6 +50,41 @@
       "when": 1791190623030,
       "tag": "0006_typical_harrier",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791278573107,
+      "tag": "0007_useful_cerise",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791282626449,
+      "tag": "0008_tidy_manta",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791289142737,
+      "tag": "0009_glorious_forge",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791291208910,
+      "tag": "0010_overconfident_mercury",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791293430558,
+      "tag": "0011_square_lightspeed",
+      "breakpoints": true
     }
   ]
 }

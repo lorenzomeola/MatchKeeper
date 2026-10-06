@@ -1,7 +1,7 @@
 -- Permisos + políticas RLS para MatchKeeper.
 -- AVISO: este archivo es el punto de partida. Los permisos por columna de profiles, applications,
 -- matches y messages los endurece db/admin.sql (y db/messaging.sql). Si vuelves a correr este archivo,
--- corre después db/messaging.sql y db/admin.sql, en ese orden, o se restauran permisos demasiado amplios.
+-- corre después db/messaging.sql, db/admin.sql, db/payments.sql y db/booking-payments.sql, en ese orden, o se restauran permisos demasiado amplios.
 -- No se genera con Drizzle (no modela RLS); se versiona aquí y se aplica a
 -- mano en el SQL Editor de Supabase, igual que la migración de esquema.
 -- Idempotente: se puede volver a correr entero sin error (drop if exists
@@ -335,58 +335,5 @@ to authenticated
 using (goalkeeper_id = auth.uid());
 
 -- ============ accept_application (RPC) ============
--- Acepta una aplicación de forma atómica: marca la aplicación como aceptada,
--- rechaza las demás aplicaciones pendientes del mismo partido, marca el
--- partido como asignado y crea el booking. SECURITY DEFINER porque el
--- cliente no tiene INSERT en bookings ni permiso para tocar aplicaciones
--- de otros porteros directamente.
-create or replace function public.accept_application(p_application_id uuid)
-returns uuid
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  v_application public.applications%rowtype;
-  v_match public.matches%rowtype;
-  v_booking_id uuid;
-begin
-  select * into v_application from public.applications where id = p_application_id;
-  if not found then
-    raise exception 'Application not found';
-  end if;
-
-  select * into v_match from public.matches where id = v_application.match_id;
-  if not found then
-    raise exception 'Match not found';
-  end if;
-
-  if v_match.created_by <> auth.uid() then
-    raise exception 'Not authorized';
-  end if;
-
-  if v_application.status <> 'pending' then
-    raise exception 'Application is not pending';
-  end if;
-
-  if v_match.status <> 'open' then
-    raise exception 'Match is not open';
-  end if;
-
-  update public.applications set status = 'accepted' where id = p_application_id;
-
-  update public.applications
-  set status = 'rejected'
-  where match_id = v_match.id and id <> p_application_id and status = 'pending';
-
-  update public.matches set status = 'assigned' where id = v_match.id;
-
-  insert into public.bookings (match_id, application_id, player_id, goalkeeper_id, rate)
-  values (v_match.id, p_application_id, v_match.created_by, v_application.goalkeeper_id, v_application.rate)
-  returning id into v_booking_id;
-
-  return v_booking_id;
-end;
-$$;
-
-grant execute on function public.accept_application(uuid) to authenticated;
+-- Vive en db/booking-payments.sql: elegir portero crea una reserva pendiente de pago, no confirmada.
+-- No se redefine aquí para que volver a correr este archivo no restaure la versión sin cobro.

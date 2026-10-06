@@ -57,6 +57,11 @@ export function money(value: string | number | null | undefined) {
   return `£${Number.isInteger(n) ? n : n.toFixed(2)}`;
 }
 
+/** Peniques enteros -> "£34.50", siempre con dos decimales (para desgloses de pago). */
+export function moneyPence(pence: number) {
+  return `£${(pence / 100).toFixed(2)}`;
+}
+
 const ymd = (d: Date) => new Intl.DateTimeFormat("en-CA", { timeZone: TZ }).format(d);
 
 /** Fecha de hoy en Londres como yyyy-mm-dd, para el `min` de un campo date. */

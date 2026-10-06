@@ -109,7 +109,7 @@ export async function loadKeeperHome(userId: string) {
   const appliedIds = new Set(apps.map((a) => a.match_id));
 
   const booked = apps
-    .filter((a) => a.status === "accepted" && a.matches && isUpcoming(a.matches, nowMs))
+    .filter((a) => a.status === "accepted" && a.matches && a.matches.status !== "cancelled" && isUpcoming(a.matches, nowMs))
     .sort((a, b) => Date.parse(a.matches!.starts_at) - Date.parse(b.matches!.starts_at));
   const waiting = apps.filter(
     (a) => a.status === "pending" && a.matches && a.matches.status === "open" && isUpcoming(a.matches, nowMs),

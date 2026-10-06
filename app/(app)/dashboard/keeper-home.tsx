@@ -7,10 +7,16 @@ import { StatCard } from "@/components/app/stat-card";
 import { APPLICATION_STATUS, StatusBadge } from "@/components/app/status-badge";
 import { Button } from "@/components/platform/button";
 import { MapIcon } from "@/components/platform/icons";
+import { PaymentSetupCard } from "@/components/app/payment-setup-card";
+import { StandingCard } from "@/components/app/standing-card";
+import { DebtCard } from "@/components/app/debt-card";
 import { loadKeeperHome } from "@/lib/data/dashboard";
+import { loadMyDebtPence } from "@/lib/data/debts";
 import { loadUnreadCount } from "@/lib/data/messages";
+import { loadMyStanding } from "@/lib/data/standing";
 import { dateTile, firstName, money, timeRange } from "@/lib/format";
 import type { completeness } from "@/lib/profile";
+import { createClient } from "@/lib/supabase/server";
 
 type Props = {
   userId: string;
@@ -19,7 +25,14 @@ type Props = {
 };
 
 export async function KeeperHome({ userId, profile, rating }: Props) {
-  const [d, unread] = await Promise.all([loadKeeperHome(userId), loadUnreadCount()]);
+  const supabase = await createClient();
+  const [d, unread, { data: payAccount }, standing, debtPence] = await Promise.all([
+    loadKeeperHome(userId),
+    loadUnreadCount(),
+    supabase.from("keeper_stripe_accounts").select("payouts_enabled").eq("profile_id", userId).maybeSingle(),
+    loadMyStanding(supabase, userId),
+    loadMyDebtPence(supabase, userId),
+  ]);
   const next = d.next?.matches ?? null;
 
   return (
@@ -36,6 +49,8 @@ export async function KeeperHome({ userId, profile, rating }: Props) {
 
       <div className="grid gap-6">
         <UnreadNotice count={unread} />
+        <StandingCard level={standing.level} />
+        <DebtCard pence={debtPence} />
         {!profile.approved && (
           <section className="rounded-[var(--r-lg)] border border-warning/40 bg-[color-mix(in_oklab,var(--warning)_8%,transparent)] p-5">
             <div className="flex items-center gap-2">
@@ -47,6 +62,8 @@ export async function KeeperHome({ userId, profile, rating }: Props) {
             </p>
           </section>
         )}
+
+        {profile.approved && !payAccount?.payouts_enabled && <PaymentSetupCard resume={Boolean(payAccount)} />}
 
         {(rating.requiredMissing.length > 0 || rating.percent < 100) && (
           <ProfileNudge

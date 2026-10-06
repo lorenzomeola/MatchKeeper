@@ -86,11 +86,11 @@ export async function loadKeeperGames(userId: string) {
   const tabs: Record<MatchTab, KeeperItem[]> = {
     open: apps.filter((a) => a.status === "pending" && a.matches!.status === "open" && live(a)).map(item),
     booked: apps
-      .filter((a) => a.status === "accepted" && live(a))
+      .filter((a) => a.status === "accepted" && a.matches!.status !== "cancelled" && live(a))
       .sort((a, b) => Date.parse(a.matches!.starts_at) - Date.parse(b.matches!.starts_at))
       .map(item),
     past: apps
-      .filter((a) => !live(a) || a.status === "rejected" || a.status === "withdrawn" || (a.status === "pending" && a.matches!.status !== "open"))
+      .filter((a) => !live(a) || a.matches!.status === "cancelled" || a.status === "rejected" || a.status === "withdrawn" || (a.status === "pending" && a.matches!.status !== "open"))
       .map(item),
   };
   return tabs;

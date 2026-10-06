@@ -1,0 +1,2 @@
+ALTER TABLE "bookings" DROP CONSTRAINT "bookings_match_id_unique";--> statement-breakpoint
+CREATE UNIQUE INDEX "bookings_active_match_uq" ON "bookings" USING btree ("match_id") WHERE "bookings"."status" <> 'cancelled';

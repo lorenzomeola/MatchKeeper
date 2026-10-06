@@ -1,0 +1,1 @@
+ALTER TABLE "bookings" ADD COLUMN "stripe_checkout_session_id" text;

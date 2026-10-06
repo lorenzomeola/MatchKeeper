@@ -1,10 +1,12 @@
 import type { ComponentType } from "react";
 import {
+  BlockIcon,
   CalendarIcon,
   ChatIcon,
   FlagIcon,
   GridIcon,
   HomeIcon,
+  InfoIcon,
   ListIcon,
   MapIcon,
   PlusIcon,
@@ -57,6 +59,8 @@ const ADMIN: NavItem[] = [
   { href: "/admin/matches", label: "Matches", icon: ListIcon, tab: true },
   { href: "/admin/reports", label: "Reports", icon: FlagIcon, tab: true, badge: "reports" },
   { href: "/admin/payments", label: "Payments", icon: WalletIcon },
+  { href: "/admin/strikes", label: "Strikes", icon: BlockIcon },
+  { href: "/admin/disputes", label: "Disputes", icon: InfoIcon },
 ];
 
 export const NAV: Record<NavVariant, NavItem[]> = {

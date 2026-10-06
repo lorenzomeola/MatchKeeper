@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { completeness, profileChecklist, valuesFromRow, type Role } from "@/lib/profile";
+import { isActiveStrike, keeperStanding } from "@/lib/strikes";
 
 type Client = Awaited<ReturnType<typeof createClient>>;
 
@@ -239,7 +240,10 @@ export async function loadPayments() {
   const supabase = await createClient();
   const { data } = await supabase
     .from("bookings")
-    .select("id, rate, commission_pct, payment_status, created_at, match_id, player_id, goalkeeper_id, matches(address, starts_at)")
+    .select(
+      "id, rate, commission_pct, payment_status, status, created_at, match_id, player_id, goalkeeper_id, team_response, team_report_note, keeper_checked_in_at, check_in_distance_m, total_pence, matches(address, starts_at)",
+    )
+    .neq("status", "pending_payment")
     .order("created_at", { ascending: false })
     .limit(50);
   const rows = (data ?? []) as unknown as {
@@ -247,12 +251,156 @@ export async function loadPayments() {
     rate: string | number;
     commission_pct: string | number;
     payment_status: string;
+    status: string;
     created_at: string;
     match_id: string;
     player_id: string;
     goalkeeper_id: string;
+    team_response: string | null;
+    team_report_note: string | null;
+    keeper_checked_in_at: string | null;
+    check_in_distance_m: number | null;
+    total_pence: number | null;
     matches: { address: string | null; starts_at: string } | null;
   }[];
   const names = await namesOf(supabase, rows.flatMap((r) => [r.player_id, r.goalkeeper_id]));
   return { rows, names };
+}
+
+export type StrikeGroup = {
+  keeperId: string;
+  name: string;
+  standing: ReturnType<typeof keeperStanding>;
+  strikes: { id: string; kind: string | null; reason: string; createdAt: string; waivedAt: string | null; waivedReason: string | null; active: boolean }[];
+  upcoming: { id: string; matchId: string; address: string | null; startsAt: string }[];
+};
+
+/** Porteros con strikes, los más graves primero. Los suspendidos traen sus reservas próximas para que el admin decida. */
+export async function loadStrikes(): Promise<StrikeGroup[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("strikes")
+    .select("id, goalkeeper_id, kind, reason, created_at, waived_at, waived_reason")
+    .order("created_at", { ascending: false });
+  const rows = data ?? [];
+  const names = await namesOf(supabase, rows.map((r) => r.goalkeeper_id));
+  const now = new Date();
+
+  const byKeeper = new Map<string, typeof rows>();
+  for (const r of rows) byKeeper.set(r.goalkeeper_id, [...(byKeeper.get(r.goalkeeper_id) ?? []), r]);
+
+  const groups: StrikeGroup[] = [...byKeeper.entries()].map(([keeperId, list]) => {
+    const inputs = list.map((s) => ({ kind: s.kind, createdAt: new Date(s.created_at), waivedAt: s.waived_at ? new Date(s.waived_at) : null }));
+    return {
+      keeperId,
+      name: names.get(keeperId)?.name ?? "Goalkeeper",
+      standing: keeperStanding(inputs, now),
+      strikes: list.map((s, i) => ({
+        id: s.id,
+        kind: s.kind,
+        reason: s.reason,
+        createdAt: s.created_at,
+        waivedAt: s.waived_at,
+        waivedReason: s.waived_reason,
+        active: isActiveStrike(inputs[i], now),
+      })),
+      upcoming: [],
+    };
+  });
+
+  const suspendedIds = groups.filter((g) => g.standing.level === "suspended").map((g) => g.keeperId);
+  if (suspendedIds.length > 0) {
+    const { data: bookings } = await supabase
+      .from("bookings")
+      .select("id, goalkeeper_id, match_id, matches(address, starts_at)")
+      .in("goalkeeper_id", suspendedIds)
+      .eq("status", "confirmed");
+    for (const b of (bookings ?? []) as unknown as { id: string; goalkeeper_id: string; match_id: string; matches: { address: string | null; starts_at: string } | null }[]) {
+      if (!b.matches || new Date(b.matches.starts_at) <= now) continue;
+      groups.find((g) => g.keeperId === b.goalkeeper_id)?.upcoming.push({ id: b.id, matchId: b.match_id, address: b.matches.address, startsAt: b.matches.starts_at });
+    }
+  }
+
+  const rank = { suspended: 3, review: 2, warned: 1, good: 0 } as const;
+  return groups.sort((a, b) => rank[b.standing.level] - rank[a.standing.level] || b.standing.points - a.standing.points);
+}
+
+export type DisputeRow = {
+  id: string;
+  stripeDisputeId: string;
+  bookingId: string | null;
+  matchId: string | null;
+  address: string | null;
+  startsAt: string | null;
+  teamName: string;
+  keeperName: string;
+  reason: string | null;
+  status: string;
+  amountPence: number;
+  dueBy: string | null;
+  evidenceSubmittedAt: string | null;
+  evidence: { stripe: Record<string, string>; checks: { label: string; ok: boolean }[] } | null;
+  fault: string | null;
+  reversedPence: number;
+  reversalError: string | null;
+  retransferredAt: string | null;
+  createdAt: string;
+  debts: { id: string; amountPence: number; recoveredPence: number; status: string }[];
+};
+
+/** Disputas con su reserva, la evidencia preparada y el estado de la recuperación. Incluye el ratio de los últimos 90 días. */
+export async function loadDisputes() {
+  const supabase = await createClient();
+  const since = new Date(Date.now() - 90 * 86_400_000).toISOString();
+  const head = { count: "exact", head: true } as const;
+
+  const [{ data }, recent, paid] = await Promise.all([
+    supabase.from("disputes").select("*").order("created_at", { ascending: false }).limit(100),
+    count(supabase.from("disputes").select("id", head).gte("created_at", since)),
+    count(supabase.from("bookings").select("id", head).not("stripe_charge_id", "is", null).gte("created_at", since)),
+  ]);
+  const rows = data ?? [];
+
+  const bookingIds = rows.map((r) => r.booking_id).filter((id): id is string => Boolean(id));
+  const { data: bookings } = bookingIds.length
+    ? await supabase.from("bookings").select("id, match_id, player_id, goalkeeper_id, matches(address, starts_at)").in("id", bookingIds)
+    : { data: [] };
+  const byBooking = new Map(
+    ((bookings ?? []) as unknown as { id: string; match_id: string; player_id: string; goalkeeper_id: string; matches: { address: string | null; starts_at: string } | null }[]).map((b) => [b.id, b]),
+  );
+  const names = await namesOf(supabase, [...byBooking.values()].flatMap((b) => [b.player_id, b.goalkeeper_id]));
+
+  const { data: debts } = rows.length
+    ? await supabase.from("keeper_debts").select("id, dispute_id, amount_pence, recovered_pence, status").in("dispute_id", rows.map((r) => r.id))
+    : { data: [] };
+
+  const disputes: DisputeRow[] = rows.map((r) => {
+    const b = r.booking_id ? byBooking.get(r.booking_id) : undefined;
+    return {
+      id: r.id,
+      stripeDisputeId: r.stripe_dispute_id,
+      bookingId: r.booking_id,
+      matchId: b?.match_id ?? null,
+      address: b?.matches?.address ?? null,
+      startsAt: b?.matches?.starts_at ?? null,
+      teamName: b ? (names.get(b.player_id)?.name ?? "Team") : "Unknown booking",
+      keeperName: b ? (names.get(b.goalkeeper_id)?.name ?? "Keeper") : "-",
+      reason: r.reason,
+      status: r.status,
+      amountPence: r.amount_pence,
+      dueBy: r.due_by,
+      evidenceSubmittedAt: r.evidence_submitted_at,
+      evidence: r.evidence ?? null,
+      fault: r.fault,
+      reversedPence: r.reversed_pence,
+      reversalError: r.reversal_error,
+      retransferredAt: r.retransferred_at,
+      createdAt: r.created_at,
+      debts: (debts ?? [])
+        .filter((x) => x.dispute_id === r.id)
+        .map((x) => ({ id: x.id, amountPence: x.amount_pence, recoveredPence: x.recovered_pence, status: x.status })),
+    };
+  });
+
+  return { disputes, ratio: { disputes: recent, paidBookings: paid } };
 }

@@ -39,8 +39,9 @@ export default function SafetyPage() {
       <p>
         Tell us within three days of the match at{" "}
         <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>, and do not confirm the match as
-        played. You get a full refund, and the goalkeeper receives a strike. Repeated strikes
-        lead to the goalkeeper&apos;s profile being removed from the platform.
+        played. You get a full refund, and the goalkeeper receives a strike. A no-show suspends
+        the goalkeeper from new matches, and a second one within 12 months can lead to their
+        profile being removed from the platform.
       </p>
 
       <h2>4. Before you meet</h2>

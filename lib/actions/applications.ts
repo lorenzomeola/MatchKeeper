@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { loadMyStanding } from "@/lib/data/standing";
 import { createClient } from "@/lib/supabase/server";
 
 export type ApplicationActionState = { error: string | null; done?: boolean };
@@ -27,6 +28,17 @@ export async function applyToMatchAction(
   if (rate > RATE_MAX) return { error: `The rate can't be more than £${RATE_MAX}.` };
   if (message.length > MESSAGE_MAX) return { error: `Keep your message under ${MESSAGE_MAX} characters.` };
 
+  const { data: payAccount } = await supabase
+    .from("keeper_stripe_accounts")
+    .select("payouts_enabled")
+    .eq("profile_id", user.id)
+    .maybeSingle();
+  if (!payAccount?.payouts_enabled) return { error: "Set up payments from your dashboard before applying." };
+
+  if ((await loadMyStanding(supabase, user.id)).level === "suspended") {
+    return { error: "Your account is suspended from applying to new matches." };
+  }
+
   const { error } = await supabase.from("applications").insert({
     match_id: matchId,
     goalkeeper_id: user.id,
@@ -39,22 +51,6 @@ export async function applyToMatchAction(
     if (error.code === "23505") return { error: "You already applied to this match." };
     console.error("applyToMatchAction failed", error);
     return { error: "We couldn't send your application. Please try again." };
-  }
-
-  revalidatePath(`/matches/${matchId}`);
-  return { error: null, done: true };
-}
-
-export async function acceptApplicationAction(
-  applicationId: string,
-  matchId: string,
-): Promise<ApplicationActionState> {
-  const supabase = await createClient();
-  const { error } = await supabase.rpc("accept_application", { p_application_id: applicationId });
-
-  if (error) {
-    console.error("acceptApplicationAction failed", error);
-    return { error: "We couldn't book this keeper. The match may already be filled." };
   }
 
   revalidatePath(`/matches/${matchId}`);
