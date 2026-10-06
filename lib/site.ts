@@ -5,14 +5,14 @@ export const SITE_TAGLINE = "Every match deserves a real keeper";
 export const SITE_DESCRIPTION =
   "Find a goalkeeper for your amateur football match in London. A community project connecting teams with available goalkeepers so no game gets cancelled.";
 
-// Update this once the real domain is bought (e.g. matchkeeper.co.uk).
-export const SITE_URL = "https://matchkeeper.app";
+// Dominio de producción actual en Vercel. Cambiar cuando se compre el dominio propio (p. ej. matchkeeper.co.uk).
+export const SITE_URL = "https://matchkeeperservice.vercel.app";
 
 export const CITY = "London";
 
 // Punto de contacto publicado en el footer y las paginas legales. Cambiar en
 // cuanto se de de alta el dominio/buzon definitivo.
-export const CONTACT_EMAIL = "hello@matchkeeper.app";
+export const CONTACT_EMAIL = "matchkeeperuk@gmail.com";
 
 // The three Google Forms used in the UK (London) validation phase.
 export const FORMS = {
