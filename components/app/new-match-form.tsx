@@ -1,15 +1,16 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useId, useState } from "react";
 import dynamic from "next/dynamic";
 import { DateTile, MatchChips } from "@/components/app/match-card";
 import { LevelPicker } from "@/components/app/level-picker";
 import { CtaAction } from "@/components/platform/cta-button";
-import { Field, FormError, SelectField, SubmitButton, TextField } from "@/components/platform/form-fields";
+import { Field, FormError, RequirementTag, SelectField, SubmitButton, TextField } from "@/components/platform/form-fields";
 import { createMatchAction, type MatchActionState } from "@/lib/actions/matches";
 import { londonLocalToIso, timeRange, todayLondon } from "@/lib/format";
 import { searchPlaces, type Place } from "@/lib/geocode";
 import { FORMAT_OPTIONS, NOTES_MAX, SURFACE_OPTIONS } from "@/lib/match-options";
+import { AGE_FROM_OPTIONS, AGE_TO_OPTIONS } from "@/lib/profile";
 
 const MapPicker = dynamic(() => import("@/components/map-picker"), {
   ssr: false,
@@ -30,10 +31,14 @@ type Values = {
   surface: string;
   level: string;
   budget: string;
+  prefAgeMin: string;
+  prefAgeMax: string;
   notes: string;
 };
 
 type Errors = Partial<Record<keyof Values, string>>;
+
+const NOT_LOCATED = "Search for the pitch and choose it from the list, or place the pin on the map.";
 
 const STEP_ONE: (keyof Values)[] = ["date", "startTime", "endTime", "address"];
 
@@ -62,9 +67,14 @@ export function NewMatchForm({ initialDate = "" }: { initialDate?: string }) {
     surface: "",
     level: "",
     budget: "",
+    prefAgeMin: "",
+    prefAgeMax: "",
     notes: "",
   });
   const [pos, setPos] = useState(LONDON);
+  // La ubicación solo cuenta como puesta si salió de un resultado de búsqueda o el usuario movió el pin.
+  const [placed, setPlaced] = useState<{ by: "search" | "map"; label: string } | null>(null);
+  const addressId = useId();
   const [errors, setErrors] = useState<Errors>({});
   const [finding, setFinding] = useState(false);
   const [findNote, setFindNote] = useState<string | null>(null);
@@ -82,8 +92,22 @@ export function NewMatchForm({ initialDate = "" }: { initialDate?: string }) {
 
   function goNext() {
     const e = validateStepOne(v, today);
+    if (!e.address && !placed) e.address = NOT_LOCATED;
     setErrors(e);
     if (Object.keys(e).length === 0) setStep(2);
+    else if (e.address === NOT_LOCATED && !finding && !searched) void findOnMap();
+  }
+
+  function onAddressChange(value: string) {
+    set("address", value);
+    // Si el texto cambia tras elegir un resultado, la ubicación ya no corresponde: hay que buscar de nuevo.
+    if (placed?.by === "search" && value.trim() !== placed.label) setPlaced(null);
+  }
+
+  function onPinMoved(lat: number, lng: number) {
+    setPos({ lat, lng });
+    setPlaced((prev) => ({ by: "map", label: prev?.label ?? "" }));
+    setErrors((prev) => (prev.address === NOT_LOCATED ? { ...prev, address: undefined } : prev));
   }
 
   async function findOnMap() {
@@ -110,6 +134,7 @@ export function NewMatchForm({ initialDate = "" }: { initialDate?: string }) {
   function pickPlace(p: Place) {
     setPos({ lat: p.lat, lng: p.lng });
     set("address", p.label);
+    setPlaced({ by: "search", label: p.label });
     setPlaces([]);
     setSearched(false);
     setFindNote("Pin placed. Drag it if it is not on the exact pitch.");
@@ -127,6 +152,8 @@ export function NewMatchForm({ initialDate = "" }: { initialDate?: string }) {
     format: v.format ? Number(v.format) : null,
     surface: v.surface || null,
     budget_suggested: v.budget || null,
+    pref_age_min: v.prefAgeMin || null,
+    pref_age_max: v.prefAgeMax || null,
   };
 
   return (
@@ -141,6 +168,7 @@ export function NewMatchForm({ initialDate = "" }: { initialDate?: string }) {
             return;
           }
           const e1 = validateStepOne(v, today);
+          if (!e1.address && !placed) e1.address = NOT_LOCATED;
           const e2: Errors = {};
           if (!v.format) e2.format = "Choose the format.";
           if (!v.surface) e2.surface = "Choose the surface.";
@@ -213,24 +241,41 @@ export function NewMatchForm({ initialDate = "" }: { initialDate?: string }) {
             />
           </div>
           <div className="grid gap-3">
-            <TextField
+            <Field
               label="Pitch name or address"
-              name="address"
-              type="text"
-              autoComplete="off"
-              placeholder="Hackney Marshes, London"
-              value={v.address}
-              onChange={(e) => set("address", e.target.value)}
+              htmlFor={addressId}
               error={err("address")}
-            />
-            <button
-              type="button"
-              onClick={findOnMap}
-              disabled={finding}
-              className="inline-flex min-h-11 w-fit items-center rounded-[var(--r-sm)] text-sm font-semibold text-accent-strong underline underline-offset-4 disabled:opacity-60"
+              hint="Search it, then pick the right place from the list."
             >
-              {finding ? "Searching…" : "Find it on the map"}
-            </button>
+              <div className="flex gap-2">
+                <input
+                  id={addressId}
+                  name="address"
+                  type="text"
+                  autoComplete="off"
+                  placeholder="Hackney Marshes, London"
+                  className="pl-input min-w-0 flex-1"
+                  value={v.address}
+                  onChange={(e) => onAddressChange(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      void findOnMap();
+                    }
+                  }}
+                  aria-invalid={err("address") ? true : undefined}
+                  aria-describedby={err("address") ? `${addressId}-error` : `${addressId}-hint`}
+                />
+                <button
+                  type="button"
+                  onClick={findOnMap}
+                  disabled={finding}
+                  className="pl-focus inline-flex min-h-12 shrink-0 items-center rounded-[var(--r-md)] bg-accent px-5 text-sm font-semibold text-accent-ink transition-opacity duration-200 hover:opacity-90 disabled:opacity-60"
+                >
+                  {finding ? "Searching…" : "Search"}
+                </button>
+              </div>
+            </Field>
             {places.length > 0 && (
               <ul className="pl-surface divide-y divide-line overflow-hidden rounded-[var(--r-md)]" aria-label="Matching places">
                 {places.map((p) => (
@@ -262,7 +307,7 @@ export function NewMatchForm({ initialDate = "" }: { initialDate?: string }) {
             {findNote && <p className="text-[13px] text-muted">{findNote}</p>}
           </div>
           <div>
-            <MapPicker lat={pos.lat} lng={pos.lng} onChange={(lat, lng) => setPos({ lat, lng })} />
+            <MapPicker lat={pos.lat} lng={pos.lng} onChange={onPinMoved} />
             <p className="mt-2 text-[13px] text-muted">
               Tap the map or drag the pin to the exact pitch. Keepers see this location.
             </p>
@@ -316,6 +361,33 @@ export function NewMatchForm({ initialDate = "" }: { initialDate?: string }) {
             onChange={(l) => set("level", l)}
             tag="recommended"
           />
+
+          <fieldset className="grid gap-2.5">
+            <legend className="mb-1 flex w-full items-baseline justify-between text-sm font-medium text-fg-2">
+              Preferred keeper age
+              <RequirementTag tag="optional" />
+            </legend>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <SelectField
+                label="From"
+                name="prefAgeMin"
+                placeholder="No minimum"
+                options={AGE_FROM_OPTIONS}
+                value={v.prefAgeMin}
+                onChange={(e) => set("prefAgeMin", e.target.value)}
+              />
+              <SelectField
+                label="To"
+                name="prefAgeMax"
+                placeholder="No maximum"
+                options={AGE_TO_OPTIONS}
+                value={v.prefAgeMax}
+                onChange={(e) => set("prefAgeMax", e.target.value)}
+                error={err("prefAgeMax")}
+              />
+            </div>
+            <p className="text-[13px] text-muted">Just a preference. Keepers of any age can still apply.</p>
+          </fieldset>
 
           <TextField
             label="Suggested budget (£)"

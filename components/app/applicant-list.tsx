@@ -22,6 +22,7 @@ export type Applicant = {
   bio: string | null;
   level: string | null;
   experienceYears: number | null;
+  ageRange: string | null;
 };
 
 const SORTS = [
@@ -102,8 +103,11 @@ export function ApplicantList({ matchId, applicants }: { matchId: string; applic
                   </div>
                 </div>
 
-                {(a.experienceYears != null || a.level) && (
+                {(a.experienceYears != null || a.level || a.ageRange) && (
                 <ul className="mt-2.5 flex flex-wrap gap-1.5">
+                  {a.ageRange && (
+                    <li className="rounded-[var(--r-xs)] bg-surface-2 px-2 py-1 text-xs font-medium text-fg-2">Age {a.ageRange}</li>
+                  )}
                   {a.experienceYears != null && (
                     <li className="rounded-[var(--r-xs)] bg-surface-2 px-2 py-1 text-xs font-medium text-fg-2">
                       {a.experienceYears} {a.experienceYears === 1 ? "year" : "years"} as a keeper

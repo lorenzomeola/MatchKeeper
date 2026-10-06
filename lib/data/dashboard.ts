@@ -11,6 +11,8 @@ export type MatchRow = {
   surface: string | null;
   notes: string | null;
   budget_suggested: string | number | null;
+  pref_age_min?: string | null;
+  pref_age_max?: string | null;
   status: "open" | "assigned" | "completed" | "cancelled";
 };
 

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { dateTile, money, SURFACE_LABEL, timeRange } from "@/lib/format";
+import { ageRangeText } from "@/lib/profile";
 
 type CardMatch = {
   id: string;
@@ -11,6 +12,8 @@ type CardMatch = {
   format: number | null;
   surface: string | null;
   budget_suggested: string | number | null;
+  pref_age_min?: string | null;
+  pref_age_max?: string | null;
 };
 
 export function DateTile({ iso, large }: { iso: string; large?: boolean }) {
@@ -31,10 +34,12 @@ export function DateTile({ iso, large }: { iso: string; large?: boolean }) {
 }
 
 export function MatchChips({ match }: { match: CardMatch }) {
+  const age = ageRangeText(match.pref_age_min, match.pref_age_max);
   const chips = [
     match.format ? `${match.format}-a-side` : null,
     match.surface ? (SURFACE_LABEL[match.surface] ?? match.surface) : null,
     match.level,
+    age ? `Prefers age ${age}` : null,
     money(match.budget_suggested) ? `${money(match.budget_suggested)} budget` : null,
   ].filter((c): c is string => !!c);
 

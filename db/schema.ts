@@ -51,6 +51,8 @@ export const profiles = pgTable("profiles", {
   level: text("level"),
   // jugadores: "individual" (un jugador que organiza con amigos) o "team" (equipo con nombre).
   playerKind: text("player_kind"),
+  // porteros: tramo de edad (18-24 | 25-34 | 35-44 | 45-54 | 55+).
+  ageRange: text("age_range"),
   baseLat: doublePrecision("base_lat"),
   baseLng: doublePrecision("base_lng"),
   // solo aplica a porteros: se activa tras revisión manual del admin.
@@ -105,6 +107,9 @@ export const matches = pgTable("matches", {
   format: smallint("format"),
   // grass | artificial | indoor | futsal
   surface: text("surface"),
+  // preferencia opcional de edad del portero (mismos tramos que profiles.age_range); nunca bloquea aplicar.
+  prefAgeMin: text("pref_age_min"),
+  prefAgeMax: text("pref_age_max"),
   notes: text("notes"),
   budgetSuggested: numeric("budget_suggested", { precision: 10, scale: 2 }),
   status: matchStatus("status").notNull().default("open"),

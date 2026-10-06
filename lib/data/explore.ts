@@ -14,6 +14,8 @@ export type ExploreMatch = {
   surface: string | null;
   level: string | null;
   budget_suggested: string | number | null;
+  pref_age_min?: string | null;
+  pref_age_max?: string | null;
   kind: PinKind;
   by: string;
 };
@@ -31,6 +33,8 @@ const pin = (m: MatchWithCoords, kind: PinKind, by: string): ExploreMatch => ({
   surface: m.surface,
   level: m.level,
   budget_suggested: m.budget_suggested,
+  pref_age_min: m.pref_age_min ?? null,
+  pref_age_max: m.pref_age_max ?? null,
   kind,
   by,
 });

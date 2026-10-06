@@ -12,6 +12,7 @@ export type AdminProfile = {
   city: string | null;
   level: string | null;
   experience_years: number | null;
+  age_range?: string | null;
   approved: boolean;
   is_admin: boolean;
   created_at: string;

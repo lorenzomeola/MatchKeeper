@@ -28,6 +28,7 @@ export default async function KeeperProfilePage({ params }: { params: Promise<{ 
   const facts = [
     k.experienceYears != null ? `${k.experienceYears} ${k.experienceYears === 1 ? "year" : "years"} as a keeper` : null,
     k.level,
+    k.ageRange ? `Age ${k.ageRange}` : null,
   ].filter(Boolean) as string[];
 
   return (

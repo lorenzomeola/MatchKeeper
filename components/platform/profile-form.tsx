@@ -4,6 +4,7 @@ import { useActionState, useId, useState } from "react";
 import Link from "next/link";
 import { saveProfileAction, type ProfileActionState } from "@/lib/actions/profile";
 import {
+  AGE_RANGE_OPTIONS,
   BIO_MAX,
   CITY_OPTIONS,
   DETAILED_BIO_MIN,
@@ -230,20 +231,34 @@ export function ProfileForm({
         </fieldset>
 
         {isKeeper && (
-          <TextField
-            label="Years as a goalkeeper"
-            name="experienceYears"
-            type="number"
-            inputMode="numeric"
-            min={0}
-            max={60}
-            step={1}
-            placeholder="6"
-            value={v.experienceYears}
-            onChange={(e) => set("experienceYears", e.target.value)}
-            error={fe.experienceYears}
-            tag="recommended"
-          />
+          <div className="grid gap-5 sm:grid-cols-2">
+            <SelectField
+              label="Age range"
+              name="ageRange"
+              tag="required"
+              required
+              placeholder="Choose"
+              options={AGE_RANGE_OPTIONS}
+              value={v.ageRange}
+              onChange={(e) => set("ageRange", e.target.value)}
+              error={fe.ageRange}
+              hint="Teams see your range, never your exact age."
+            />
+            <TextField
+              label="Years as a goalkeeper"
+              name="experienceYears"
+              type="number"
+              inputMode="numeric"
+              min={0}
+              max={60}
+              step={1}
+              placeholder="6"
+              value={v.experienceYears}
+              onChange={(e) => set("experienceYears", e.target.value)}
+              error={fe.experienceYears}
+              tag="recommended"
+            />
+          </div>
         )}
 
         <Field

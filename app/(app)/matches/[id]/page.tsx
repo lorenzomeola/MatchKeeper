@@ -24,6 +24,7 @@ type KeeperEmbed = {
   bio: string | null;
   level: string | null;
   experience_years: number | null;
+  age_range: string | null;
 };
 
 type ApplicationRow = {
@@ -56,7 +57,7 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
     const { data } = await supabase
       .from("applications")
       .select(
-        "id, rate, message, status, created_at, goalkeeper_id, profiles:goalkeeper_id(display_name, avatar_url, city, bio, level, experience_years)",
+        "id, rate, message, status, created_at, goalkeeper_id, profiles:goalkeeper_id(display_name, avatar_url, city, bio, level, experience_years, age_range)",
       )
       .eq("match_id", id)
       .order("created_at", { ascending: true });
@@ -101,6 +102,7 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
     bio: a.profiles?.bio ?? null,
     level: a.profiles?.level ?? null,
     experienceYears: a.profiles?.experience_years ?? null,
+    ageRange: a.profiles?.age_range ?? null,
   }));
 
   const canApply = !isOwner && isKeeper && me?.approved && match.status === "open" && !expired && !mine;

@@ -9,6 +9,44 @@ export const LEVEL_INFO: Record<(typeof LEVELS)[number], string> = {
   "Semi-pro": "Top amateur or non-league standard. Structured training and a fast pace.",
 };
 
+// Tramos de edad (solo mayores de 18). Orden ascendente: se compara por posición.
+export const AGE_RANGES = [
+  { value: "18-24", from: 18, to: 24 },
+  { value: "25-34", from: 25, to: 34 },
+  { value: "35-44", from: 35, to: 44 },
+  { value: "45-54", from: 45, to: 54 },
+  { value: "55+", from: 55, to: null },
+] as const;
+
+export const AGE_RANGE_OPTIONS = AGE_RANGES.map((a) => ({ value: a.value as string, label: a.value as string }));
+
+// Preferencia de un partido: "desde" y "hasta" usan el mismo valor de tramo; la etiqueta muestra la edad.
+export const AGE_FROM_OPTIONS = [
+  { value: "", label: "No minimum" },
+  ...AGE_RANGES.map((a) => ({ value: a.value as string, label: `${a.from}+` })),
+];
+export const AGE_TO_OPTIONS = [
+  { value: "", label: "No maximum" },
+  ...AGE_RANGES.filter((a) => a.to != null).map((a) => ({ value: a.value as string, label: `Up to ${a.to}` })),
+];
+
+export function isAgeRange(value: string | null | undefined): value is (typeof AGE_RANGES)[number]["value"] {
+  return AGE_RANGES.some((a) => a.value === value);
+}
+
+/** Texto de la preferencia de edad de un partido; null si no hay ninguna. */
+export function ageRangeText(min: string | null | undefined, max: string | null | undefined): string | null {
+  const lo = AGE_RANGES.find((a) => a.value === min);
+  const hi = AGE_RANGES.find((a) => a.value === max);
+  if (!lo && !hi) return null;
+  if (lo && hi) {
+    if (hi.to == null) return `${lo.from}+`;
+    return lo.value === hi.value ? lo.value : `${lo.from}-${hi.to}`;
+  }
+  if (lo) return `${lo.from}+`;
+  return hi!.to == null ? null : `up to ${hi!.to}`;
+}
+
 export const PLAYER_KINDS = ["individual", "team"] as const;
 export type PlayerKind = (typeof PLAYER_KINDS)[number];
 
@@ -56,6 +94,7 @@ export type ProfileValues = {
   bio: string;
   level: string;
   experienceYears: string;
+  ageRange: string;
   avatarUrl: string;
   teamName: string;
   playerKind: PlayerKind;
@@ -82,8 +121,9 @@ export type ChecklistItem = {
 export function profileChecklist(role: Role, v: ProfileValues): ChecklistItem[] {
   if (role === "goalkeeper") {
     return [
-      { key: "avatar", label: "Profile photo", done: !!v.avatarUrl, required: true, weight: 30 },
+      { key: "avatar", label: "Profile photo", done: !!v.avatarUrl, required: true, weight: 25 },
       { key: "city", label: "City", done: isAvailableCity(v.city), required: true, weight: 5 },
+      { key: "age", label: "Age range", done: isAgeRange(v.ageRange), required: true, weight: 5 },
       {
         key: "bio",
         label: `Bio (${KEEPER_BIO_MIN}+ characters)`,
@@ -203,6 +243,7 @@ type ProfileRow = {
   bio?: string | null;
   level?: string | null;
   experience_years?: number | null;
+  age_range?: string | null;
   avatar_url?: string | null;
   player_kind?: string | null;
 };
@@ -221,6 +262,7 @@ export function valuesFromRow(row: ProfileRow | null, teamName = ""): ProfileVal
     bio: row?.bio ?? "",
     level: row?.level ?? "",
     experienceYears: row?.experience_years == null ? "" : String(row.experience_years),
+    ageRange: row?.age_range ?? "",
     avatarUrl: row?.avatar_url ?? "",
     teamName,
     playerKind,

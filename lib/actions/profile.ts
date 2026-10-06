@@ -2,12 +2,12 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { BIO_MAX, KEEPER_BIO_MIN, LEVELS, PLAYER_KINDS, isAvailableCity, type PlayerKind } from "@/lib/profile";
+import { BIO_MAX, KEEPER_BIO_MIN, LEVELS, PLAYER_KINDS, isAgeRange, isAvailableCity, type PlayerKind } from "@/lib/profile";
 
 export type ProfileActionState = {
   error: string | null;
   fieldErrors?: Partial<
-    Record<"displayName" | "city" | "bio" | "experienceYears" | "teamName" | "avatarUrl" | "playerKind", string>
+    Record<"displayName" | "city" | "bio" | "experienceYears" | "ageRange" | "teamName" | "avatarUrl" | "playerKind", string>
   >;
 };
 
@@ -37,6 +37,7 @@ export async function saveProfileAction(
   const level = text("level");
   const teamName = text("teamName");
   const experienceRaw = text("experienceYears");
+  const ageRange = text("ageRange");
   const avatarUrl = text("avatarUrl");
   const playerKind = text("playerKind") as PlayerKind;
 
@@ -59,6 +60,7 @@ export async function saveProfileAction(
     }
   }
   if (isKeeper && !avatarUrl) fieldErrors.avatarUrl = "Add a photo so teams can recognise you.";
+  if (isKeeper && !isAgeRange(ageRange)) fieldErrors.ageRange = "Choose your age range.";
 
   // La URL solo se acepta si apunta a la carpeta propia del bucket de avatares:
   // evita guardar enlaces externos arbitrarios como foto de perfil.
@@ -79,6 +81,7 @@ export async function saveProfileAction(
       bio: bio || null,
       level: (LEVELS as readonly string[]).includes(level) ? level : null,
       experience_years: experienceYears,
+      ...(isKeeper ? { age_range: ageRange } : {}),
       avatar_url: avatarUrl || null,
       ...(isKeeper ? {} : { player_kind: playerKind }),
     })

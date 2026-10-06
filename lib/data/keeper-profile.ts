@@ -10,6 +10,7 @@ export type KeeperProfile = {
   bio: string | null;
   level: string | null;
   experienceYears: number | null;
+  ageRange: string | null;
   approved: boolean;
   joinedAt: string;
   isSelf: boolean;
@@ -28,7 +29,7 @@ export async function loadKeeperProfile(keeperId: string, viewerId: string): Pro
 
   const { data: p } = await supabase
     .from("profiles")
-    .select("id, role, display_name, avatar_url, city, bio, level, experience_years, approved, created_at")
+    .select("id, role, display_name, avatar_url, city, bio, level, experience_years, age_range, approved, created_at")
     .eq("id", keeperId)
     .maybeSingle();
   if (!p || p.role !== "goalkeeper") return null;
@@ -61,6 +62,7 @@ export async function loadKeeperProfile(keeperId: string, viewerId: string): Pro
     bio: p.bio,
     level: p.level,
     experienceYears: p.experience_years,
+    ageRange: p.age_range,
     approved: p.approved,
     joinedAt: p.created_at,
     isSelf: p.id === viewerId,

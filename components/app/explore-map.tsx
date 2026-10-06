@@ -24,23 +24,23 @@ const NO_FILTERS: Filters = { when: "any", format: "", surface: "", radius: "" }
 const PIN_BASE =
   "absolute left-0 top-0 inline-flex min-h-9 min-w-9 cursor-pointer items-center justify-center rounded-full px-3 text-xs font-bold leading-none shadow-[0_4px_14px_rgba(0,0,0,0.35)] transition-shadow duration-150";
 const PIN_KIND: Record<PinKind, string> = {
-  open: "bg-[#ff7a1a] text-[#1a1005]",
-  mine: "bg-[#ff7a1a] text-[#1a1005]",
-  applied: "border-2 border-[#ff7a1a] bg-[var(--bg-2)] text-[var(--accent-strong)]",
-  booked: "bg-[#3dd68c] text-[#06210f]",
-  "mine-booked": "bg-[#3dd68c] text-[#06210f]",
+  open: "bg-[#3dd68c] text-[#06210f]",
+  mine: "bg-[#3dd68c] text-[#06210f]",
+  applied: "border-2 border-[#3dd68c] bg-[var(--bg-2)] text-[var(--success)]",
+  booked: "bg-[#ff7a1a] text-[#1a1005]",
+  "mine-booked": "bg-[#ff7a1a] text-[#1a1005]",
 };
 const KIND_LABEL: Record<PinKind, { label: string; tone: "accent" | "warning" | "success" }> = {
-  open: { label: "Open", tone: "accent" },
-  mine: { label: "Looking for a keeper", tone: "accent" },
+  open: { label: "Open", tone: "success" },
+  mine: { label: "Looking for a keeper", tone: "success" },
   applied: { label: "You applied", tone: "warning" },
-  booked: { label: "You are booked", tone: "success" },
-  "mine-booked": { label: "Keeper booked", tone: "success" },
+  booked: { label: "You are booked", tone: "accent" },
+  "mine-booked": { label: "Keeper booked", tone: "accent" },
 };
 
 // Sin `scale`: el CSS `scale` se compone con el transform que Mapbox pone al pin y lo desplaza del punto real.
 const pinClass = (kind: PinKind, selected: boolean) =>
-  `${PIN_BASE} ${PIN_KIND[kind]} ${selected ? "ring-4 ring-[#ff7a1a]/45 brightness-110" : ""}`;
+  `${PIN_BASE} ${PIN_KIND[kind]} ${selected ? "ring-4 ring-white/50 brightness-110" : ""}`;
 
 function matchesWhen(startsAt: string, when: When, today: string) {
   if (when === "any") return true;
@@ -262,13 +262,13 @@ export function ExploreMap({
                   <span className="block font-semibold text-fg">How to read the map</span>
                   <span className="mt-2 block">Each pin is a match and shows its start time. Tap one to see the details.</span>
                   <span className="mt-2 block">
-                    <span className="font-semibold text-accent-strong">Orange</span> is open.{" "}
+                    <span className="font-semibold text-success">Green</span> is looking for a keeper.{" "}
                     {isKeeper ? (
                       <>
                         <span className="font-semibold text-fg">Outlined</span> means you applied.{" "}
                       </>
                     ) : null}
-                    <span className="font-semibold text-success">Green</span> is booked.
+                    <span className="font-semibold text-accent-strong">Orange</span> has a keeper booked.
                   </span>
                   {isKeeper && <span className="mt-2 block">Open a match to apply with your own rate.</span>}
                 </InfoTip>

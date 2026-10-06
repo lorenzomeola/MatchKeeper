@@ -4,11 +4,12 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { londonLocalToIso } from "@/lib/format";
 import { FORMATS, NOTES_MAX, SURFACES, isLevel } from "@/lib/match-options";
+import { AGE_RANGES, isAgeRange } from "@/lib/profile";
 
 export type MatchActionState = {
   error: string | null;
   fieldErrors?: Partial<
-    Record<"date" | "startTime" | "endTime" | "address" | "format" | "surface" | "budget" | "notes", string>
+    Record<"date" | "startTime" | "endTime" | "address" | "format" | "surface" | "budget" | "notes" | "prefAgeMax", string>
   >;
 };
 
@@ -34,6 +35,8 @@ export async function createMatchAction(
   const level = text("level");
   const budgetRaw = text("budget");
   const notes = text("notes");
+  const prefAgeMin = text("prefAgeMin");
+  const prefAgeMax = text("prefAgeMax");
 
   const fe: NonNullable<MatchActionState["fieldErrors"]> = {};
   if (!date) fe.date = "Pick a date.";
@@ -43,6 +46,12 @@ export async function createMatchAction(
   if (!FORMATS.includes(format as (typeof FORMATS)[number])) fe.format = "Choose the format.";
   if (!(SURFACES as readonly string[]).includes(surface)) fe.surface = "Choose the surface.";
   if (notes.length > NOTES_MAX) fe.notes = `Keep it under ${NOTES_MAX} characters.`;
+  const ageIndex = (v: string) => AGE_RANGES.findIndex((a) => a.value === v);
+  if ((prefAgeMin && !isAgeRange(prefAgeMin)) || (prefAgeMax && !isAgeRange(prefAgeMax))) {
+    fe.prefAgeMax = "Choose an age range from the list.";
+  } else if (prefAgeMin && prefAgeMax && ageIndex(prefAgeMin) > ageIndex(prefAgeMax)) {
+    fe.prefAgeMax = "The upper age can't be below the lower age.";
+  }
 
   let budget: number | null = null;
   if (budgetRaw) {
@@ -83,6 +92,8 @@ export async function createMatchAction(
       surface,
       level: isLevel(level) ? level : null,
       budget_suggested: budget,
+      pref_age_min: prefAgeMin || null,
+      pref_age_max: prefAgeMax || null,
       notes: notes || null,
     })
     .select("id")
