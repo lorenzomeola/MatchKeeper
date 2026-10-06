@@ -30,15 +30,15 @@ export function StatusBadge({
 }
 
 export const MATCH_STATUS: Record<string, { label: string; tone: Tone }> = {
-  open: { label: "Open", tone: "accent" },
-  assigned: { label: "Keeper booked", tone: "success" },
+  open: { label: "Open", tone: "success" },
+  assigned: { label: "Keeper booked", tone: "accent" },
   completed: { label: "Played", tone: "neutral" },
   cancelled: { label: "Cancelled", tone: "danger" },
 };
 
 export const APPLICATION_STATUS: Record<string, { label: string; tone: Tone }> = {
   pending: { label: "Waiting", tone: "warning" },
-  accepted: { label: "Accepted", tone: "success" },
+  accepted: { label: "Accepted", tone: "accent" },
   rejected: { label: "Not chosen", tone: "neutral" },
   withdrawn: { label: "Withdrawn", tone: "neutral" },
 };

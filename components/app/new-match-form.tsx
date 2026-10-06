@@ -66,7 +66,7 @@ export function NewMatchForm({ initialDate = "" }: { initialDate?: string }) {
     format: "",
     surface: "",
     level: "",
-    budget: "",
+    budget: "30",
     prefAgeMin: "",
     prefAgeMax: "",
     notes: "",
@@ -396,7 +396,7 @@ export function NewMatchForm({ initialDate = "" }: { initialDate?: string }) {
             inputMode="decimal"
             min={0}
             step="0.5"
-            placeholder="25"
+            placeholder="30"
             tag="optional"
             hint="What you expect to pay. Keepers still apply with their own rate."
             value={v.budget}

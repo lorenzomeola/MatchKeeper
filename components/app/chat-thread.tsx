@@ -210,7 +210,7 @@ export function ChatThread({ thread, userId }: { thread: Thread; userId: string 
           </span>
         </span>
         {thread.appStatus === "accepted" ? (
-          <StatusBadge tone="success">Booked</StatusBadge>
+          <StatusBadge tone="accent">Booked</StatusBadge>
         ) : (
           <span className="text-xs font-semibold text-accent-strong">View match</span>
         )}

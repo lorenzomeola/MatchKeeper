@@ -14,10 +14,16 @@ export function StatCard({
   value: ReactNode;
   hint?: string;
   href?: string;
-  tone?: "default" | "accent" | "warning";
+  tone?: "default" | "accent" | "warning" | "success";
 }) {
   const valueTone =
-    tone === "accent" ? "text-accent-strong" : tone === "warning" ? "text-warning" : "text-fg";
+    tone === "accent"
+      ? "text-accent-strong"
+      : tone === "warning"
+        ? "text-warning"
+        : tone === "success"
+          ? "text-success"
+          : "text-fg";
   const body = (
     <>
       <p className="text-[13px] font-medium text-muted">{label}</p>

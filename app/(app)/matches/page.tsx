@@ -129,7 +129,7 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
                           <Avatar name={keeper.name} src={keeper.avatarUrl} size="sm" className="!h-7 !w-7" />
                           <span className="truncate font-medium text-fg">{keeper.name}</span>
                         </span>
-                        <StatusBadge tone="success">Booked</StatusBadge>
+                        <StatusBadge tone="accent">Booked</StatusBadge>
                       </>
                     ) : tab === "past" ? (
                       <>

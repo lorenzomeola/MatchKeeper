@@ -31,7 +31,7 @@ export async function PlayerHome({ userId, profile, teamName, kind, rating }: Pr
         <Avatar name={d.nextKeeper.name} src={d.nextKeeper.avatarUrl} size="sm" />
         <span>
           <span className="block text-fg">{d.nextKeeper.name}</span>
-          <span className="block text-xs text-muted">Keeper booked</span>
+          <span className="block text-xs font-medium text-accent-strong">Keeper booked</span>
         </span>
       </span>
     ) : d.nextPending > 0 ? (
@@ -93,7 +93,7 @@ export async function PlayerHome({ userId, profile, teamName, kind, rating }: Pr
         )}
 
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <StatCard label="Open matches" value={d.openCount} hint="Waiting for a keeper" href="/matches" />
+          <StatCard label="Open matches" value={d.openCount} hint="Waiting for a keeper" href="/matches" tone="success" />
           <StatCard
             label="Keepers to review"
             value={d.waitingCount}
@@ -101,7 +101,7 @@ export async function PlayerHome({ userId, profile, teamName, kind, rating }: Pr
             tone={d.waitingCount > 0 ? "warning" : "default"}
             href="/matches"
           />
-          <StatCard label="Keepers booked" value={d.bookedCount} hint="Upcoming matches" href="/calendar" />
+          <StatCard label="Keepers booked" value={d.bookedCount} hint="Upcoming matches" href="/calendar" tone="accent" />
           <StatCard label="Matches played" value={d.playedCount} hint={`${d.totalPosted} posted in total`} />
         </div>
       </div>
@@ -138,7 +138,7 @@ export async function PlayerHome({ userId, profile, teamName, kind, rating }: Pr
                   match={m}
                   href={`/matches/${m.id}`}
                   footer={
-                    <span className="text-muted">
+                    <span className={m.status === "assigned" ? "font-medium text-accent-strong" : "font-medium text-success"}>
                       {m.status === "assigned" ? "Keeper booked" : "Looking for a keeper"}
                     </span>
                   }

@@ -84,9 +84,9 @@ export async function KeeperHome({ userId, profile, rating }: Props) {
         )}
 
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <StatCard label="Open matches" value={d.availableCount} hint="You have not applied to" href="/map" tone="accent" />
+          <StatCard label="Open matches" value={d.availableCount} hint="You have not applied to" href="/map" tone="success" />
           <StatCard label="Waiting for a reply" value={d.waitingCount} hint="Applications sent" href="/matches" />
-          <StatCard label="Games booked" value={d.bookedCount} hint="Upcoming" href="/calendar" />
+          <StatCard label="Games booked" value={d.bookedCount} hint="Upcoming" href="/calendar" tone="accent" />
           <StatCard label="Applications" value={d.totalApplied} hint="Sent so far" />
         </div>
       </div>

@@ -11,13 +11,13 @@ const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 const CHIP: Record<CalKind, string> = {
   booked: "bg-accent text-accent-ink",
-  open: "bg-[color-mix(in_oklab,var(--warning)_20%,transparent)] text-warning",
+  open: "bg-[color-mix(in_oklab,var(--success)_20%,transparent)] text-success",
   waiting: "border border-line-strong text-fg-2",
   played: "bg-surface-2 text-fg-2",
 };
 const DOT: Record<CalKind, string> = {
   booked: "bg-accent",
-  open: "bg-warning",
+  open: "bg-success",
   waiting: "border border-fg-2 bg-transparent",
   played: "bg-muted",
 };

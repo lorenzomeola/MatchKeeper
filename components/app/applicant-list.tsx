@@ -182,8 +182,8 @@ export function ApplicantList({ matchId, applicants }: { matchId: string; applic
 }
 
 export function ApplicantStatus({ status }: { status: string }) {
-  const map: Record<string, { label: string; tone: "success" | "warning" | "neutral" }> = {
-    accepted: { label: "Booked", tone: "success" },
+  const map: Record<string, { label: string; tone: "success" | "accent" | "warning" | "neutral" }> = {
+    accepted: { label: "Booked", tone: "accent" },
     pending: { label: "Waiting", tone: "warning" },
     rejected: { label: "Not chosen", tone: "neutral" },
     withdrawn: { label: "Withdrawn", tone: "neutral" },
