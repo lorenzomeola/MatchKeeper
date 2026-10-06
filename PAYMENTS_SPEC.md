@@ -442,7 +442,10 @@ envío.
 - El registro de eventos es de solo inserción.
 - **Ubicación del check-in:** es dato personal. Guardar solo lo necesario
   (coordenadas en el momento del check-in y distancia), explicarlo en la Política
-  de privacidad y fijar un plazo de conservación con el abogado.
+  de privacidad. Plazo propuesto: coordenadas 120 días tras el partido (cubre el
+  plazo de contracargo con tarjeta), luego se borran y se conserva solo la hora y
+  si el check-in fue dentro del radio. Si hay disputa abierta, hasta resolverla.
+  Confirmar con el abogado. Ya reflejado en la Política de privacidad.
 - **Chats:** se conservan como evidencia. Decirlo en la Política de privacidad.
 - Una reserva no se puede editar (fecha o campo) una vez pagada: hay que cancelar
   y crear otra.

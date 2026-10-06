@@ -153,6 +153,18 @@ const KEEPER_FAQ: QA[] = [
     ),
   },
   {
+    q: "What if I get there and the team does not show up?",
+    a: (
+      <>
+        Tap &quot;I have arrived&quot; when you reach the pitch. We record the time and where you
+        were, and that record shows you turned up. The team is charged in full and you are paid in
+        full. If the team says you were not there, we hold the payment and check your check-in and
+        the chat before deciding. Check-in only works near the pitch and around kick-off, so tap it
+        when you arrive. We keep the exact coordinates for 120 days, then delete them.
+      </>
+    ),
+  },
+  {
     q: "What if I need to cancel?",
     a: (
       <>

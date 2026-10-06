@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return (
-    <LegalShell eyebrow="Legal" title="Terms of Service" updated="2026-10-02">
+    <LegalShell eyebrow="Legal" title="Terms of Service" updated="2026-10-06">
       <p>
         <em>
           MatchKeeper is currently in a pilot phase in London. These terms cover how the
@@ -52,6 +52,12 @@ export default function TermsPage() {
           team confirms the match, or automatically three days after the match ends if nobody
           reports a problem and the goalkeeper checked in. See <a href="/safety">Safety</a> for
           what happens if the goalkeeper does not turn up.
+        </li>
+        <li>
+          When a goalkeeper taps &quot;I have arrived&quot;, MatchKeeper records the time, their
+          location at that moment and how far they are from the pitch. Check-in only works close
+          to the pitch and around kick-off. This record is how we show that the goalkeeper
+          turned up. See the <a href="/privacy">Privacy Policy</a> for how long we keep it.
         </li>
         <li>
           MatchKeeper adds a 15% platform fee on top of the keeper&apos;s rate. The team pays the
@@ -100,6 +106,13 @@ export default function TermsPage() {
         nobody responds in that time and the goalkeeper checked in at the pitch, the payment is
         released to the goalkeeper automatically. If the goalkeeper did not check in, we hold the
         payment and contact both sides before releasing or refunding it.
+      </p>
+      <p>
+        If the team does not show up and the goalkeeper checked in at the pitch, the check-in
+        record is the evidence that the goalkeeper was there. The team is charged in full and the
+        goalkeeper is paid, as set out above. If the team says the goalkeeper was not there, we
+        hold the payment and review the check-in record and the chat before deciding. A check-in
+        is strong evidence, but not the only thing we look at.
       </p>
 
       <h2>5. Payments</h2>

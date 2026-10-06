@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function PrivacyPage() {
   return (
-    <LegalShell eyebrow="Legal" title="Privacy Policy" updated="2026-10-02">
+    <LegalShell eyebrow="Legal" title="Privacy Policy" updated="2026-10-06">
       <p>
         <em>
           MatchKeeper is currently in a pilot phase in London. This is a plain-language
@@ -26,6 +26,11 @@ export default function PrivacyPage() {
           Messages sent through the in-app chat, so both sides can coordinate a match.
         </li>
         <li>
+          Check-in location: when a goalkeeper taps &quot;I have arrived&quot;, we record the time,
+          their coordinates at that moment and the distance to the pitch. We only read the
+          location when they tap the button, never in the background.
+        </li>
+        <li>
           Payment information, handled entirely by Stripe. We never see or store your
           card details.
         </li>
@@ -35,6 +40,12 @@ export default function PrivacyPage() {
       <p>
         To operate the marketplace: match organisers with keepers, process payments, review
         goalkeeper profiles, and let you contact the other side of a confirmed booking.
+      </p>
+      <p>
+        The check-in location exists for one purpose: to prove a goalkeeper turned up, so a team
+        that did not show up can be charged and a goalkeeper who did can be paid. The other side
+        of a booking can see that the goalkeeper checked in, not their exact coordinates, unless
+        it is needed to resolve a dispute.
       </p>
 
       <h2>3. Who it&apos;s shared with</h2>
@@ -60,6 +71,12 @@ export default function PrivacyPage() {
       <p>
         We keep account and booking data for as long as your account is active, plus a
         reasonable period afterwards for dispute resolution and legal record-keeping.
+      </p>
+      <p>
+        Check-in coordinates are kept for 120 days after the match, which covers the period in
+        which a card payment can be disputed. After that we delete the coordinates and keep only
+        the time of the check-in and whether it was at the pitch. If a dispute is still open, we
+        keep them until it is resolved.
       </p>
 
       <h2>6. Contact</h2>
