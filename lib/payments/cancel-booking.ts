@@ -1,6 +1,7 @@
 import "server-only";
 import { getStripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { defer, notifyBookingCancelled } from "@/lib/email/booking-emails";
 import { cancellationWork, type CancellationPlan } from "./money";
 import { transferToKeeper } from "./release-booking";
 
@@ -31,6 +32,14 @@ export async function cancelBooking(input: {
   if (error) throw error;
   if (!ok) return { cancelled: false, moneyPending: false };
 
+  defer(() =>
+    notifyBookingCancelled(input.bookingId, {
+      by: input.by,
+      refundPence: input.plan.refundPence,
+      keeperSharePence: input.plan.keeperSharePence,
+      strikeKind: input.plan.strikeKind,
+    }),
+  );
   try {
     await processCancellationMoney(input.bookingId);
     return { cancelled: true, moneyPending: false };

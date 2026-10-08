@@ -4,6 +4,7 @@ import type Stripe from "stripe";
 import { longDate, splitAddress, timeRange } from "@/lib/format";
 import { getStripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { defer, notifyBookingConfirmed, notifyCheckoutExpired } from "@/lib/email/booking-emails";
 import { appUrl } from "./app-url";
 import { CHECKOUT_TTL_MINUTES, COMMISSION_PCT } from "./config";
 import { calculateTotals } from "./money";
@@ -155,12 +156,27 @@ export async function confirmCheckoutSession(sessionId: string, expectedPlayerId
     p_charge: charge,
   });
   if (error) throw error;
+  // Los avisos llevan clave por reserva: confirmar dos veces (webhook y página de retorno) no los duplica.
+  defer(() => notifyBookingConfirmed(bookingId));
   return { paid: true, matchId: booking.match_id as string };
 }
 
 /** Sesión caducada sin pago: la reserva pendiente se descarta y la candidatura sigue disponible. */
 export async function discardExpiredCheckout(sessionId: string) {
   const admin = createAdminClient();
+  const { data: pending } = await admin
+    .from("bookings")
+    .select("id")
+    .eq("stripe_checkout_session_id", sessionId)
+    .eq("status", "pending_payment");
+  // El aviso se prepara antes de borrar la reserva, porque después ya no hay de dónde sacar los datos.
+  for (const b of pending ?? []) {
+    try {
+      await notifyCheckoutExpired(b.id);
+    } catch (e) {
+      console.error("checkout expired email failed", e);
+    }
+  }
   await admin
     .from("bookings")
     .delete()

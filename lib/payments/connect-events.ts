@@ -3,6 +3,7 @@ import type Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { syncKeeperAccount } from "./connect";
 import { nextPayoutProblem, type PayoutProblem } from "./external-events";
+import { defer, notifyPayoutFailed } from "@/lib/email/booking-emails";
 
 /**
  * Eventos de las cuentas conectadas de los porteros. `account.updated` solo avisa de que algo cambió: se vuelve a
@@ -46,6 +47,11 @@ export async function handleConnectEvent(event: Stripe.Event) {
         .update({ payout_failed_at: next?.failedAt.toISOString() ?? null, payout_failure: next?.message ?? null })
         .eq("profile_id", row.profile_id);
       if (updateError) throw updateError;
+      if (event.type === "payout.failed" && next) {
+        const reason = next.message;
+        const at = next.failedAt;
+        defer(() => notifyPayoutFailed(row.profile_id, reason, at));
+      }
       return;
     }
     default:

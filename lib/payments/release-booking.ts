@@ -2,6 +2,7 @@ import "server-only";
 import type Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { defer, notifyBookingInReview, notifyReleased } from "@/lib/email/booking-emails";
 
 /**
  * Transfiere dinero del cobro al portero. Idempotente: si ya hay una transferencia del grupo la reutiliza
@@ -100,6 +101,8 @@ export async function releaseBooking(bookingId: string): Promise<{ released: boo
     type: "released",
     data: { transfer: transfer?.id ?? null, amount: booking.keeper_payout_pence - deductedPence, debt_deducted: deductedPence },
   });
+  const paidPence = booking.keeper_payout_pence - deductedPence;
+  defer(() => notifyReleased(bookingId, { amountPence: paidPence, debtPence: deductedPence }));
   return { released: true };
 }
 
@@ -116,5 +119,6 @@ export async function moveToReview(bookingId: string, reason: string, actorId: s
   await admin
     .from("booking_events")
     .insert({ booking_id: bookingId, type: "moved_to_review", actor_id: actorId, data: { reason } });
+  defer(() => notifyBookingInReview(bookingId));
   return true;
 }

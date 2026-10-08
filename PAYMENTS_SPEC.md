@@ -523,7 +523,7 @@ resolver revisión).
   reanuda cancelaciones a medias y borra las coordenadas del check-in a los 120 días.
   Es idempotente. `vercel.json` la programa **una vez al día** porque Vercel Hobby no
   permite más; para cada hora hace falta Vercel Pro (sección 16, decisión 5).
-- **Recordatorios: pendientes** (dependen de Resend).
+- **Recordatorios: hechos** (emails, ver sección 11).
 
 ## 11. Emails y notificaciones
 
@@ -542,8 +542,13 @@ envío.
 - Aprobación o rechazo del perfil del portero (pendiente del backlog de la fase 2).
 - Pago fallido (equipo) y pago a portero fallido (portero).
 
-**Estado (2026-10-06): no construido.** No hay ningún email. Resend no está
-instalado. Los avisos de strike, de revisión y de disputa solo existen en pantalla.
+**Estado (2026-10-08):** construidos los emails de reservas y pagos (reserva
+confirmada, recordatorios de check-in, "¿jugó?", liberación y aviso previo,
+cancelación y reembolso, strike, revisión, pago a portero fallido, pago no
+completado). Van por la cola `email_outbox` con Resend; los recordatorios se
+programan en Resend y se cancelan si la reserva cambia. **Pendiente:** aviso de
+disputa (admin), aprobación del portero, pago fallido del equipo, emails de
+marketplace y aviso de chat sin leer, y Supabase Auth por SMTP (necesita dominio).
 
 ## 12. Herramientas de admin
 

@@ -9,6 +9,7 @@ import { decideRelease } from "@/lib/payments/release";
 import { moveToReview, releaseBooking } from "@/lib/payments/release-booking";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { defer, notifyCheckedIn, notifyTeamResponded } from "@/lib/email/booking-emails";
 
 export type LifecycleState = { error: string | null; done?: boolean; message?: string };
 
@@ -79,6 +80,7 @@ export async function checkInAction(bookingId: string, lat: number, lng: number)
   await admin
     .from("booking_events")
     .insert({ booking_id: bookingId, type: "keeper_checked_in", actor_id: user.id, data: { lat, lng, distance_m: distanceM } });
+  defer(() => notifyCheckedIn(bookingId));
   revalidatePath(`/matches/${match.id}`);
   return { error: null, done: true };
 }
@@ -122,6 +124,7 @@ export async function confirmMatchPlayedAction(bookingId: string): Promise<Lifec
   await admin
     .from("booking_events")
     .insert({ booking_id: bookingId, type: "team_confirmed", actor_id: loaded.user.id });
+  defer(() => notifyTeamResponded(bookingId));
 
   // Si la Transfer falla, la respuesta queda guardada y el cron lo reintenta.
   try {
@@ -161,6 +164,7 @@ export async function reportMatchAction(
   await admin
     .from("booking_events")
     .insert({ booking_id: bookingId, type: "team_reported", actor_id: loaded.user.id, data: { kind, note: text || null } });
+  defer(() => notifyTeamResponded(bookingId));
 
   // Sin check-in y con no-show el reembolso y el strike son automáticos; en el resto decide un admin.
   const decision = decideRelease({
