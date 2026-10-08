@@ -40,6 +40,7 @@ const PLAYER: NavItem[] = [
   { href: "/messages", label: "Messages", icon: ChatIcon, tab: true, badge: "unread" },
   { href: "/map", label: "Map", icon: MapIcon, tab: true },
   { href: "/calendar", label: "Calendar", icon: CalendarIcon },
+  { href: "/payments", label: "Payments", icon: WalletIcon },
   { href: "/profile", label: "Profile", icon: UserIcon },
 ];
 
@@ -49,6 +50,7 @@ const GOALKEEPER: NavItem[] = [
   { href: "/matches", label: "My games", icon: ListIcon, tab: true },
   { href: "/messages", label: "Messages", icon: ChatIcon, tab: true, badge: "unread" },
   { href: "/calendar", label: "Calendar", icon: CalendarIcon, tab: true },
+  { href: "/payments", label: "Payments", icon: WalletIcon },
   { href: "/profile", label: "Profile", icon: UserIcon },
 ];
 

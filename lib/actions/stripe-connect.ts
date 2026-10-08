@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { startKeeperOnboarding } from "@/lib/payments/connect";
+import { createKeeperDashboardUrl, startKeeperOnboarding } from "@/lib/payments/connect";
 import { createClient } from "@/lib/supabase/server";
 
 export type PaymentSetupState = { error: string | null };
@@ -28,5 +28,26 @@ export async function startPaymentSetupAction(): Promise<PaymentSetupState> {
     console.error("startPaymentSetupAction failed", e);
     return { error: "We couldn't open the payment setup. Please try again." };
   }
+  redirect(url);
+}
+
+export async function openStripeDashboardAction(): Promise<PaymentSetupState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You need to be logged in." };
+
+  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
+  if (profile?.role !== "goalkeeper") return { error: "Only goalkeepers have a Stripe account." };
+
+  let url: string | null;
+  try {
+    url = await createKeeperDashboardUrl(user.id);
+  } catch (e) {
+    console.error("openStripeDashboardAction failed", e);
+    return { error: "We couldn't open Stripe right now. Please try again." };
+  }
+  if (!url) return { error: "Set up your payments first." };
   redirect(url);
 }

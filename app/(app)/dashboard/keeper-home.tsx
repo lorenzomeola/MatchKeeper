@@ -3,6 +3,7 @@ import { EmptyState } from "@/components/app/empty-state";
 import { NextMatchHero, ProfileNudge, UnreadNotice } from "@/components/app/home-parts";
 import { MatchCard } from "@/components/app/match-card";
 import { PageHeader, Section, SectionLink } from "@/components/app/page-header";
+import { PaymentsLink } from "@/components/app/payments-link";
 import { StatCard } from "@/components/app/stat-card";
 import { APPLICATION_STATUS, StatusBadge } from "@/components/app/status-badge";
 import { Button } from "@/components/platform/button";
@@ -106,6 +107,7 @@ export async function KeeperHome({ userId, profile, rating }: Props) {
           <StatCard label="Games booked" value={d.bookedCount} hint="Upcoming" href="/calendar" tone="accent" />
           <StatCard label="Applications" value={d.totalApplied} hint="Sent so far" />
         </div>
+        {profile.approved && <PaymentsLink role="keeper" />}
       </div>
 
       <Section

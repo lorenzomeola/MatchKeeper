@@ -186,10 +186,10 @@ Vercel y Stripe en modo real, la revisión legal y la empresa constituida.
 - Confirmación de partido jugado (auto + manual) y liberación de pago.
 - Política de cancelación + strikes.
 - Reseñas + contador de partidos jugados.
-- **Pendiente (pedido el 2026-10-06):** historial de pagos en una página `/payments`:
-  el portero ve lo ganado, lo retenido y cada partido con sus cancelaciones y
-  descuentos; el equipo ve lo pagado, reembolsado y sus recibos (ver
-  `PAYMENTS_SPEC.md`, sección 12.1).
+- **Hecho el 2026-10-08:** historial de pagos en `/payments`: el portero ve lo ganado,
+  lo retenido y cada partido con sus cancelaciones y descuentos (con CSV mensual); el
+  equipo ve lo pagado con desglose y lo reembolsado. Pendiente: recibo descargable de
+  Stripe para el equipo (ver `PAYMENTS_SPEC.md`, sección 12.1).
 
 **Fase 3 — Crecimiento (post-MVP)**
 - Disponibilidad configurable del portero, integración calendario externo.

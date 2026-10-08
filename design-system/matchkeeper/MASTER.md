@@ -108,8 +108,9 @@ structured match fields, reviews and public keeper profile) are done, see A2.
 3. Distance on applicants, which needs a keeper base location (not built, undecided).
 4. Tighten the review policy (`db/reviews.sql`) to released bookings now that payments
    exist (see A2).
-5. **Payment history for keepers and for teams** (asked for 2026-10-06, not built).
-   One `/payments` page with a view per role, plus a small card on each dashboard.
+5. **Payment history for keepers and for teams** (built 2026-10-08; still missing the
+   downloadable Stripe receipt for teams, deferred on purpose, and a link to the keeper's
+   Stripe dashboard). One `/payments` page with a view per role, plus a link on each dashboard.
    Keepers see what they have earned, what is reserved, held or in review, and every
    booking with the amount paid, cancellations (who cancelled and what the keeper still
    got), debt deductions and disputes, with a monthly filter and a CSV export for tax.

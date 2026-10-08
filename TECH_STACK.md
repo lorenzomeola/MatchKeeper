@@ -114,9 +114,9 @@ Lo que falta, por orden:
    revisiones y disputas.
 2. Los webhooks de Stripe que faltan (estado de la cuenta del portero, reembolsos,
    transferencias revertidas, pagos fallidos) y Stripe Radar.
-3. **Historial de pagos** (`/payments`) para el portero (ganado, retenido, cancelaciones,
-   descuentos, CSV) y para el equipo (pagado, reembolsado, recibos); pedido el
-   2026-10-06, ver `PAYMENTS_SPEC.md`, sección 12.1.
+3. ~~Historial de pagos (`/payments`)~~ hecho el 2026-10-08 para el portero (con CSV) y
+   para el equipo; falta el recibo descargable de Stripe del equipo, ver
+   `PAYMENTS_SPEC.md`, sección 12.1.
 4. **Preparar el lanzamiento:** variables de entorno y webhook en Vercel, plan Pro de
    Vercel para el cron cada hora, Stripe en modo real, prueba del check-in en un
    móvil real, revisión legal y empresa constituida.

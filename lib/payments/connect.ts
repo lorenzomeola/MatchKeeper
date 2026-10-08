@@ -65,6 +65,18 @@ export async function startKeeperOnboarding(user: { id: string; email?: string }
   return link.url;
 }
 
+/** URL de un solo uso (caduca pronto) al panel Express del propio portero; null si aún no tiene cuenta. */
+export async function createKeeperDashboardUrl(profileId: string) {
+  const { data } = await createAdminClient()
+    .from("keeper_stripe_accounts")
+    .select("stripe_account_id")
+    .eq("profile_id", profileId)
+    .maybeSingle();
+  if (!data) return null;
+  const link = await getStripe().accounts.createLoginLink(data.stripe_account_id);
+  return link.url;
+}
+
 /** Lee el estado en Stripe y lo guarda. Devuelve null si el portero aún no tiene cuenta. */
 export async function syncKeeperAccount(profileId: string) {
   const admin = createAdminClient();

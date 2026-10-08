@@ -3,6 +3,7 @@ import { EmptyState } from "@/components/app/empty-state";
 import { NextMatchHero, ProfileNudge, UnreadNotice } from "@/components/app/home-parts";
 import { MatchCard } from "@/components/app/match-card";
 import { PageHeader, Section, SectionLink } from "@/components/app/page-header";
+import { PaymentsLink } from "@/components/app/payments-link";
 import { StatCard } from "@/components/app/stat-card";
 import { Button } from "@/components/platform/button";
 import { ListIcon } from "@/components/platform/icons";
@@ -104,6 +105,7 @@ export async function PlayerHome({ userId, profile, teamName, kind, rating }: Pr
           <StatCard label="Keepers booked" value={d.bookedCount} hint="Upcoming matches" href="/calendar" tone="accent" />
           <StatCard label="Matches played" value={d.playedCount} hint={`${d.totalPosted} posted in total`} />
         </div>
+        <PaymentsLink role="team" />
       </div>
 
       {needsReply.length > 0 && (

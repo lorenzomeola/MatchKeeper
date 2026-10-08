@@ -13,9 +13,9 @@ temas, **este documento manda**.
   sección 17, más strikes, borrado de coordenadas y solapamiento de calendario).
   Estado por sección, abajo y en las secciones 10, 11, 12, 15, 16 y 17.
   **Pendiente:** emails y recordatorios (Resend), algunos webhooks (sección 10),
-  herramientas de admin menores (sección 12), el historial de pagos del portero y del
-  equipo (sección
-  12.1) y todo lo de lanzamiento (sección 17, paso 10). No se ha probado nada con
+  herramientas de admin menores (sección 12) y todo lo de lanzamiento (sección 17,
+  paso 10). El historial de pagos (sección 12.1) está hecho; falta el recibo de Stripe
+  del equipo. No se ha probado nada con
   dinero real ni en Vercel.
 - Las pruebas fueron contra el sandbox con tarjetas de prueba, en local con la CLI de
   Stripe reenviando webhooks. Cada paso se probó antes de pasar al siguiente: pruebas
@@ -542,7 +542,38 @@ instalado. Los avisos de strike, de revisión y de disputa solo existen en panta
 - Pendiente (opcional para el primer lanzamiento): reembolso **parcial**, marcar un
   check-in a mano con nota, vetos de equipos y exportar la evidencia.
 
-### 12.1 Historial de pagos del portero y del equipo (pendiente, añadido el 2026-10-06)
+### 12.1 Historial de pagos del portero y del equipo (hecho el 2026-10-08, con partes pendientes)
+
+**Construido y probado en local contra el sandbox (2026-10-08).** Página `/payments` con
+vista por rol, enlace desde cada dashboard y entrada "Payments" en la barra lateral.
+Código: `lib/payments/history.ts` (reglas puras, pruebas en `history.test.ts`),
+`lib/data/payments.ts` (cargador de servidor que filtra por usuario; los descuentos por
+deuda se leen con la clave de servicio solo para ese portero),
+`components/app/payment-history.tsx` y `app/(app)/payments/export/route.ts` (CSV
+mensual del portero). Sin cambios de SQL.
+- Equipo: gastado, este mes, retenido y reembolsado; por reserva, tarifa más comisión,
+  reembolso y coste final, con el aviso de que un reembolso tarda días.
+- Portero: pagado (total y del mes), reservado, a la espera y en espera de decisión;
+  por reserva su tarifa, descuento por deuda, lo transferido y el strike si lo hubo.
+  No ve la comisión ni lo que pagó el equipo. CSV por mes, con protección contra fórmulas.
+- Probado: los importes de 20 reservas (jugada, cancelaciones a más de 24 h, a 12 h y a
+  1 h, cancelación del portero, en revisión, en disputa, con deuda) cuadran con el
+  cálculo a mano; cada usuario ve solo lo suyo (2 porteros y 2 equipos); el CSV da 401
+  sin sesión, 403 a un equipo y 400 con un mes inválido; y el estado vacío.
+- **Panel de Stripe del portero (2026-10-08):** botón "Open my Stripe dashboard" en su
+  vista (solo si ya puede cobrar). El enlace de acceso se genera al pulsar, es de un solo
+  uso y se pide con `accounts.createLoginLink`, que funciona con las cuentas de Accounts
+  v2 con panel Express: probado en el sandbox, abre la pantalla de acceso de Stripe
+  Express. No se probó el inicio de sesión dentro del panel (pide un código por SMS o
+  email).
+- **Pendiente:** recibo descargable de Stripe para el equipo (decidido el 2026-10-08
+  dejarlo para después: habría que guardar el enlace al confirmar el pago), la
+  cronología (check-in, confirmación, liberación) al
+  abrir una línea y revisar a mano la vista de escritorio. No se probó con una reserva
+  nueva de Stripe de principio a fin, solo con reservas de pruebas anteriores y
+  reservas sembradas.
+
+**Propuesta original (2026-10-06):**
 
 **Idea (a petición del fundador):** que el portero tenga un panel personal de sus
 pagos y cancelaciones, y que el equipo vea también su historial de pagos. **No está
