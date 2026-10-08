@@ -100,11 +100,17 @@ Portero, más Admin interno).
 El detalle de importes, comisión sobre cobros parciales, check-in y disputas está
 en `PAYMENTS_SPEC.md`, que manda sobre este documento en estos temas.
 
-- Un número de strikes acumulados (a definir, ej. 3 en 90 días) suspende o
-  reduce visibilidad del portero — desincentiva cancelaciones sin causar
-  fricción/riesgo económico al jugador.
-- Disputas (ej. "el portero no llegó pero no se reportó a tiempo") se
-  resuelven manualmente por Admin en el MVP (sin automatizar aún).
+- Strikes (decidido y construido el 2026-10-06): sistema por puntos. Un no-show
+  son 3 puntos durante 12 meses y una cancelación tardía 1 punto durante 90 días.
+  Con 3 puntos el portero queda suspendido (no puede aplicar a partidos nuevos), con
+  2 lo revisa un admin, y dos no-shows en 12 meses lo marcan para una retirada
+  definitiva que decide una persona. Un admin puede anular un strike. Detalle en
+  `PAYMENTS_SPEC.md`, sección 1.
+- Disputas con el banco: el sistema prepara la evidencia y un admin decide si la
+  envía; si la pierde por culpa del portero se le recupera lo que cobró por esa
+  reserva (revirtiendo su pago o descontándolo de pagos futuros). Las demás
+  situaciones (por ejemplo "el portero no llegó pero no se reportó a tiempo") las
+  resuelve un admin desde la cola de revisión.
 
 ## 6. Mapa
 
@@ -160,6 +166,13 @@ Nota 2: el sitio publicado asume que el lanzamiento público ya incluye pagos co
 Stripe, aunque esta hoja de ruta sitúa los pagos en la Fase 2. Pendiente de
 decidir (ver "Status board" en `MASTER.md`).
 
+**Estado a 2026-10-06:** la Fase 1 está construida (ver el "Status board" de
+`MASTER.md`). De la Fase 2, **los pagos con Stripe Connect, la confirmación y
+liberación, las cancelaciones con strikes, las disputas y las reseñas están
+construidos y probados en el sandbox de Stripe**. Falta lo que impide un
+lanzamiento con dinero real: emails (Resend), algunos webhooks, la configuración en
+Vercel y Stripe en modo real, la revisión legal y la empresa constituida.
+
 **Fase 1 — Core (lanzamiento)**
 - Cuentas (Jugador / Portero), perfiles, perfil de Equipo opcional.
 - Publicar partido, feed de partidos por radio, aplicar, seleccionar aplicante.
@@ -168,11 +181,15 @@ decidir (ver "Status board" en `MASTER.md`).
 - Chat 1:1 jugador↔portero.
 - Aprobación manual de porteros por Admin.
 
-**Fase 2 — Pagos y confianza**
+**Fase 2 — Pagos y confianza** *(construida y probada en sandbox, 2026-10-06)*
 - Stripe Connect Express (onboarding porteros) + pago con retención.
 - Confirmación de partido jugado (auto + manual) y liberación de pago.
 - Política de cancelación + strikes.
 - Reseñas + contador de partidos jugados.
+- **Pendiente (pedido el 2026-10-06):** historial de pagos en una página `/payments`:
+  el portero ve lo ganado, lo retenido y cada partido con sus cancelaciones y
+  descuentos; el equipo ve lo pagado, reembolsado y sus recibos (ver
+  `PAYMENTS_SPEC.md`, sección 12.1).
 
 **Fase 3 — Crecimiento (post-MVP)**
 - Disponibilidad configurable del portero, integración calendario externo.

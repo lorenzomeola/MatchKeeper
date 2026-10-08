@@ -20,8 +20,8 @@
 | Estilos/UI | Tailwind CSS (ya usado en la landing) + shadcn/ui para componentes de app (formularios, tablas, modales) | Consistencia con la landing, componentes accesibles listos |
 | Acceso a datos (runtime) | **`supabase-js`** (PostgREST) sobre HTTPS, no conexión directa a Postgres | Ver §1.1 — necesario por la VPN corporativa del founder |
 | Esquema/migraciones | Drizzle Kit (`db/schema.ts` → SQL) | Solo para generar y versionar el SQL del esquema, no para queries en runtime |
-| Jobs programados (confirmación auto de partido) | Vercel Cron (o `pg_cron` de Supabase) llamando una API route cada hora | No requiere infraestructura extra |
-| Email transaccional | Resend (recibos, notificaciones de aplicación/aceptación) | Buen free tier, integración simple con Next.js |
+| Jobs programados (confirmación auto de partido) | Vercel Cron (o `pg_cron` de Supabase) llamando una API route cada hora | No requiere infraestructura extra. **Construido** en `/api/cron/release` (libera pagos, reanuda cancelaciones, borra coordenadas). `vercel.json` la lanza una vez al día porque Hobby no permite más: para cada hora hace falta Vercel Pro |
+| Email transaccional | Resend (recibos, notificaciones de aplicación/aceptación) | Buen free tier, integración simple con Next.js. **Todavía no está instalado**: no se envía ningún email |
 | Analytics/errores | Vercel Analytics + Sentry (free tier) | Monitoreo básico sin costo al inicio |
 
 ### 1.1 Por qué no hay conexión directa a Postgres en runtime
@@ -92,14 +92,31 @@ partido normal es £3.61. Detalle y casos en `PAYMENTS_SPEC.md`, sección 2.)
 - `teams` — perfil opcional creado por un `player`; `team_members` (roster).
 - `matches` — publicado por un `player` (o `team`): fecha, ubicación (lat/lng), duración, presupuesto sugerido, estado (`open` → `assigned` → `completed`/`cancelled`).
 - `applications` — portero aplica a un `match` con su tarifa; estado (`pending`/`accepted`/`rejected`).
-- `bookings` — se crea al aceptar una aplicación: vincula match+portero+jugador, Payment Intent de Stripe, estado del pago (ver `PAYMENTS_SPEC.md`, secciones 4 y 9).
+- `bookings` — se crea al elegir portero (`pending_payment`) y pasa a `confirmed` cuando Stripe confirma el cobro. Guarda importes en peniques, check-in, respuesta del equipo, ids de Stripe y la aceptación de los Términos (ver `PAYMENTS_SPEC.md`, secciones 4 y 9). Una sola reserva activa por partido.
+- `booking_events` — registro de auditoría solo de inserción; base de la evidencia de disputas.
+- `keeper_stripe_accounts` — cuenta Connect del portero, aparte de `profiles` porque `profiles` lo leen los equipos.
+- `disputes` — disputas con el banco: evidencia preparada, culpa, recuperación y devolución si se gana.
+- `keeper_debts` y `keeper_debt_deductions` — lo que un portero debe tras una disputa perdida por su culpa y lo descontado en cada pago.
+- `stripe_events` — ids de eventos de Stripe ya procesados (idempotencia del webhook).
 - `reviews` — jugador → portero, ligada a un `booking` completado.
 - `messages` — chat 1:1 por candidatura (`application_id`), iniciado por el equipo; continúa tras aceptar.
-- `strikes` — historial de cancelaciones del portero.
+- `strikes` — faltas del portero (`late_cancel` o `no_show`), con anulación por un admin. La suspensión se calcula a partir de los puntos, no se guarda.
 
 ## 5. Próximo paso
 
-Con Product Plan y Tech Stack confirmados, el siguiente paso es el **plan de
-desarrollo** (orden de construcción de la Fase 1). Se recomienda empezar por:
-esquema de base de datos + auth + perfiles → publicar/aplicar a partidos →
-calendario/mapa → chat → (Fase 2) Stripe Connect.
+**Estado a 2026-10-06:** la Fase 1 y los pagos de la Fase 2 están construidos; los
+pagos, strikes y disputas se probaron en el sandbox de Stripe (56 pruebas unitarias,
+más ejecuciones reales contra Stripe y Supabase). El detalle está en
+`PAYMENTS_SPEC.md` y en el "Status board" de `design-system/matchkeeper/MASTER.md`.
+
+Lo que falta, por orden:
+1. **Resend** con un dominio verificado: emails y recordatorios de pagos, strikes,
+   revisiones y disputas.
+2. Los webhooks de Stripe que faltan (estado de la cuenta del portero, reembolsos,
+   transferencias revertidas, pagos fallidos) y Stripe Radar.
+3. **Historial de pagos** (`/payments`) para el portero (ganado, retenido, cancelaciones,
+   descuentos, CSV) y para el equipo (pagado, reembolsado, recibos); pedido el
+   2026-10-06, ver `PAYMENTS_SPEC.md`, sección 12.1.
+4. **Preparar el lanzamiento:** variables de entorno y webhook en Vercel, plan Pro de
+   Vercel para el cron cada hora, Stripe en modo real, prueba del check-in en un
+   móvil real, revisión legal y empresa constituida.

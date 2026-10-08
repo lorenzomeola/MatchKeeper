@@ -14,9 +14,9 @@ and [components/platform/](../../components/platform/).
 
 ## Status board (read this first)
 
-Last audited: **2026-10-05**. Section A2 below was built that week; the rest of
-the board was reconciled on 2026-10-02 with this file,
-[PAYMENTS_SPEC.md](../../PAYMENTS_SPEC.md),
+Last audited: **2026-10-06**. Section A3 below (payments) was built and tested that
+day. Section A2 was built the week before; the rest of the board was reconciled on
+2026-10-02 with this file, [PAYMENTS_SPEC.md](../../PAYMENTS_SPEC.md),
 [PRODUCT_PLAN.md](../../PRODUCT_PLAN.md) and [TECH_STACK.md](../../TECH_STACK.md).
 
 Naming: "phase 1" and "phase 2" in this file are the **visual redesign** phases.
@@ -58,14 +58,65 @@ All in the Floodlight theme, mobile first, checked at 390px.
   `surface-futsal.sql`. Do not re-run
   `policies.sql` alone, it restores broad grants.
 
+### A3. Done (payments, 2026-10-06)
+
+Built and tested in the **Stripe sandbox** (test cards, local webhooks through the
+Stripe CLI). Nothing was tested with real money or on Vercel. Full detail, test
+results and limits in [PAYMENTS_SPEC.md](../../PAYMENTS_SPEC.md) sections 0, 8, 15
+and 18. 56 unit tests (`npm test`).
+
+- Keeper payment setup: Stripe Connect Express through Accounts v2. A keeper cannot
+  apply or be chosen until payouts are enabled ("Identity confirmed" is now true).
+- Booking and checkout: the team picks a keeper, accepts the Terms and the
+  cancellation table, and pays through Stripe Checkout with 3D Secure. The booking is
+  confirmed by webhook (or when the team returns to the site).
+- Check-in (200 m, 30 minutes either side of kick-off), team confirmation or report,
+  and release to the keeper by the daily cron after three days if the keeper checked
+  in. Anything else goes to an admin review queue (`/admin/payments`).
+- Cancellations and refunds with the 24 h and 2 h rules, a reopened match when the
+  keeper cancels with more than 2 h left, and automatic refund plus strike when there
+  is no check-in and the team reports a no-show.
+- Strikes by points: no-show 3 points for 12 months, late cancellation 1 point for
+  90 days. 3 points suspends the keeper from applying, 2 puts them in the admin review
+  list, two no-shows flag them for removal (a person decides). Admins can cancel a
+  strike (`/admin/strikes`). Keepers see their standing on their home page.
+- Disputes: webhook, evidence prepared automatically and sent by an admin with one
+  click, who bears the loss, recovery from the keeper (payout reversal, or a debt
+  deducted from later payouts), funds returned if the dispute is won, dispute ratio
+  (`/admin/disputes`). Keepers see any amount they owe.
+- Keeper calendar overlap check when a team picks a keeper, and deletion of check-in
+  coordinates 120 days after the match (as the Privacy Policy says).
+- Terms, Safety and FAQ updated with the real strike rule and the dispute recovery.
+- Reviews, the keeper dashboard and the calendar no longer show cancelled bookings as
+  booked.
+- SQL to run by hand on a fresh database, after everything in A2: migrations `0007`
+  to `0011` in `db/migrations/`, then `strikes.sql`, `payments.sql`,
+  `booking-payments.sql`, `cancellations.sql`, `disputes.sql` and `retention.sql`. All
+  idempotent. Do not run `payments.sql` or `booking-payments.sql` before `strikes.sql`.
+
 ### B. Still to build
 
 Items 1 to 6 of the old list (onboarding, auth, shell and dashboards, UI primitives,
 structured match fields, reviews and public keeper profile) are done, see A2.
 
-1. Approval email through Resend (9). Needs a verified domain.
-2. Payments, cancellations, check-in and disputes (item 10, PAYMENTS_SPEC.md). **Last.**
+1. Approval email through Resend (9). Needs a verified domain. **Resend is also needed
+   for all payment emails and reminders** (PAYMENTS_SPEC.md section 11). None exist.
+2. Payments (item 10): built, see A3. Still missing: the Stripe webhooks for account
+   status, refunds, reversed transfers, failed payouts and failed payments; emails and
+   reminders; admin partial refund, manual check-in and team bans; Stripe Radar; and
+   the launch checklist in D.
 3. Distance on applicants, which needs a keeper base location (not built, undecided).
+4. Tighten the review policy (`db/reviews.sql`) to released bookings now that payments
+   exist (see A2).
+5. **Payment history for keepers and for teams** (asked for 2026-10-06, not built).
+   One `/payments` page with a view per role, plus a small card on each dashboard.
+   Keepers see what they have earned, what is reserved, held or in review, and every
+   booking with the amount paid, cancellations (who cancelled and what the keeper still
+   got), debt deductions and disputes, with a monthly filter and a CSV export for tax.
+   Teams see what they paid (rate plus fee), what was held, refunded or charged on
+   cancellation, and a downloadable Stripe receipt. The data is served from the server
+   because keepers cannot read the booking events or debt deductions. Design, open
+   questions and the test plan are in PAYMENTS_SPEC.md section 12.1.
 
 ### C. Decisions pending
 
@@ -74,17 +125,19 @@ structured match fields, reviews and public keeper profile) are done, see A2.
 | # | Decision | My recommendation | Blocks |
 |---|---|---|---|
 | 1 | Which profile fields a keeper must fill to be approved | Photo, city and a short bio required. Experience and level optional | Onboarding |
-| 2 | When a keeper does the Stripe onboarding | Before applying, as part of approval. Then teams only see keepers who can be paid, and "Identity confirmed" is true | Onboarding |
+| 2 | When a keeper does the Stripe onboarding | Before applying, as part of approval. Then teams only see keepers who can be paid, and "Identity confirmed" is true | Onboarding. **Decided and built 2026-10-06** |
 | 3 | UI primitives for modals, dropdowns and toasts. TECH_STACK.md says shadcn/ui, but nothing is installed and the design system is custom | Keep custom components on the platform tokens. Use a headless library such as Radix only for dialog, dropdown and toast accessibility | Phase 2 components |
 | 4 | Google login besides email and password. TECH_STACK.md says it is supported, the app only has email | Not now. Email and password first | Auth |
 | 5 | What `/` and `/home` become. `/home` is noindex and not linked, `/` is the validation landing | Keep `/` until launch, then promote `/home` to `/` | Launch |
-| 6 | Does the first public launch include payments. The site copy assumes yes, PRODUCT_PLAN.md puts payments in its Fase 2 | Launch with payments, since the copy depends on it. If not, hide the Stripe wording until they exist | Launch scope |
+| 6 | Does the first public launch include payments. The site copy assumes yes, PRODUCT_PLAN.md puts payments in its Fase 2 | Launch with payments, since the copy depends on it. If not, hide the Stripe wording until they exist | Launch scope. Payments are now built (sandbox), so launching with them is possible once D is done |
 | 7 | Photo upload rules (Supabase Storage) | 5 MB, JPEG, PNG or WebP, shown to the admin at approval | Onboarding |
 | 8 | When to show a keeper's rating | Only after 3 reviews | Profiles |
 | 9 | The real support mailbox and the response time promised | Choose the mailbox. Safety says reports are reviewed personally | Launch |
 
-**You can decide later, when payments are built:** the 9 payment decisions in
-PAYMENTS_SPEC.md section 16.
+**You can decide later, when payments are built:** the payment decisions in
+PAYMENTS_SPEC.md section 16. As of 2026-10-06 they are closed, except the new-account
+limits (7), VAT (9) and moving the cron to hourly with Vercel Pro (5).
+Decision 2 above (Stripe onboarding before applying) is built.
 
 ### D. External blockers before a public launch
 
@@ -93,7 +146,19 @@ PAYMENTS_SPEC.md section 16.
 - Company registered. Name, registration number and registered office must appear
   on the site, and the footer has none yet.
 - Stripe account verified and Connect enabled. The connected-account setup is
-  permanent per account, so decide it before creating the first one.
+  permanent per account, so decide it before creating the first one. The sandbox
+  account is already configured (Accounts v2, Express dashboard, platform responsible
+  for losses and fees); repeat the same setup in live mode. Also turn on Radar and set
+  the descriptor `MATCHKEEPER`.
+- Vercel configuration for payments: `STRIPE_SECRET_KEY`,
+  `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`, `CRON_SECRET` and
+  `SUPABASE_SERVICE_ROLE_KEY` (see `.env.local.example`); a webhook endpoint for
+  `checkout.session.completed`, `expired`, `async_payment_succeeded` and the five
+  `charge.dispute.*` events; and Vercel Pro so the release cron can run every hour
+  (it runs once a day on Hobby). As of 2026-10-06 the deployed staging site has none of
+  this, so payments do not work there.
+- Run the SQL in A3 on the production Supabase project.
+- Test the check-in with real phone geolocation. Only a simulated position was tried.
 - Real domain and mailbox. `SITE_URL` and `CONTACT_EMAIL` in `lib/site.ts` are
   placeholders (`matchkeeper.app`, `hello@matchkeeper.app`).
 - Accounts and keys: Resend with a verified sending domain, Sentry, a Mapbox token,
@@ -116,16 +181,16 @@ not true, so none of this should go public before it is built.
 | "In-app chat" | Chat on the match page | Built, but only after a keeper is accepted |
 | "Message them before you accept" (FAQ) | One thread per application, started by the team | Built |
 | "Free to join as a keeper" | Nothing to charge | True today |
-| "Identity confirmed" (trust chip, Safety) | Stripe Connect identity check before a keeper can be chosen | Not built (payments) |
+| "Identity confirmed" (trust chip, Safety) | Stripe Connect identity check before a keeper can be chosen | Built (sandbox) |
 | "Experience checked" (trust chip) | Experience field and admin review | Field built, admin sees it at approval |
-| "Removed after no-shows" and strikes | Strike logic and removal | Not built (payments) |
+| "Removed after no-shows" and strikes | Strike logic and removal | Strikes and automatic suspension built. Removal is a manual admin decision, flagged after two no-shows |
 | Ratings, "matches played", "Public rating and match history" | Reviews UI, counter, keeper profile page | Built (`/keepers/[id]`, review form on a played match) |
 | "Compare by rating, matches played, distance and price" | Applicant list with those fields | Rate, experience and level built. Rating and distance not on the list yet |
 | "Read their bio", keeper photo | Profile page and upload | Built |
 | "Date, pitch, format and level" | Format and surface fields | Built |
-| "You see the full price, rate plus fee, before you book" | Checkout summary | Not built |
-| "Goalkeepers receive 100% of their rate" | Transfer logic | Not built (payments) |
-| Payments held by Stripe, cancellations, check-in, 3-day release, refunds | PAYMENTS_SPEC.md | Not built |
+| "You see the full price, rate plus fee, before you book" | Checkout summary | Built (`/matches/[id]/book`) |
+| "Goalkeepers receive 100% of their rate" | Transfer logic | Built (sandbox). A keeper with a debt from a lost dispute is paid less until it is repaid |
+| Payments held by Stripe, cancellations, check-in, 3-day release, refunds | PAYMENTS_SPEC.md | Built (sandbox). Emails about them are not |
 | "Under 2 minutes to post a match" | Measure it | Unverified |
 
 ### F. Clean-up and technical debt
@@ -142,18 +207,31 @@ not true, so none of this should go public before it is built.
   history does not list it. That is the normal route here (TECH_STACK.md 1.1).
 - `next build` failed once while the dev server was running (prerender error on
   `/admin/goalkeepers`) and passed on clean runs. Run a clean build before deploying.
-- `accept_application` and the default `bookings.payment_status = held` must change
-  when payments are built (PAYMENTS_SPEC.md section 4).
+- Payments, strikes and disputes are built, so `accept_application` and the default
+  `bookings.payment_status` were changed as PAYMENTS_SPEC.md section 4 asked (done
+  2026-10-06).
+- `npm run db:generate` only writes the SQL; the files in `db/*.sql` and the
+  migrations are pasted by hand into the Supabase SQL Editor (the VPN blocks Postgres).
+  Stripe code runs through the Stripe CLI listener locally: `stripe listen` with the
+  events from A3, forwarding to `/api/stripe/webhook`.
+- A cancelled booking leaves its application as `accepted`; the keeper-facing lists,
+  calendar and map filter on the match status instead.
 
 ### G. Not verified, so treat as unconfirmed
 
-- Whether a transfer to a keeper can be reversed after a lost dispute.
+- Whether Stripe live reverses a transfer when the keeper's account has no balance, and
+  whether it then debits their bank. The sandbox reverses even with zero balance, so
+  the debt path was tested by forcing the failure.
 - Stripe's descriptor rules, what Radar includes at no cost, the exact 3D Secure
-  liability shift, dispute evidence deadlines, and Vercel Cron limits.
+  liability shift, real dispute evidence deadlines, and Vercel Cron limits.
+- The event names for connected-account status in Accounts v2.
+- Phone geolocation for the check-in, the cron on Vercel, a transfer to a restricted
+  keeper account, and inquiry-type disputes.
 - Legal points (Consumer Rights Act 2015, unfair terms, payment-services
-  regulation). General orientation only, not legal advice.
-- That the Stripe CLI and API work from the corporate laptop, which sits behind a
-  VPN that inspects TLS.
+  regulation), including whether recovering a lost dispute from a keeper's payouts is
+  acceptable. General orientation only, not legal advice.
+- ~~That the Stripe CLI and API work from the corporate laptop~~ They do (checked
+  2026-10-06).
 
 ---
 
@@ -441,15 +519,17 @@ soften the copy before anything goes public.
    Once built, restore a line such as "You will get an email once yours is
    approved" to the "How does verification work?" answer in
    `components/platform/faq.tsx`. Consider the same for rejection, with a reason.
-10. **Payments, cancellations, check-in and disputes (copy is live, code is not).**
-    The full, implementation-ready specification lives in
+10. **Payments, cancellations, check-in and disputes (built and tested in the Stripe
+    sandbox on 2026-10-06; emails, some webhooks and launch steps still missing).**
+    The full specification lives in
     [PAYMENTS_SPEC.md](../../PAYMENTS_SPEC.md) and is the single source of truth.
     It covers the fee model, Stripe Connect setup, booking states, cancellation
     rules, the keeper check-in, release logic, dispute policy and prevention,
     schema changes, webhooks, emails, admin tools, acceptance tests, open
-    decisions and the order of implementation. Build it after the rest of the
-    product (pages, auth, onboarding, user and admin dashboards) is finished,
-    and after a solicitor has reviewed the Terms (decided 2026-10-02). The FAQ,
+    decisions and the order of implementation. It was built after the rest of the
+    product (pages, auth, onboarding, user and admin dashboards), as decided on
+    2026-10-02. Launching with real money still needs a solicitor to review the Terms.
+    The FAQ,
     Terms and Safety already describe these rules, so keep them in sync with the
     spec if anything changes.
 11. **Match form needs structured fields.** The post-a-match form only has a free

@@ -82,10 +82,33 @@ more game time and get paid for it.
 - [ ] Review responses → go/no-go before building any real product
   (matching, accounts, payments).
 
+## Product build status (2026-10-06)
+
+The validation landing above is only `/`. The real product is built behind login:
+accounts, matches, applications, chat, map, calendar, reviews, keeper approval and
+admin pages. **Payments are built and tested in the Stripe sandbox**: keeper payout
+setup, checkout with 3D Secure, check-in, release, cancellations and refunds, keeper
+strikes with suspension, and disputes with prepared evidence and recovery.
+
+**Not done yet:** emails and reminders (Resend), a few Stripe webhooks, the Vercel and
+live-mode Stripe setup, the solicitor review of the Terms and the company
+registration. Nothing has been tried with real money.
+
+Where to read more: [PAYMENTS_SPEC.md](PAYMENTS_SPEC.md) (rules, what was built and
+tested, what was not), the status board in
+[design-system/matchkeeper/MASTER.md](design-system/matchkeeper/MASTER.md),
+[PRODUCT_PLAN.md](PRODUCT_PLAN.md) and [TECH_STACK.md](TECH_STACK.md). To test
+payments locally, copy `.env.local.example` to `.env.local`, run `npm run dev`, and
+forward webhooks with the Stripe CLI (the event list is in MASTER.md, A3 and D).
+
 ## Repo structure
 
 - `app/`, `components/`, `lib/` — the Next.js landing page (see
-  [README.landing.md](README.landing.md) for the technical README).
+  [README.landing.md](README.landing.md) for the technical README) and the logged-in
+  product. Payment logic is in `lib/payments/` and `lib/actions/`, the Stripe webhook
+  and the cron job are under `app/api/`.
+- `db/` — Drizzle schema, migrations and the SQL files that are pasted by hand into
+  the Supabase SQL Editor (order in PAYMENTS_SPEC.md section 0).
 - `archive/belgium-ghent/` — full frozen copy of the Belgium/Ghent version
   (content, forms, domain) from before the UK pivot.
 - `archive/brand-uk-orange-src/` — HTML sources used to render the UK

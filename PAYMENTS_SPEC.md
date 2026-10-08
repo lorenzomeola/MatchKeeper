@@ -9,16 +9,32 @@ temas, **este documento manda**.
 
 - **Decidido el 2026-10-02.** Las cifras de Stripe se verificaron ese día en su
   documentación oficial (ver sección 18).
-- **Nada de esto está construido.** Lo único publicado es la copy: el FAQ de
-  `/home` ([components/platform/faq.tsx](components/platform/faq.tsx)),
-  [Terms](app/(legal)/terms/page.tsx) y [Safety](app/(legal)/safety/page.tsx)
-  ya describen estas reglas como si existieran.
-- **Se implementa después de terminar** el resto del desarrollo: páginas,
-  login/signup, onboarding del portero, dashboards de usuario y admin. No antes.
+- **Construido y probado en el sandbox de Stripe el 2026-10-06** (pasos 1 a 8 de la
+  sección 17, más strikes, borrado de coordenadas y solapamiento de calendario).
+  Estado por sección, abajo y en las secciones 10, 11, 12, 15, 16 y 17.
+  **Pendiente:** emails y recordatorios (Resend), algunos webhooks (sección 10),
+  herramientas de admin menores (sección 12), el historial de pagos del portero y del
+  equipo (sección
+  12.1) y todo lo de lanzamiento (sección 17, paso 10). No se ha probado nada con
+  dinero real ni en Vercel.
+- Las pruebas fueron contra el sandbox con tarjetas de prueba, en local con la CLI de
+  Stripe reenviando webhooks. Cada paso se probó antes de pasar al siguiente: pruebas
+  unitarias de las reglas, ejecución real contra Stripe y la base de datos, y los
+  caminos de error y de permisos. Lo que **no** se pudo probar está anotado en la
+  sección 18.
+- La copy ([FAQ](components/platform/faq.tsx), [Terms](app/(legal)/terms/page.tsx) y
+  [Safety](app/(legal)/safety/page.tsx)) describe estas reglas y se mantiene alineada
+  con lo construido (strikes y recuperación en disputas actualizados el 2026-10-06).
 - **Antes de lanzar con pagos reales:** revisión de Términos por un abogado
   (sección 14) y empresa constituida con cuenta de Stripe verificada.
 - El sistema de diseño de las pantallas nuevas está en
   [design-system/matchkeeper/MASTER.md](design-system/matchkeeper/MASTER.md).
+- **Orden para montar una base de datos desde cero:** las migraciones `0007` a `0011`
+  de `db/migrations/` (pegadas en el SQL Editor de Supabase), y después
+  `db/strikes.sql`, `db/payments.sql`, `db/booking-payments.sql`,
+  `db/cancellations.sql`, `db/disputes.sql` y `db/retention.sql`. Todos son
+  idempotentes. `db/payments.sql` y `db/booking-payments.sql` no se pueden pasar antes
+  que `db/strikes.sql`, porque usan `keeper_is_suspended`.
 
 ## 1. Decisiones cerradas
 
@@ -35,7 +51,7 @@ temas, **este documento manda**.
 | Antes de que haya un portero elegido | Retirarse es gratis |
 | Portero cancela con más de 24 h | Sin penalización, reembolso total al equipo |
 | Portero cancela más tarde o no aparece | Reembolso total al equipo y un strike |
-| Strikes repetidos | Retirada de la plataforma (umbral por decidir, ver sección 16) |
+| Strikes repetidos | Sistema por puntos en una ventana móvil: no-show = 3 puntos durante 12 meses, cancelación tardía = 1 punto durante 90 días. 1 punto: aviso. 2 puntos: el admin revisa. 3 o más: suspendido, no puede aplicar a partidos nuevos (sus reservas ya confirmadas siguen). Dos no-shows en 12 meses marcan al portero como candidato a retirada definitiva, que decide siempre una persona. Un admin puede anular un strike con un motivo. Decidido y construido el 2026-10-06 (`lib/strikes.ts`, `db/strikes.sql`, `/admin/strikes`) |
 | Después del partido | 3 días para que el equipo confirme o reporte |
 | Liberación automática | A los 3 días, **solo si el portero hizo check-in** |
 | Sin check-in y equipo en silencio | No se libera. Se retiene y se contacta a ambos |
@@ -301,12 +317,14 @@ voluntaria una queja dudosa cuesta unas 0.72 libras, mucho menos.
 Cobrar a un portero que cumplió de buena fe sería injusto y podría
 considerarse un término abusivo.
 
-**Cómo se recupera dinero de un portero:** Stripe intenta compensar con pagos
-futuros y debitar su cuenta bancaria (el débito automático de saldos negativos
-funciona con bancos del Reino Unido); la plataforma puede pausar sus pagos; y
-Stripe puede retener una reserva en el saldo de la plataforma. **Revertir una
-transferencia ya hecha no se confirmó en la documentación consultada: verificar
-antes de depender de ello.**
+**Cómo se recupera dinero de un portero:** Stripe permite revertir una
+transferencia ya enviada (`POST /v1/transfers/:id/reversals`, total o parcial,
+verificado el 2026-10-06), pero la documentación dice que en transferencias de este
+tipo solo se puede si la cuenta del portero tiene saldo para cubrirla. El débito
+automático de saldos negativos funciona con bancos del Reino Unido, pero no se ha
+probado en real. Por eso la recuperación tiene dos pasos (ver "Lo construido" abajo):
+revertir la transferencia y, si Stripe no puede, una deuda del portero que se
+descuenta de sus pagos futuros.
 
 **Prevención** (todo se construye junto con los pagos):
 
@@ -332,6 +350,46 @@ antes de depender de ello.**
 Las disputas pueden llegar meses después del pago (normalmente hasta 120 días),
 cuando el portero ya cobró. De ahí la importancia de la cláusula de Términos y de
 la configuración de cuenta de la sección 3.
+
+### Lo construido (2026-10-06)
+
+Decisiones tomadas al implementarlo:
+
+- **Pagos al portero: diarios.** No se retrasan para dejar saldo recuperable: perjudica
+  al portero y no cubre los 120 días de plazo.
+- **Evidencia: la prepara el sistema, la envía un admin.** Al llegar la disputa se
+  genera y se guarda (`disputes.evidence`): Términos aceptados, pago con 3D Secure,
+  check-in, confirmación del equipo, chat, línea de tiempo y política de cancelación,
+  más un resumen de cuánta prueba hay. Un admin la revisa y la envía con un botón,
+  una sola vez, o acepta la disputa sin responder (responder y perder cuesta otras 20
+  libras).
+- **Quién asume la pérdida:** el admin marca portero, MatchKeeper o poco claro en
+  `/admin/disputes`. Si es el portero se recupera **lo que MatchKeeper le pagó por
+  esa reserva** (por ejemplo £30), no el total de la disputa. La comisión y las tasas
+  de Stripe las asume la plataforma.
+- **Recuperación en dos pasos:** primero se intenta revertir la transferencia. Si
+  Stripe no puede, se crea una deuda (`keeper_debts`) que se descuenta de los pagos
+  siguientes del portero, lo más antiguo primero (`reserve_debt_deduction`,
+  idempotente por reserva). Un pago puede quedar en cero: se marca como liberado sin
+  transferencia. El portero ve lo que debe en su inicio y un admin puede cancelar la
+  deuda con un motivo.
+- **Disputa ganada:** la reserva recupera su estado de pago anterior, se devuelve al
+  portero lo revertido y lo ya descontado de otros pagos, y se cancelan las deudas de
+  esa disputa.
+- **Una vez iniciada la recuperación no se puede cambiar la decisión de culpa.**
+- **Disputas sin reserva conocida:** se registran igualmente. El sistema busca la
+  reserva por el cargo y, si falta, por la intención de pago.
+- Eventos gestionados: `charge.dispute.created`, `updated`, `closed`,
+  `funds_withdrawn` y `funds_reinstated`. Pueden llegar casi a la vez y en cualquier
+  orden; el sistema lo tolera.
+- Panel con el ratio de disputas de los últimos 90 días.
+
+Limitaciones conocidas: la reversión **no falla de forma natural en el sandbox** (Stripe
+de prueba deja revertir aunque la cuenta del portero tenga saldo cero), así que la ruta
+de deuda se probó forzando el fallo y no se sabe cuándo fallará Stripe real. Si el
+portero ya no tiene pagos futuros, la deuda queda sin cobrar y la asume la plataforma.
+Si la reserva se liberó con el pago en cero (sin transferencia) no hay nada que
+revertir.
 
 ## 9. Esquema de datos propuesto
 
@@ -378,6 +436,28 @@ de servicio. Los participantes leen su propia reserva; `booking_events` y
 `disputes` solo los admins. Añadir las políticas en
 [db/policies.sql](db/policies.sql).
 
+**Estado (2026-10-06): construido** ([db/schema.ts](db/schema.ts), migraciones
+`0007` a `0011`). Diferencias respecto a la propuesta:
+- La cuenta de Stripe del portero está en la tabla aparte `keeper_stripe_accounts`
+  (`stripe_account_id`, `payouts_enabled`, `onboarding_complete`), no en `profiles`,
+  porque `profiles` lo leen los equipos.
+- `bookings` añade `cancelled_by`, `cancellation_charge_pct` y los importes en peniques
+  como se proponía. Un índice único parcial (`bookings_active_match_uq`) permite una
+  sola reserva activa por partido, así que tras cancelar se puede reservar otra vez.
+- `strikes` tiene `kind` (`late_cancel`/`no_show`) y los campos de anulación
+  `waived_at`, `waived_by` y `waived_reason`. La suspensión no se guarda: se calcula
+  con `keeper_strike_points` y `keeper_is_suspended` (`db/strikes.sql`).
+- `disputes` se amplió con la evidencia preparada, el estado de pago anterior, la
+  culpa, la reversión de la transferencia y la devolución si se gana.
+- Tablas nuevas: `keeper_debts` y `keeper_debt_deductions` (deudas del portero y lo
+  descontado en cada reserva).
+- Funciones de base de datos (RPC) con permiso solo para el servidor:
+  `confirm_booking_payment`, `cancel_booking`, `reserve_debt_deduction`,
+  `purge_checkin_coordinates` y `keeper_strike_points`. `accept_application` crea una
+  reserva pendiente de pago y rechaza a un portero suspendido o ya reservado a esa hora.
+- RLS: nadie escribe estas tablas desde el cliente. Los porteros ven sus propios
+  strikes y deudas; los admins ven todo.
+
 ## 10. Endpoints, webhooks y tareas
 
 **Webhook** `app/api/stripe/webhook/route.ts`:
@@ -401,6 +481,26 @@ resolver revisión).
 - Caducidad de `pending_payment` (30 minutos).
 - Dónde ejecutarlas está por decidir (sección 16).
 
+**Estado (2026-10-06):**
+- **Webhook construido** (`app/api/stripe/webhook/route.ts`): firma verificada sobre el
+  cuerpo sin procesar, idempotencia con `stripe_events` y un fallo libera el id para
+  que el reintento de Stripe se procese. Gestiona `checkout.session.completed`,
+  `expired` y `async_payment_succeeded` (el cobro usa Checkout alojado de Stripe, así
+  que no se usa `payment_intent.succeeded`) y los cinco `charge.dispute.*`.
+- **Eventos pendientes:** `account.updated` (hoy el estado del alta del portero se
+  refresca con un botón "Check again"; los nombres de evento de Accounts v2 no están
+  verificados), `charge.refunded`, `transfer.reversed`, `payout.failed` y el pago
+  fallido.
+- **Acciones de servidor construidas:** crear checkout, check-in, confirmar, reportar,
+  cancelar (equipo y portero) y las de admin (resolver revisión, anular strike,
+  disputas).
+- **Tarea programada construida:** `GET /api/cron/release` con `CRON_SECRET` como
+  Bearer. Libera pagos vencidos, manda a revisión lo que no se puede liberar solo,
+  reanuda cancelaciones a medias y borra las coordenadas del check-in a los 120 días.
+  Es idempotente. `vercel.json` la programa **una vez al día** porque Vercel Hobby no
+  permite más; para cada hora hace falta Vercel Pro (sección 16, decisión 5).
+- **Recordatorios: pendientes** (dependen de Resend).
+
 ## 11. Emails y notificaciones
 
 Proveedor elegido en [TECH_STACK.md](TECH_STACK.md): **Resend** (todavía no está
@@ -418,6 +518,9 @@ envío.
 - Aprobación o rechazo del perfil del portero (pendiente del backlog de la fase 2).
 - Pago fallido (equipo) y pago a portero fallido (portero).
 
+**Estado (2026-10-06): no construido.** No hay ningún email. Resend no está
+instalado. Los avisos de strike, de revisión y de disputa solo existen en pantalla.
+
 ## 12. Herramientas de admin
 
 - Cola de **reservas en revisión** (sin check-in y equipo en silencio, o reporte):
@@ -428,6 +531,84 @@ envío.
 - Gestión de **strikes** y de **vetos** de equipos.
 - Marcar un check-in manualmente, con nota obligatoria.
 - Panel con el **ratio de disputas** y reservas retenidas.
+
+**Estado (2026-10-06):**
+- Construido: cola de **reservas en revisión** (`/admin/payments`) con check-in,
+  respuesta del equipo y nota; decisiones pagar al portero, reembolsar o reembolsar con
+  strike. **Strikes** (`/admin/strikes`) con anulación con motivo, reservas próximas
+  de un portero suspendido y marca de candidato a retirada. **Disputas**
+  (`/admin/disputes`) con plazo, evidencia revisable, culpa, envío o aceptación,
+  recuperación y ratio de los últimos 90 días.
+- Pendiente (opcional para el primer lanzamiento): reembolso **parcial**, marcar un
+  check-in a mano con nota, vetos de equipos y exportar la evidencia.
+
+### 12.1 Historial de pagos del portero y del equipo (pendiente, añadido el 2026-10-06)
+
+**Idea (a petición del fundador):** que el portero tenga un panel personal de sus
+pagos y cancelaciones, y que el equipo vea también su historial de pagos. **No está
+construido**; esto es la recomendación acordada para construirlo.
+
+**Dónde vive:** una sola página `/payments` con una vista distinta según el rol, y una
+tarjeta pequeña en cada dashboard que lleva a ella (el dashboard se queda ligero).
+Ya existen rutas bajo `/payments/` (retorno del alta del portero y de la reserva), así
+que el índice encaja. Los dos lados usan el mismo vocabulario de estados, con palabras
+distintas según quién lo lee.
+
+**Vista del portero**
+- **Dashboard (4 cifras):** pagado este mes y en total; reservado para él (partidos
+  futuros ya pagados por el equipo); pendiente de liberar (partidos jugados aún sin
+  liberar); en revisión. Si existe, lo que debe por una disputa (hoy ya hay un aviso,
+  `DebtCard`).
+- **`/payments`:** lista por meses, una línea por partido: fecha, campo, equipo y lo
+  que gana (su tarifa). Estado: Reservado, Jugado y pendiente (con la fecha en que se
+  liberará), Pagado (con fecha), En revisión, Cancelado o En disputa. Al abrir una
+  línea, la cronología (reservado, check-in, confirmación, liberación).
+- **Cancelaciones:** quién canceló y cuándo, y qué cobró aun así (por ejemplo £15.00 si
+  el equipo canceló con 12 h de margen, £30.00 con menos de 2 h, o £0 si canceló el
+  propio portero), con el strike si lo hubo.
+- **Descuentos por deuda:** cuánto se le descontó en cada pago y de qué disputa.
+- **Exportación CSV por mes** para su declaración de impuestos (el portero es autónomo).
+- **No se le muestra** la comisión ni el total que pagó el equipo (él cobra el 100% de
+  su tarifa) ni el contenido de las disputas, solo su efecto.
+- **Aviso visible:** "Pagado" significa que MatchKeeper ya se lo transfirió a su cuenta
+  de Stripe. Cuándo llega a su banco lo decide Stripe y lo ve en su panel de Stripe,
+  al que habría que enlazar (por verificar si se puede generar el enlace desde las
+  cuentas de Accounts v2).
+
+**Vista del equipo o jugador**
+- **Dashboard:** total gastado este mes, retenido y reembolsado.
+- **`/payments`:** una línea por reserva: fecha, campo, portero y **lo que pagó** con el
+  desglose que vio al reservar (por ejemplo £30.00 de tarifa + £4.50 de comisión de
+  servicio). Estados en lenguaje sencillo: Retenido hasta que se juegue, Liberado al
+  portero, Reembolsado, Parcialmente reembolsado, En revisión, En disputa.
+- **Cancelaciones:** lo cobrado y lo reembolsado (por ejemplo £17.25 y £17.25), con el
+  aviso de que **un reembolso a tarjeta tarda varios días**.
+- **Recibo descargable** (enlace al recibo de Stripe). Hoy ese enlace no se guarda:
+  guardarlo al confirmar el pago.
+- Sin exportación CSV por ahora: empezar con recibos.
+
+**Cómo construirlo**
+- **Un cargador de datos en el servidor** que filtra por el usuario con sesión y devuelve
+  solo las columnas necesarias. Así no se abren permisos nuevos en la base de datos y es
+  más fácil que lo mostrado coincida con Stripe. Hoy el portero lee sus propias
+  reservas (`bookings`), `strikes` y `keeper_debts`, pero **no** `booking_events` ni
+  `keeper_debt_deductions` (solo los admins); habría que servir esos descuentos desde
+  el servidor y guardar el motivo de cada uno. Comprobar qué columnas expone la
+  política de lectura de `bookings` antes de apoyarse en ellas.
+- Datos que ya están: `keeper_payout_pence`, `payment_status`, `status`,
+  `cancelled_by`, `cancellation_charge_pct`, `released_at`, `total_pence`,
+  `platform_fee_pence`, `stripe_refund_id`, `keeper_checked_in_at`,
+  `team_responded_at`.
+- Cuando haya Resend: resumen mensual por email.
+
+**Qué dinero se muestra al portero:** MatchKeeper sabe lo que **transfirió**; lo que
+Stripe ingresa después en su banco (pagos diarios) no. Mostrar lo de MatchKeeper y
+enlazar al panel de Stripe, para no prometer saldos que no controlamos.
+
+**Pruebas:** cada usuario ve solo lo suyo (probar con la sesión de otro portero y de
+otro equipo); los importes coinciden con Stripe en todos los casos de la sección 15
+(jugado, cancelación parcial, cancelación total, deuda, disputa ganada); la exportación
+coincide con la pantalla; los estados de ambos lados cuentan lo mismo.
 
 ## 13. Seguridad, privacidad e integridad
 
@@ -492,69 +673,86 @@ comprobar que las llamadas a la API de Stripe y la CLI de Stripe funcionan desde
 ese equipo. Si no, usar `NODE_EXTRA_CA_CERTS` o el almacén de certificados del
 sistema, o probar desde otro entorno.
 
-| # | Escenario | Resultado esperado |
-|---|---|---|
-| 1 | Pago completado, partido jugado, equipo confirma | Liberado, portero 3000, MatchKeeper 450 |
-| 2 | Check-in hecho, equipo en silencio 3 días | Liberación automática |
-| 3 | Sin check-in, equipo en silencio 3 días | Retenido, `under_review`, aviso a ambos, sin transferencia |
-| 4 | Sin check-in, equipo reporta no-show | Reembolso total, strike |
-| 5 | Check-in hecho, equipo reporta no-show | `under_review`, sin liberación |
-| 6 | Equipo cancela a más de 24 h | Reembolso total, sin cobro |
-| 7 | Equipo cancela entre 24 h y 2 h | Cobro 1725, reembolso 1725, portero 1500 |
-| 8 | Equipo cancela a menos de 2 h | Cobro 3450, portero 3000 |
-| 9 | Portero cancela a más de 24 h | Reembolso total, sin strike |
-| 10 | Portero cancela a menos de 24 h | Reembolso total, strike |
-| 11 | Pago falla o checkout caduca | La candidatura vuelve a estar disponible |
-| 12 | Webhook repetido dos veces | Se procesa una sola vez |
-| 13 | Dos liberaciones del mismo booking | Una sola transferencia (idempotencia) |
-| 14 | Tarjeta que exige 3D Secure | Se autentica y el cobro se completa |
-| 15 | Disputa creada | Registro en `disputes`, evidencia generada, aviso al admin |
-| 16 | Cambio de hora (marzo y octubre) | Las ventanas de 24 h y 2 h no se alteran |
-| 17 | Redondeo (tarifas con peniques impares) | `keeperShare + feeShare + refund = total` siempre |
-| 18 | Check-in fuera de ventana o fuera de radio | Rechazado |
+| # | Escenario | Resultado esperado | Estado (2026-10-06) |
+|---|---|---|---|
+| 1 | Pago completado, partido jugado, equipo confirma | Liberado, portero 3000, MatchKeeper 450 | Probado en sandbox (transferencia de £30.00) |
+| 2 | Check-in hecho, equipo en silencio 3 días | Liberación automática | Probado con el cron |
+| 3 | Sin check-in, equipo en silencio 3 días | Retenido, `under_review`, aviso a ambos, sin transferencia | Probado (pasa a revisión una sola vez). El aviso por email no existe |
+| 4 | Sin check-in, equipo reporta no-show | Reembolso total, strike | Probado (reembolso 3450 y strike `no_show`) |
+| 5 | Check-in hecho, equipo reporta no-show | `under_review`, sin liberación | Probado en vivo con el reporte "otro problema". El caso exacto de no-show con check-in lo cubre un test unitario |
+| 6 | Equipo cancela a más de 24 h | Reembolso total, sin cobro | Probado (3450 reembolsados) |
+| 7 | Equipo cancela entre 24 h y 2 h | Cobro 1725, reembolso 1725, portero 1500 | Probado |
+| 8 | Equipo cancela a menos de 2 h | Cobro 3450, portero 3000 | Probado |
+| 9 | Portero cancela a más de 24 h | Reembolso total, sin strike | Probado (el partido se reabre) |
+| 10 | Portero cancela a menos de 24 h | Reembolso total, strike | Probado (con 12 h reabre, con 1 h queda cancelado) |
+| 11 | Pago falla o checkout caduca | La candidatura vuelve a estar disponible | Caducidad probada. El pago fallido no (falta ese evento) |
+| 12 | Webhook repetido dos veces | Se procesa una sola vez | Probado |
+| 13 | Dos liberaciones del mismo booking | Una sola transferencia (idempotencia) | Probado (el cron repetido no duplica) |
+| 14 | Tarjeta que exige 3D Secure | Se autentica y el cobro se completa | Probado en el navegador del usuario (el navegador integrado no pinta el iframe) |
+| 15 | Disputa creada | Registro en `disputes`, evidencia generada, aviso al admin | Probado el registro y la evidencia. El aviso es solo en pantalla (sin email) |
+| 16 | Cambio de hora (marzo y octubre) | Las ventanas de 24 h y 2 h no se alteran | Sin test dedicado. El cálculo usa milisegundos, así que no depende de la zona horaria |
+| 17 | Redondeo (tarifas con peniques impares) | `keeperShare + feeShare + refund = total` siempre | Probado con tests unitarios |
+| 18 | Check-in fuera de ventana o fuera de radio | Rechazado | Probado |
+
+Además de estos casos se probaron: strikes y suspensión (matriz de puntos y paridad entre
+SQL y TypeScript), disputas en todos sus caminos, descuento de deuda en pagos futuros,
+solapamiento de calendario, borrado de coordenadas y los permisos de cada acción de admin.
+**Hay 56 pruebas unitarias** (`npm test`).
 
 ## 16. Decisiones abiertas
 
-Todas son de pagos y ninguna bloquea el resto del desarrollo. Hay que cerrarlas
-antes de empezar a construir esta especificación. Cada una lleva mi recomendación.
-El estado global de lo pendiente está en la sección "Status board" de
-[design-system/matchkeeper/MASTER.md](design-system/matchkeeper/MASTER.md).
+Eran todas decisiones de pagos. **El 2026-10-06 se cerraron las que bloqueaban la
+construcción** (columna "Estado"); quedan abiertas las de lanzamiento. Cada una lleva
+la recomendación original. El estado global de lo pendiente está en la sección "Status
+board" de [design-system/matchkeeper/MASTER.md](design-system/matchkeeper/MASTER.md).
 
-| # | Decisión | Recomendación | Afecta a |
-|---|---|---|---|
-| 1 | Radio y ventana del check-in | 200 metros y de 30 minutos antes a 30 minutos después del inicio. Los campos pueden ser grandes y el GPS impreciso | Check-in |
-| 2 | Umbral de strikes | Aviso al primero, revisión al segundo y retirada al tercero en 90 días | Strikes |
-| 3 | Si el portero cancela, qué pasa con el partido | Reabrirlo y avisar a los demás candidatos si quedan más de 2 horas. Si no, queda cancelado | Cancelaciones |
-| 4 | Cuándo hace el portero el alta en Stripe | Antes de poder aplicar, como parte de la aprobación. Así los equipos solo ven porteros que pueden cobrar y "Identity confirmed" es cierto | Connect y onboarding |
-| 5 | Dónde ejecutar las tareas programadas | Vercel Cron cada hora (el plan Pro está presupuestado en TECH_STACK). Alternativa: `pg_cron` en Supabase | Liberación |
-| 6 | Calendario de pagos al portero | Diario por defecto. Semanal si se quiere pagar menos comisiones fijas de 10p | Connect |
-| 7 | Límites para cuentas nuevas | Email verificado y, si aparece fraude, tope en la primera reserva y en reservas de última hora | Prevención |
-| 8 | Equipo y portero cancelan en la misma ventana | Aplica la regla de quien cancela primero | Cancelaciones |
-| 9 | IVA sobre la comisión | Consultar con un asesor fiscal antes de fijar precios | Precio |
+| # | Decisión | Recomendación | Afecta a | Estado (2026-10-06) |
+|---|---|---|---|---|
+| 1 | Radio y ventana del check-in | 200 metros y de 30 minutos antes a 30 minutos después del inicio. Los campos pueden ser grandes y el GPS impreciso | Check-in | **Cerrada y construida** con esa recomendación. Falta probarla en un móvil real |
+| 2 | Umbral de strikes | Aviso al primero, revisión al segundo y retirada al tercero en 90 días | Strikes | **Cerrada con otra regla** más estricta con el no-show: sistema por puntos (sección 1) |
+| 3 | Si el portero cancela, qué pasa con el partido | Reabrirlo y avisar a los demás candidatos si quedan más de 2 horas. Si no, queda cancelado | Cancelaciones | **Cerrada y construida.** Los demás candidatos vuelven a pendiente, salvo los suspendidos. El aviso por email queda para Resend |
+| 4 | Cuándo hace el portero el alta en Stripe | Antes de poder aplicar, como parte de la aprobación. Así los equipos solo ven porteros que pueden cobrar y "Identity confirmed" es cierto | Connect y onboarding | **Cerrada y construida:** sin pagos habilitados no puede aplicar ni ser elegido |
+| 5 | Dónde ejecutar las tareas programadas | Vercel Cron cada hora (el plan Pro está presupuestado en TECH_STACK). Alternativa: `pg_cron` en Supabase | Liberación | **Construida como Vercel Cron.** `vercel.json` la lanza una vez al día (límite de Hobby). **Abierta:** pasar a cada hora con Vercel Pro antes de lanzar |
+| 6 | Calendario de pagos al portero | Diario por defecto. Semanal si se quiere pagar menos comisiones fijas de 10p | Connect | **Cerrada: diario** (secciones 8 y 18) |
+| 7 | Límites para cuentas nuevas | Email verificado y, si aparece fraude, tope en la primera reserva y en reservas de última hora | Prevención | **Abierta, no construida.** Revisar si aparece fraude |
+| 8 | Equipo y portero cancelan en la misma ventana | Aplica la regla de quien cancela primero | Cancelaciones | **Cerrada y construida** (`cancel_booking` bloquea la fila y gana la primera) |
+| 9 | IVA sobre la comisión | Consultar con un asesor fiscal antes de fijar precios | Precio | **Abierta.** Depende de un asesor |
 
-**Investigación pendiente (tarea mía, no una decisión):** comprobar en la
-documentación de Stripe si se puede revertir una transferencia ya enviada a un
-portero tras perder una disputa. Está en la sección 18.
+**Investigación sobre transferencias revertidas: resuelta el 2026-10-06** (sección 18).
+Se puede revertir, con la limitación del saldo; por eso existe la deuda del portero.
 
 **Ya resuelto:** el proveedor de email es Resend, según TECH_STACK.md.
 
 ## 17. Orden de implementación sugerido
 
+Progreso a 2026-10-06 (todo lo marcado se probó en el sandbox, ver sección 15):
+
 1. **Prerrequisitos:** resto del producto terminado, Términos revisados, empresa
-   constituida, cuenta de Stripe verificada.
+   constituida, cuenta de Stripe verificada. *Producto terminado; sandbox de Stripe
+   creado. Faltan la revisión legal, la empresa y la cuenta verificada.*
 2. **Esquema y funciones puras:** migraciones, cálculo de importes, cancelaciones
-   y reglas de liberación, con sus tests. No requiere Stripe.
+   y reglas de liberación, con sus tests. No requiere Stripe. *Hecho.*
 3. **Onboarding de porteros en Connect:** cuenta Express, enlace de alta,
-   `account.updated` y bloqueo de selección hasta tener pagos habilitados.
+   `account.updated` y bloqueo de selección hasta tener pagos habilitados. *Hecho,
+   salvo el webhook `account.updated`.*
 4. **Cobro al elegir portero:** checkout con 3D Secure, casilla de Términos,
-   webhook y reserva confirmada.
+   webhook y reserva confirmada. *Hecho.*
 5. **Check-in y respuesta del equipo:** botones, recordatorios, registro de eventos.
+   *Hecho, salvo los recordatorios (Resend).*
 6. **Liberación automática y cola de revisión:** tarea programada y herramientas
-   de admin.
-7. **Cancelaciones, reembolsos y strikes.**
+   de admin. *Hecho.*
+7. **Cancelaciones, reembolsos y strikes.** *Hecho (strikes con el sistema de puntos).*
 8. **Disputas:** webhooks, generación de evidencia, panel de admin y recuperación.
+   *Hecho.*
 9. **Endurecimiento:** Radar, monitorización del ratio de disputas, revisión del
-   registro de auditoría y pruebas de extremo a extremo.
+   registro de auditoría y pruebas de extremo a extremo. *Ratio de disputas hecho.
+   Pendientes: Radar, los webhooks que faltan y repetir las pruebas en modo real.*
+10. **Lanzamiento (añadido el 2026-10-06):** Resend con dominio verificado; Stripe en
+    modo real; en Vercel las variables de entorno (`STRIPE_SECRET_KEY`,
+    `STRIPE_WEBHOOK_SECRET`, `CRON_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`), el endpoint
+    del webhook con los eventos de `checkout.session.*` y `charge.dispute.*`, y el
+    plan Pro para el cron cada hora; prueba del check-in en un móvil real; revisión
+    legal; empresa constituida.
 
 ## 18. Verificado frente a pendiente de verificar
 
@@ -574,11 +772,38 @@ docs.stripe.com/connect):
 - El débito automático de saldos negativos funciona con bancos del Reino Unido.
 - Las plataformas nuevas usan la API Accounts v2.
 
-**Por verificar antes de construir:** transferencias revertidas; duración exacta
-de las retenciones de tarjeta (se asume unos 7 días); reglas del descriptor;
-condiciones del traspaso de responsabilidad con 3D Secure; plazos de las pruebas
-en disputas; qué incluye Radar en la versión estándar; calendario de pagos por
-defecto; límites de Vercel Cron; IVA sobre las comisiones de Stripe.
+**Verificado el 2026-10-06** en la documentación de Stripe y probando en el sandbox:
+- En cargos separados con transferencias, Stripe descuenta de la **plataforma** el
+  importe de la disputa y sus tasas. La plataforma responde por API, no el portero.
+- Una transferencia a un portero se puede revertir, total o parcial
+  (`POST /v1/transfers/:id/reversals`). En transferencias con `transfer_group` la
+  documentación dice que solo si la cuenta del portero tiene saldo para cubrirla.
+  En el sandbox la reversión funcionó incluso con saldo cero, así que **no se pudo
+  probar un fallo natural**.
+- Si se gana la disputa, lo revertido se vuelve a transferir al portero con una nueva
+  transferencia.
+- La evidencia se envía por API (`disputes.update` con `submit`). Puede guardarse sin
+  enviar. Cada campo de texto admite hasta 20.000 caracteres y hay una fecha límite
+  por disputa. En el sandbox, para ganar hay que enviar como `uncategorized_text`
+  exactamente `winning_evidence`.
+- Tarjetas de prueba de disputa: `pm_card_createDispute` (fraude),
+  `pm_card_createDisputeProductNotReceived` y `pm_card_createDisputeInquiry`.
+  `pm_card_bypassPending` deja el saldo disponible al instante.
+- Un `charge.dispute.funds_withdrawn` puede llegar antes que el `created`.
+- La CLI de Stripe y la API funcionan desde el portátil corporativo con su VPN.
+- Un retraso de pagos de hasta 31 días (`delay_days_override`) solo aplica a cargos
+  con `on_behalf_of` o directos, no a transferencias de plataforma.
+
+**Por verificar:** si Stripe real revierte una transferencia con la cuenta del portero
+sin saldo y si debita su banco; duración exacta de las retenciones de tarjeta (ya no
+se usan); reglas del descriptor; condiciones del traspaso de responsabilidad con 3D
+Secure; plazos de las pruebas en disputas reales; qué incluye Radar en la versión
+estándar; límites de Vercel Cron en el plan elegido; nombres de los eventos de cuenta
+de Accounts v2; IVA sobre las comisiones de Stripe.
+
+**Sin probar al 2026-10-06:** geolocalización del check-in en un móvil real, el cron
+en Vercel, una transferencia a una cuenta del portero restringida, disputas de tipo
+consulta (`warning_*`), `debit_negative_balances` y todo en modo real.
 
 ## 19. Discrepancias con otros documentos
 
