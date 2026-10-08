@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { KeeperPayments, TeamPayments } from "@/components/app/payment-history";
 import { PageHeader } from "@/components/app/page-header";
-import { loadKeeperPayments, loadTeamPayments } from "@/lib/data/payments";
+import { PayoutProblemCard } from "@/components/app/payout-problem-card";
+import { loadKeeperPayments, loadPayoutProblem, loadTeamPayments } from "@/lib/data/payments";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Payments", robots: { index: false } };
@@ -24,6 +25,7 @@ export default async function PaymentsPage() {
       .select("payouts_enabled")
       .eq("profile_id", user.id)
       .maybeSingle();
+    const payoutProblem = await loadPayoutProblem(supabase, user.id);
     return (
       <>
         <PageHeader
@@ -31,7 +33,12 @@ export default async function PaymentsPage() {
           title="Payments"
           description="What you have earned, game by game, and what is still on its way."
         />
-        <KeeperPayments entries={entries} teamOf={teamOf} summary={summary} hasStripeAccount={Boolean(stripeAccount?.payouts_enabled)} />
+        {payoutProblem && (
+          <div className="mb-6">
+            <PayoutProblemCard message={payoutProblem.message} />
+          </div>
+        )}
+        <KeeperPayments entries={entries} teamOf={teamOf} summary={summary} hasStripeAccount={Boolean(stripeAccount?.payouts_enabled) && !payoutProblem} />
       </>
     );
   }

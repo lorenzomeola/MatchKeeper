@@ -37,6 +37,16 @@ async function namesOf(supabase: Client, ids: string[]) {
   return map;
 }
 
+/** El portero ve su propia fila (RLS). Si la columna aún no existe en la base de datos, simplemente no hay aviso. */
+export async function loadPayoutProblem(supabase: Client, userId: string) {
+  const { data } = await supabase
+    .from("keeper_stripe_accounts")
+    .select("payout_failed_at, payout_failure")
+    .eq("profile_id", userId)
+    .maybeSingle();
+  return data?.payout_failed_at ? { message: (data.payout_failure as string | null) ?? null } : null;
+}
+
 export async function loadTeamPayments(supabase: Client, userId: string) {
   const now = new Date();
   const rows = await loadRows(supabase, userId, "player_id");

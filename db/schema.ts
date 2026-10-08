@@ -347,6 +347,9 @@ export const keeperStripeAccounts = pgTable("keeper_stripe_accounts", {
   stripeAccountId: text("stripe_account_id").notNull().unique(),
   payoutsEnabled: boolean("payouts_enabled").notNull().default(false),
   onboardingComplete: boolean("onboarding_complete").notNull().default(false),
+  // Último pago a su banco que Stripe no pudo hacer (webhook payout.failed); se borra con un payout.paid posterior.
+  payoutFailedAt: timestamp("payout_failed_at", { withTimezone: true }),
+  payoutFailure: text("payout_failure"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

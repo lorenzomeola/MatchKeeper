@@ -112,8 +112,9 @@ más ejecuciones reales contra Stripe y Supabase). El detalle está en
 Lo que falta, por orden:
 1. **Resend** con un dominio verificado: emails y recordatorios de pagos, strikes,
    revisiones y disputas.
-2. Los webhooks de Stripe que faltan (estado de la cuenta del portero, reembolsos,
-   transferencias revertidas, pagos fallidos) y Stripe Radar.
+2. ~~Webhooks de Stripe que faltan~~ hechos el 2026-10-08 (estado de la cuenta del
+   portero, pagos fallidos, reembolsos y transferencias revertidas; dos destinos de
+   webhook en Stripe). Pendiente: Stripe Radar.
 3. ~~Historial de pagos (`/payments`)~~ hecho el 2026-10-08 para el portero (con CSV) y
    para el equipo; falta el recibo descargable de Stripe del equipo, ver
    `PAYMENTS_SPEC.md`, sección 12.1.

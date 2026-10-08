@@ -12,7 +12,7 @@ temas, **este documento manda**.
 - **Construido y probado en el sandbox de Stripe el 2026-10-06** (pasos 1 a 8 de la
   sección 17, más strikes, borrado de coordenadas y solapamiento de calendario).
   Estado por sección, abajo y en las secciones 10, 11, 12, 15, 16 y 17.
-  **Pendiente:** emails y recordatorios (Resend), algunos webhooks (sección 10),
+  **Pendiente:** emails y recordatorios (Resend),
   herramientas de admin menores (sección 12) y todo lo de lanzamiento (sección 17,
   paso 10). El historial de pagos (sección 12.1) está hecho; falta el recibo de Stripe
   del equipo. No se ha probado nada con
@@ -487,10 +487,34 @@ resolver revisión).
   que el reintento de Stripe se procese. Gestiona `checkout.session.completed`,
   `expired` y `async_payment_succeeded` (el cobro usa Checkout alojado de Stripe, así
   que no se usa `payment_intent.succeeded`) y los cinco `charge.dispute.*`.
-- **Eventos pendientes:** `account.updated` (hoy el estado del alta del portero se
-  refresca con un botón "Check again"; los nombres de evento de Accounts v2 no están
-  verificados), `charge.refunded`, `transfer.reversed`, `payout.failed` y el pago
-  fallido.
+- **Webhooks de cuentas conectadas y de reembolsos (2026-10-08):**
+  - Segundo destino `app/api/stripe/connect-webhook` (alcance "Connected accounts" en
+    Stripe, secreto `STRIPE_CONNECT_WEBHOOK_SECRET`). `account.updated` (Stripe lo emite
+    para las cuentas de Accounts v2; comprobado en el sandbox) vuelve a leer la cuenta
+    y actualiza si el portero puede cobrar, sin el botón "Check again". `payout.failed`
+    y `payout.paid` marcan o borran el aviso de pago fallido del portero
+    (`keeper_stripe_accounts.payout_failed_at`, migración 0012), con botón a su panel
+    de Stripe; un evento antiguo no pisa a uno nuevo.
+  - Destino actual: `charge.refunded` de una reserva activa hecho fuera de la app (panel
+    de Stripe) la manda a revisión de un admin; los reembolsos de la propia app se
+    ignoran (la reserva ya está cancelada). Con la reserva ya pagada al portero solo
+    queda en el registro de eventos y en los logs. `transfer.reversed` solo se registra
+    (las reversiones de disputas también pasan por ahí).
+  - Verificación de firma, id guardado y liberado si falla, compartidos en
+    `lib/payments/webhook.ts`. En local el secreto de la CLI sirve para los dos destinos;
+    en Vercel son dos destinos con dos secretos distintos.
+  - Probado: firma inválida (400) y duplicados en los dos destinos, handler que falla
+    (500 y se reprocesa), `account.updated` real tras forzar `payouts_enabled=false`,
+    reembolso parcial real hecho en Stripe, reembolso de la app sin falsos avisos,
+    `payout.failed` y `payout.paid` firmados (en orden y desordenados) y su aviso en el
+    dashboard, y un ciclo real completo: Checkout, webhook, cancelación con reembolso,
+    y otro con confirmación del equipo y transferencia de £30 al portero.
+  - **No probado:** `payout.failed` real de Stripe (solo eventos firmados a mano);
+    el pago en otra moneda con Adaptive Pricing (Checkout ofrece EUR a quien no esté en
+    el Reino Unido; mis pruebas acabaron siempre en GBP). Conviene desactivar Adaptive
+    Pricing en el panel de Stripe antes del lanzamiento. Sin `payment_failed`: con
+    tarjeta en Checkout un fallo no crea reserva pagada.
+- **Eventos pendientes:** ninguno de los previstos.
 - **Acciones de servidor construidas:** crear checkout, check-in, confirmar, reportar,
   cancelar (equipo y portero) y las de admin (resolver revisión, anular strike,
   disputas).
@@ -765,7 +789,7 @@ Progreso a 2026-10-06 (todo lo marcado se probó en el sandbox, ver sección 15)
    y reglas de liberación, con sus tests. No requiere Stripe. *Hecho.*
 3. **Onboarding de porteros en Connect:** cuenta Express, enlace de alta,
    `account.updated` y bloqueo de selección hasta tener pagos habilitados. *Hecho,
-   salvo el webhook `account.updated`.*
+   incluido el webhook `account.updated` (2026-10-08).*
 4. **Cobro al elegir portero:** checkout con 3D Secure, casilla de Términos,
    webhook y reserva confirmada. *Hecho.*
 5. **Check-in y respuesta del equipo:** botones, recordatorios, registro de eventos.
@@ -776,8 +800,8 @@ Progreso a 2026-10-06 (todo lo marcado se probó en el sandbox, ver sección 15)
 8. **Disputas:** webhooks, generación de evidencia, panel de admin y recuperación.
    *Hecho.*
 9. **Endurecimiento:** Radar, monitorización del ratio de disputas, revisión del
-   registro de auditoría y pruebas de extremo a extremo. *Ratio de disputas hecho.
-   Pendientes: Radar, los webhooks que faltan y repetir las pruebas en modo real.*
+   registro de auditoría y pruebas de extremo a extremo. *Ratio de disputas y webhooks
+   hechos. Pendientes: Radar y repetir las pruebas en modo real.*
 10. **Lanzamiento (añadido el 2026-10-06):** Resend con dominio verificado; Stripe en
     modo real; en Vercel las variables de entorno (`STRIPE_SECRET_KEY`,
     `STRIPE_WEBHOOK_SECRET`, `CRON_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`), el endpoint

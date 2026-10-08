@@ -11,9 +11,11 @@ import { MapIcon } from "@/components/platform/icons";
 import { PaymentSetupCard } from "@/components/app/payment-setup-card";
 import { StandingCard } from "@/components/app/standing-card";
 import { DebtCard } from "@/components/app/debt-card";
+import { PayoutProblemCard } from "@/components/app/payout-problem-card";
 import { loadKeeperHome } from "@/lib/data/dashboard";
 import { loadMyDebtPence } from "@/lib/data/debts";
 import { loadUnreadCount } from "@/lib/data/messages";
+import { loadPayoutProblem } from "@/lib/data/payments";
 import { loadMyStanding } from "@/lib/data/standing";
 import { dateTile, firstName, money, timeRange } from "@/lib/format";
 import type { completeness } from "@/lib/profile";
@@ -27,12 +29,13 @@ type Props = {
 
 export async function KeeperHome({ userId, profile, rating }: Props) {
   const supabase = await createClient();
-  const [d, unread, { data: payAccount }, standing, debtPence] = await Promise.all([
+  const [d, unread, { data: payAccount }, standing, debtPence, payoutProblem] = await Promise.all([
     loadKeeperHome(userId),
     loadUnreadCount(),
     supabase.from("keeper_stripe_accounts").select("payouts_enabled").eq("profile_id", userId).maybeSingle(),
     loadMyStanding(supabase, userId),
     loadMyDebtPence(supabase, userId),
+    loadPayoutProblem(supabase, userId),
   ]);
   const next = d.next?.matches ?? null;
 
@@ -52,6 +55,7 @@ export async function KeeperHome({ userId, profile, rating }: Props) {
         <UnreadNotice count={unread} />
         <StandingCard level={standing.level} />
         <DebtCard pence={debtPence} />
+        {payoutProblem && <PayoutProblemCard message={payoutProblem.message} />}
         {!profile.approved && (
           <section className="rounded-[var(--r-lg)] border border-warning/40 bg-[color-mix(in_oklab,var(--warning)_8%,transparent)] p-5">
             <div className="flex items-center gap-2">
