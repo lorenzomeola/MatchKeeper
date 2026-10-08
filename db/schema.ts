@@ -12,6 +12,7 @@ import {
   jsonb,
   primaryKey,
   uniqueIndex,
+  index,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
@@ -459,3 +460,28 @@ export const stripeEvents = pgTable("stripe_events", {
     .notNull()
     .defaultNow(),
 });
+
+// Cola de emails: cada aviso se anota antes de mandarse. La clave única evita duplicados si un evento se repite,
+// y guarda el id de Resend para poder cancelar un envío programado (recordatorios, aviso de chat).
+export const emailOutbox = pgTable(
+  "email_outbox",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    dedupeKey: text("dedupe_key").notNull().unique(),
+    template: text("template").notNull(),
+    toEmail: text("to_email").notNull(),
+    toUserId: uuid("to_user_id").references(() => profiles.id, { onDelete: "set null" }),
+    // Datos de la plantilla.
+    payload: jsonb("payload").notNull().default({}),
+    sendAfter: timestamp("send_after", { withTimezone: true }).notNull().defaultNow(),
+    // pending | sending | scheduled | sent | failed | cancelled | skipped
+    status: text("status").notNull().default("pending"),
+    attempts: integer("attempts").notNull().default(0),
+    lastError: text("last_error"),
+    providerId: text("provider_id"),
+    claimedAt: timestamp("claimed_at", { withTimezone: true }),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("email_outbox_due_idx").on(t.status, t.sendAfter)],
+);

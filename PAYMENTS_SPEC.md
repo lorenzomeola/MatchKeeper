@@ -564,7 +564,10 @@ instalado. Los avisos de strike, de revisión y de disputa solo existen en panta
   (`/admin/disputes`) con plazo, evidencia revisable, culpa, envío o aceptación,
   recuperación y ratio de los últimos 90 días.
 - Pendiente (opcional para el primer lanzamiento): reembolso **parcial**, marcar un
-  check-in a mano con nota, vetos de equipos y exportar la evidencia.
+  check-in a mano con nota, vetos de equipos y exportar la evidencia. **Decisión del
+  fundador (2026-10-08): no construirlas hasta que aparezca un caso real** que las
+  necesite; mientras tanto el admin resuelve esos casos a mano desde el panel de
+  Stripe. La más probable de hacer falta primero es el reembolso parcial.
 
 ### 12.1 Historial de pagos del portero y del equipo (hecho el 2026-10-08, con partes pendientes)
 
