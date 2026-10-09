@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { notifyAdminNewKeeper } from "@/lib/email/admin-emails";
+import { defer } from "@/lib/email/booking-emails";
 import { createClient } from "@/lib/supabase/server";
 
 // Recibe el link de confirmación de email de Supabase (?code=...) y crea el
@@ -28,12 +30,16 @@ export async function GET(request: Request) {
         .maybeSingle();
 
       if (!existing) {
-        await supabase.from("profiles").insert({
+        const { error: insertError } = await supabase.from("profiles").insert({
           id: data.user.id,
           role: meta.role === "goalkeeper" ? "goalkeeper" : "player",
           display_name: meta.display_name ?? data.user.email ?? "Sin nombre",
           city: meta.city ?? null,
         });
+        if (!insertError && meta.role === "goalkeeper") {
+          const userId = data.user.id;
+          defer(() => notifyAdminNewKeeper(userId));
+        }
         // Cuenta nueva: lo siguiente es completar el perfil.
         return NextResponse.redirect(`${origin}${next ?? "/onboarding"}`);
       }

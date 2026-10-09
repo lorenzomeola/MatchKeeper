@@ -6,6 +6,7 @@ import { keeperStanding } from "@/lib/strikes";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { loadBookingContext, type BookingCtx } from "./booking-context";
 import { cancelEmails, queueEmail } from "./outbox";
+import { notifyAdminBookingReview, notifyAdminKeeperStanding } from "./admin-emails";
 import { notifyNotSelected, notifyReopened } from "./marketplace-emails";
 import { bookingSchedule } from "./schedule";
 
@@ -177,6 +178,7 @@ export async function notifyBookingCancelled(bookingId: string, input: CancelInp
         dedupe: key(c.id, "strike"),
         data: { kind: input.strikeKind, level: standing.level, pitch: c.pitch, matchUrl: c.matchUrl },
       });
+      await notifyAdminKeeperStanding(c, standing);
     }
   }
   if (input.reopened) await notifyReopened(c);
@@ -203,7 +205,7 @@ export async function notifyReleased(bookingId: string, input: { amountPence: nu
 }
 
 /** La reserva pasa a revisión de un admin. */
-export async function notifyBookingInReview(bookingId: string) {
+export async function notifyBookingInReview(bookingId: string, reason: string) {
   await cancelPending(key(bookingId, "team_"));
   const c = await loadBookingContext(bookingId);
   if (!c) return;
@@ -225,6 +227,7 @@ export async function notifyBookingInReview(bookingId: string) {
       data: { teamName: c.team.name, pitch: c.pitch, when: c.when, matchUrl: c.matchUrl },
     });
   }
+  await notifyAdminBookingReview(c, reason);
 }
 
 /** Stripe no pudo pagar al banco del portero. `eventAt` distingue un fallo nuevo de uno ya avisado. */

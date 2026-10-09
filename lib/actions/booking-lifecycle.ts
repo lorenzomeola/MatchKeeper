@@ -10,6 +10,7 @@ import { moveToReview, releaseBooking } from "@/lib/payments/release-booking";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { defer, notifyCheckedIn, notifyTeamResponded } from "@/lib/email/booking-emails";
+import { notifyAdminPaymentProblem } from "@/lib/email/admin-emails";
 
 export type LifecycleState = { error: string | null; done?: boolean; message?: string };
 
@@ -131,6 +132,7 @@ export async function confirmMatchPlayedAction(bookingId: string): Promise<Lifec
     await releaseBooking(bookingId);
   } catch (e) {
     console.error("confirmMatchPlayedAction release failed", e);
+    defer(() => notifyAdminPaymentProblem(bookingId, "release", e));
   }
   revalidatePath(`/matches/${loaded.matchId}`);
   return { error: null, done: true };

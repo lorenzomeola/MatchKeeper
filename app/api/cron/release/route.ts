@@ -1,4 +1,6 @@
 import { processCancellationMoney } from "@/lib/payments/cancel-booking";
+import { notifyAdminPaymentProblem } from "@/lib/email/admin-emails";
+import { defer } from "@/lib/email/booking-emails";
 import { cancellationWork } from "@/lib/payments/money";
 import { moveToReview, releaseBooking } from "@/lib/payments/release-booking";
 import { decideRelease } from "@/lib/payments/release";
@@ -48,6 +50,7 @@ export async function GET(req: Request) {
       summary.cancellationsResumed++;
     } catch (e) {
       console.error(`cancellation resume failed for booking ${c.id}`, e);
+      defer(() => notifyAdminPaymentProblem(c.id, "cancellation", e));
       summary.failed++;
     }
   }
@@ -80,6 +83,7 @@ export async function GET(req: Request) {
       }
     } catch (e) {
       console.error(`release cron failed for booking ${b.id}`, e);
+      defer(() => notifyAdminPaymentProblem(b.id, "release", e));
       summary.failed++;
     }
   }

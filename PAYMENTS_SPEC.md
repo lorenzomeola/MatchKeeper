@@ -546,9 +546,11 @@ envío.
 confirmada, recordatorios de check-in, "¿jugó?", liberación y aviso previo,
 cancelación y reembolso, strike, revisión, pago a portero fallido, pago no
 completado). Van por la cola `email_outbox` con Resend; los recordatorios se
-programan en Resend y se cancelan si la reserva cambia. **Pendiente:** aviso de
-disputa (admin), aprobación del portero, pago fallido del equipo, emails de
-marketplace y aviso de chat sin leer, y Supabase Auth por SMTP (necesita dominio).
+programan en Resend y se cancelan si la reserva cambia. También están los emails
+de marketplace (candidaturas, aprobación, reseñas, chat sin leer) y los avisos al
+admin (`ADMIN_EMAIL`): portero nuevo, disputa, reserva en revisión, denuncia,
+strikes y dinero atascado. **Pendiente:** pago fallido del equipo y Supabase Auth
+por SMTP (necesita dominio).
 
 ## 12. Herramientas de admin
 

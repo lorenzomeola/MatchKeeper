@@ -2,6 +2,8 @@ import "server-only";
 import type Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { notifyAdminDispute } from "@/lib/email/admin-emails";
+import { defer } from "@/lib/email/booking-emails";
 import { buildDisputeEvidence } from "./dispute-evidence-data";
 import { retransferAmount, reversibleAmount } from "./disputes";
 
@@ -71,6 +73,9 @@ async function onCreated(d: Stripe.Dispute) {
     .maybeSingle();
   if (error) throw error;
   if (!row) return;
+
+  const dueBy = d.evidence_details?.due_by ? new Date(d.evidence_details.due_by * 1000) : null;
+  defer(() => notifyAdminDispute({ stripeId: d.id, amountPence: d.amount, reason: d.reason, status: d.status, dueBy, matched: Boolean(booking) }));
 
   if (!booking) return;
   if (booking.payment_status !== "disputed") {

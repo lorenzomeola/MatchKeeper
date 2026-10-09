@@ -4,6 +4,8 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isAvailableCity } from "@/lib/profile";
+import { notifyAdminNewKeeper } from "@/lib/email/admin-emails";
+import { defer } from "@/lib/email/booking-emails";
 
 export type AuthActionState = {
   error: string | null;
@@ -37,12 +39,13 @@ async function ensureProfile(
 
   if (existing) return;
 
-  await supabase.from("profiles").insert({
+  const { error } = await supabase.from("profiles").insert({
     id: userId,
     role: info.role,
     display_name: info.displayName,
     city: info.city,
   });
+  if (!error && info.role === "goalkeeper") defer(() => notifyAdminNewKeeper(userId));
 }
 
 export async function signUpAction(

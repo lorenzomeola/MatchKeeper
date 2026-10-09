@@ -8,7 +8,7 @@ import { Sheet } from "@/components/app/sheet";
 import { StatusBadge } from "@/components/app/status-badge";
 import { useToast } from "@/components/app/toast";
 import { ArrowLeftIcon, BlockIcon, FlagIcon, InfoIcon, MoreIcon, SendIcon } from "@/components/platform/icons";
-import { markThreadReadAction, sendMessageAction } from "@/lib/actions/messages";
+import { markThreadReadAction, reportUserAction, sendMessageAction } from "@/lib/actions/messages";
 import type { ChatMessage, Thread } from "@/lib/data/messages";
 import { clockTime, dateTile, dayLabel, money } from "@/lib/format";
 import { createClient } from "@/lib/supabase/client";
@@ -119,15 +119,9 @@ export function ChatThread({ thread, userId }: { thread: Thread; userId: string 
 
   async function report() {
     setBusy(true);
-    const { error: e } = await supabase.from("reports").insert({
-      reporter_id: userId,
-      reported_id: otherId,
-      application_id: applicationId,
-      reason,
-      details: details.trim() || null,
-    });
+    const result = await reportUserAction({ reportedId: otherId, applicationId, reason, details });
     setBusy(false);
-    if (e) {
+    if (result.error) {
       toast("We couldn't send the report. Try again.", "error");
       return;
     }

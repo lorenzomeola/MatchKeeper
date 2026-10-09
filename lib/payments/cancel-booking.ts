@@ -2,6 +2,7 @@ import "server-only";
 import { getStripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { defer, notifyBookingCancelled } from "@/lib/email/booking-emails";
+import { notifyAdminPaymentProblem } from "@/lib/email/admin-emails";
 import { cancellationWork, type CancellationPlan } from "./money";
 import { transferToKeeper } from "./release-booking";
 
@@ -46,6 +47,7 @@ export async function cancelBooking(input: {
     return { cancelled: true, moneyPending: false };
   } catch (e) {
     console.error(`cancellation money pending for booking ${input.bookingId}`, e);
+    defer(() => notifyAdminPaymentProblem(input.bookingId, "cancellation", e));
     return { cancelled: true, moneyPending: true };
   }
 }

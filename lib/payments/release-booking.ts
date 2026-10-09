@@ -119,6 +119,6 @@ export async function moveToReview(bookingId: string, reason: string, actorId: s
   await admin
     .from("booking_events")
     .insert({ booking_id: bookingId, type: "moved_to_review", actor_id: actorId, data: { reason } });
-  defer(() => notifyBookingInReview(bookingId));
+  defer(() => notifyBookingInReview(bookingId, reason));
   return true;
 }

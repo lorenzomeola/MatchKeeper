@@ -1,6 +1,8 @@
 import "server-only";
 import type Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { notifyAdminPaymentProblem } from "@/lib/email/admin-emails";
+import { defer } from "@/lib/email/booking-emails";
 import { refundOutsideApp } from "./external-events";
 import { moveToReview } from "./release-booking";
 
@@ -28,7 +30,10 @@ export async function handleChargeRefunded(event: Stripe.Event) {
   await logEvent(booking.id, "refunded_outside_app", data);
   if (action === "review") await moveToReview(booking.id, "refunded_in_stripe");
   // Con la reserva ya pagada al portero no hay a quién retener el pago: queda en el registro y en los logs.
-  else if (booking.status === "completed") console.error(`Refund made in Stripe on an already paid booking ${booking.id}`, data);
+  else if (booking.status === "completed") {
+    console.error(`Refund made in Stripe on an already paid booking ${booking.id}`, data);
+    defer(() => notifyAdminPaymentProblem(booking.id, "refund_after_payout", null));
+  }
 }
 
 /** Una transferencia al portero revertida. Las reversiones de las disputas también pasan por aquí: solo se registra. */
