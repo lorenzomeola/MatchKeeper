@@ -54,13 +54,41 @@ export async function notifyNotSelected(c: BookingCtx) {
   }
 }
 
-/** El portero reservado canceló y el partido se reabre: las candidaturas que vuelven a pendiente se avisan. */
-export async function notifyReopened(c: BookingCtx) {
+/** El equipo canceló una de dos reservas y ya no busca más porteros: las candidaturas descartadas no vuelven. */
+export async function notifyApplicationsClosed(c: BookingCtx, closedIds: string[]) {
+  if (closedIds.length === 0) return;
+  const admin = createAdminClient();
+  // Si el partido entero se canceló no hay nada que avisar: ya no existe.
+  const { data: match } = await admin.from("matches").select("status").eq("id", c.matchId).maybeSingle();
+  if (!match || match.status === "cancelled") return;
+  const { data: apps } = await admin
+    .from("applications")
+    .select("id, goalkeeper_id")
+    .eq("match_id", c.matchId)
+    .eq("status", "rejected")
+    .in("id", closedIds);
+  for (const a of apps ?? []) {
+    const keeper = await partyOf(a.goalkeeper_id, "The keeper");
+    if (!keeper.email) continue;
+    await queueEmail({
+      template: "application_closed_keeper",
+      toEmail: keeper.email,
+      toUserId: keeper.id,
+      dedupe: `application:${a.id}:closed:${c.id}`,
+      data: { pitch: c.pitch, when: c.when, browseUrl: `${appUrl()}/matches` },
+    });
+  }
+}
+
+/** El portero reservado canceló y el partido se reabre: se avisa a las candidaturas que vuelven a pendiente. */
+export async function notifyReopened(c: BookingCtx, restoredIds: string[]) {
+  if (restoredIds.length === 0) return;
   const { data: apps } = await createAdminClient()
     .from("applications")
     .select("id, goalkeeper_id")
     .eq("match_id", c.matchId)
     .eq("status", "pending")
+    .in("id", restoredIds)
     .neq("goalkeeper_id", c.keeper.id);
   for (const a of apps ?? []) {
     const keeper = await partyOf(a.goalkeeper_id, "The keeper");

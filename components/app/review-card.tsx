@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useId, useState, useTransition } from "react";
 import { useToast } from "@/components/app/toast";
 import { FormError } from "@/components/platform/form-fields";
 import { StarIcon } from "@/components/platform/icons";
@@ -19,6 +19,7 @@ export function ReviewCard({
   keeperName: string;
 }) {
   const { toast } = useToast();
+  const commentId = useId();
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -68,11 +69,11 @@ export function ReviewCard({
         </span>
       </div>
 
-      <label htmlFor="review-comment" className="mt-4 block text-sm font-medium text-fg">
+      <label htmlFor={commentId} className="mt-4 block text-sm font-medium text-fg">
         Comment <span className="font-normal text-muted">optional</span>
       </label>
       <textarea
-        id="review-comment"
+        id={commentId}
         value={comment}
         onChange={(e) => setComment(e.target.value)}
         maxLength={600}

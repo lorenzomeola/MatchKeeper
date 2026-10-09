@@ -10,6 +10,7 @@ import { ListIcon } from "@/components/platform/icons";
 import { loadPlayerHome } from "@/lib/data/dashboard";
 import { loadUnreadCount } from "@/lib/data/messages";
 import { firstName } from "@/lib/format";
+import { keeperNames } from "@/lib/slots";
 import type { completeness, PlayerKind } from "@/lib/profile";
 
 type Props = {
@@ -26,20 +27,33 @@ export async function PlayerHome({ userId, profile, teamName, kind, rating }: Pr
   const rest = d.upcoming.filter((m) => m.id !== d.next?.id).slice(0, 4);
   const needsReply = d.needsAttention.filter(({ match }) => match.id !== d.next?.id);
 
+  const nextBooked = d.nextKeepers.length;
+  const nextFull = nextBooked >= d.nextNeeded;
+  const pendingText = (n: number) => `${n} ${n === 1 ? "keeper has" : "keepers have"} applied.`;
+
   const nextStatus = d.next ? (
-    d.nextKeeper ? (
+    nextBooked > 0 && nextFull ? (
       <span className="flex items-center gap-3">
-        <Avatar name={d.nextKeeper.name} src={d.nextKeeper.avatarUrl} size="sm" />
+        <Avatar name={d.nextKeepers[0].name} src={d.nextKeepers[0].avatarUrl} size="sm" />
         <span>
-          <span className="block text-fg">{d.nextKeeper.name}</span>
-          <span className="block text-xs font-medium text-accent-strong">Keeper booked</span>
+          <span className="block text-fg">{keeperNames(d.nextKeepers.map((k) => k.name))}</span>
+          <span className="block text-xs font-medium text-accent-strong">
+            {nextBooked > 1 ? "Keepers booked" : "Keeper booked"}
+          </span>
+        </span>
+      </span>
+    ) : nextBooked > 0 ? (
+      <span className="text-fg">
+        <strong className="font-semibold">
+          {nextBooked} of {d.nextNeeded} keepers booked ({keeperNames(d.nextKeepers.map((k) => k.name))}).
+        </strong>{" "}
+        <span className="text-muted">
+          {d.nextPending > 0 ? `${pendingText(d.nextPending)} Pick the next one.` : "Keepers nearby can still apply for the other place."}
         </span>
       </span>
     ) : d.nextPending > 0 ? (
       <span className="text-fg">
-        <strong className="font-semibold">
-          {d.nextPending} {d.nextPending === 1 ? "keeper has" : "keepers have"} applied.
-        </strong>{" "}
+        <strong className="font-semibold">{pendingText(d.nextPending)}</strong>{" "}
         <span className="text-muted">Compare them and pick one.</span>
       </span>
     ) : (
@@ -78,7 +92,7 @@ export async function PlayerHome({ userId, profile, teamName, kind, rating }: Pr
             match={d.next}
             href={`/matches/${d.next.id}`}
             status={nextStatus}
-            cta={d.nextKeeper ? "Open match" : d.nextPending > 0 ? "Review keepers" : "View match"}
+            cta={nextFull && nextBooked > 0 ? "Open match" : d.nextPending > 0 ? "Review keepers" : "View match"}
           />
         ) : (
           <EmptyState
@@ -102,7 +116,7 @@ export async function PlayerHome({ userId, profile, teamName, kind, rating }: Pr
             tone={d.waitingCount > 0 ? "warning" : "default"}
             href="/matches"
           />
-          <StatCard label="Keepers booked" value={d.bookedCount} hint="Upcoming matches" href="/calendar" tone="accent" />
+          <StatCard label="Keepers booked" value={d.bookedCount} hint="Across upcoming matches" href="/calendar" tone="accent" />
           <StatCard label="Matches played" value={d.playedCount} hint={`${d.totalPosted} posted in total`} />
         </div>
         <PaymentsLink role="team" />
@@ -134,19 +148,29 @@ export async function PlayerHome({ userId, profile, teamName, kind, rating }: Pr
       {rest.length > 0 && (
         <Section title="Coming up" action={<SectionLink href="/matches">All matches</SectionLink>}>
           <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {rest.map((m) => (
-              <li key={m.id}>
-                <MatchCard
-                  match={m}
-                  href={`/matches/${m.id}`}
-                  footer={
-                    <span className={m.status === "assigned" ? "font-medium text-accent-strong" : "font-medium text-success"}>
-                      {m.status === "assigned" ? "Keeper booked" : "Looking for a keeper"}
-                    </span>
-                  }
-                />
-              </li>
-            ))}
+            {rest.map((m) => {
+              const booked = m.applications.filter((a) => a.status === "accepted").length;
+              const full = m.status === "assigned";
+              return (
+                <li key={m.id}>
+                  <MatchCard
+                    match={m}
+                    href={`/matches/${m.id}`}
+                    footer={
+                      <span className={full ? "font-medium text-accent-strong" : "font-medium text-success"}>
+                        {full
+                          ? booked > 1
+                            ? "Keepers booked"
+                            : "Keeper booked"
+                          : booked > 0
+                            ? `${booked} of ${m.keepers_needed} keepers booked`
+                            : "Looking for a keeper"}
+                      </span>
+                    }
+                  />
+                </li>
+              );
+            })}
           </ul>
         </Section>
       )}

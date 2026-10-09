@@ -4,6 +4,7 @@ import type { LayoutInput } from "./templates.ts";
 export type MarketplaceTemplateData = {
   application_received_team: { keeperName: string; rate: string; pitch: string; when: string; matchUrl: string };
   application_not_selected_keeper: { pitch: string; when: string; browseUrl: string };
+  application_closed_keeper: { pitch: string; when: string; browseUrl: string };
   match_reopened_keeper: { pitch: string; when: string; matchUrl: string };
   keeper_approved: { dashboardUrl: string };
   review_received_keeper: { teamName: string; rating: number; comment: string | null; pitch: string; profileUrl: string };
@@ -34,6 +35,15 @@ export const MARKETPLACE_BUILDERS: { [K in keyof MarketplaceTemplateData]: Build
     paragraphs: [
       `The team for ${d.pitch} (${d.when}) has booked a different keeper.`,
       "If that booking falls through, your application goes back in the running and we will let you know.",
+    ],
+    cta: { label: "Find another match", url: d.browseUrl },
+  }),
+
+  application_closed_keeper: (d) => ({
+    title: "This match is closed",
+    subject: `${d.pitch}: the team no longer needs another keeper`,
+    paragraphs: [
+      `The team for ${d.pitch} (${d.when}) no longer needs another keeper, so your application is closed.`,
     ],
     cta: { label: "Find another match", url: d.browseUrl },
   }),

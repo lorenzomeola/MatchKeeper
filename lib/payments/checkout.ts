@@ -36,32 +36,47 @@ export async function startCheckout(
 
   const { data: match } = await admin
     .from("matches")
-    .select("id, created_by, address, starts_at, ends_at, status")
+    .select("id, created_by, address, starts_at, ends_at, status, keepers_needed")
     .eq("id", app.match_id)
     .maybeSingle();
   if (!match || match.created_by !== user.id) throw new BookingError("You can't book a keeper for this match.");
-  if (match.status !== "open") throw new BookingError("This match already has a keeper.");
+  if (match.status !== "open") throw new BookingError("This match already has all its keepers.");
 
-  const { data: prev } = await admin
+  const { data: active } = await admin
     .from("bookings")
     .select("id, application_id, status, stripe_checkout_session_id")
     .eq("match_id", match.id)
     .neq("status", "cancelled")
-    .maybeSingle();
-  if (prev) {
-    if (prev.status !== "pending_payment") throw new BookingError("This match already has a keeper.");
-    if (prev.stripe_checkout_session_id) {
-      const old = await stripe.checkout.sessions.retrieve(prev.stripe_checkout_session_id);
-      if (old.status === "open" && old.url && prev.application_id === applicationId) return old.url;
+    .order("created_at", { ascending: true });
+  const bookings = active ?? [];
+  const filled = bookings.filter((b) => b.status !== "pending_payment").length;
+  const slotsFree = match.keepers_needed - filled;
+  if (slotsFree <= 0) throw new BookingError("This match already has all its keepers.");
+
+  // Intentos sin pagar: se reutiliza el de este portero y se descartan los que no quepan junto al nuevo.
+  const pending = bookings.filter((b) => b.status === "pending_payment");
+  const same = pending.find((b) => b.application_id === applicationId);
+  const others = pending.filter((b) => b.application_id !== applicationId);
+  const dropped = [...(same ? [same] : []), ...others.slice(0, Math.max(0, others.length - (slotsFree - 1)))];
+
+  let paidFound = false;
+  for (const b of dropped) {
+    if (b.stripe_checkout_session_id) {
+      const old = await stripe.checkout.sessions.retrieve(b.stripe_checkout_session_id);
+      if (old.status === "open" && old.url && b.id === same?.id) return old.url;
       if (old.status === "complete" && old.payment_status === "paid") {
         await confirmCheckoutSession(old.id);
-        throw new BookingError("This match is already booked.");
+        if (b.id === same?.id) throw new BookingError("This keeper is already booked.");
+        paidFound = true;
+        continue;
       }
       if (old.status === "open") await stripe.checkout.sessions.expire(old.id);
     }
     // Sin dinero de por medio: el intento anterior se descarta y se empieza de nuevo.
-    await admin.from("bookings").delete().eq("id", prev.id).eq("status", "pending_payment");
+    await admin.from("bookings").delete().eq("id", b.id).eq("status", "pending_payment");
   }
+  // Un intento descartado resultó estar pagado: ocupa plaza, así que se vuelve a evaluar con el estado real.
+  if (paidFound) return startCheckout(supabase, user, applicationId, termsVersion);
 
   const { data: bookingId, error: rpcError } = await supabase.rpc("accept_application", {
     p_application_id: applicationId,
@@ -71,6 +86,9 @@ export async function startCheckout(
     console.error("accept_application failed", rpcError);
     if (rpcError?.message?.includes("already booked at that time")) {
       throw new BookingError("This keeper is already booked for another match at that time.");
+    }
+    if (rpcError?.message?.includes("Match is full")) {
+      throw new BookingError("This match already has all its keepers.");
     }
     throw new BookingError("We couldn't start the booking. The keeper may no longer be available.");
   }

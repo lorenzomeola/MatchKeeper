@@ -6,13 +6,28 @@ import { useToast } from "@/components/app/toast";
 import { Field, FormError, SubmitButton } from "@/components/platform/form-fields";
 import { applyToMatchAction, withdrawApplicationAction, type ApplicationActionState } from "@/lib/actions/applications";
 import { money } from "@/lib/format";
+import { durationText, rangeText, rateVsRange, recommendedRange } from "@/lib/pricing";
 
 const initialState: ApplicationActionState = { error: null };
 
 /** Formulario del portero para aplicar con su propia tarifa. */
-export function ApplyCard({ matchId, budget }: { matchId: string; budget: string | number | null }) {
+export function ApplyCard({
+  matchId,
+  budget,
+  format,
+  minutes,
+}: {
+  matchId: string;
+  budget: string | number | null;
+  format: number | null;
+  minutes: number;
+}) {
   const [state, formAction, pending] = useActionState(applyToMatchAction, initialState);
+  const [rate, setRate] = useState("");
   const suggested = money(budget);
+  const range = recommendedRange(format, minutes);
+  const rateNum = Number(rate);
+  const check = range && rate !== "" && rateNum > 0 ? rateVsRange(rateNum, range) : "within";
 
   return (
     <form action={formAction} noValidate className="pl-surface grid gap-5 rounded-[var(--r-xl)] p-5 sm:p-6">
@@ -26,23 +41,37 @@ export function ApplyCard({ matchId, budget }: { matchId: string; budget: string
       <input type="hidden" name="matchId" value={matchId} />
       {state.error && <FormError>{state.error}</FormError>}
 
-      <Field
-        label="Your rate (£)"
-        htmlFor="apply-rate"
-        hint={suggested ? `The team suggested ${suggested}. Your rate can be higher or lower.` : undefined}
-      >
-        <input
-          id="apply-rate"
-          name="rate"
-          type="number"
-          inputMode="decimal"
-          min={1}
-          step="0.5"
-          placeholder="25"
-          className="pl-input"
-          autoComplete="off"
-        />
-      </Field>
+      <div className="grid gap-2">
+        <Field
+          label="Your rate (£)"
+          htmlFor="apply-rate"
+          hint={
+            range
+              ? `Usual for ${durationText(minutes)}: ${rangeText(range)}.${suggested ? ` The team suggested ${suggested}.` : ""} Your rate is up to you.`
+              : suggested
+                ? `The team suggested ${suggested}. Your rate can be higher or lower.`
+                : undefined
+          }
+        >
+          <input
+            id="apply-rate"
+            name="rate"
+            type="number"
+            inputMode="decimal"
+            min={1}
+            step="0.5"
+            placeholder="25"
+            className="pl-input"
+            autoComplete="off"
+            value={rate}
+            onChange={(e) => setRate(e.target.value)}
+          />
+        </Field>
+        <p aria-live="polite" className={check === "within" ? "hidden" : "text-[13px] font-medium text-warning"}>
+          {check === "above" && range && `Above the usual ${rangeText(range)}. The team may pick a cheaper keeper.`}
+          {check === "below" && range && `Below the usual ${rangeText(range)}. You can ask for more if you want to.`}
+        </p>
+      </div>
 
       <Field label="Message to the team" htmlFor="apply-message" tag="optional" hint="Where you play, what you bring, anything that helps them choose.">
         <textarea id="apply-message" name="message" maxLength={300} className="pl-input" />

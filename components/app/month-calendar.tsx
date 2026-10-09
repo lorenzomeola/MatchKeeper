@@ -11,18 +11,21 @@ const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 const CHIP: Record<CalKind, string> = {
   booked: "bg-accent text-accent-ink",
+  partial: "border border-accent bg-accent-soft text-accent-strong",
   open: "bg-[color-mix(in_oklab,var(--success)_20%,transparent)] text-success",
   waiting: "border border-line-strong text-fg-2",
   played: "bg-surface-2 text-fg-2",
 };
 const DOT: Record<CalKind, string> = {
   booked: "bg-accent",
+  partial: "border border-accent bg-accent-soft",
   open: "bg-success",
   waiting: "border border-fg-2 bg-transparent",
   played: "bg-muted",
 };
 const LABEL: Record<CalKind, string> = {
   booked: "Booked",
+  partial: "Needs another keeper",
   open: "Looking for a keeper",
   waiting: "Waiting for a reply",
   played: "Played",
@@ -66,7 +69,7 @@ export function MonthCalendar({ events, isKeeper }: { events: CalEvent[]; isKeep
   };
 
   const dayEvents = byDay.get(selected) ?? [];
-  const legend: CalKind[] = isKeeper ? ["booked", "waiting", "played"] : ["booked", "open", "played"];
+  const legend: CalKind[] = isKeeper ? ["booked", "waiting", "played"] : ["booked", "partial", "open", "played"];
 
   return (
     <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_22rem] xl:gap-8">
@@ -148,8 +151,10 @@ export function MonthCalendar({ events, isKeeper }: { events: CalEvent[]; isKeep
 
                   <span className="hidden min-w-0 flex-col gap-1 md:flex" aria-hidden>
                     {list.slice(0, 2).map((e) => (
-                      <span key={e.id} className={`truncate rounded-[var(--r-xs)] px-1.5 py-0.5 text-[11px] font-medium ${CHIP[e.kind]}`}>
-                        {clockTime(e.startsAt)} {e.address}
+                      <span key={e.id} className={`flex min-w-0 gap-1 rounded-[var(--r-xs)] px-1.5 py-0.5 text-[11px] font-medium ${CHIP[e.kind]}`}>
+                        <span className="shrink-0">{clockTime(e.startsAt)}</span>
+                        {e.slots && <span className="shrink-0 font-bold">{e.slots}</span>}
+                        <span className="truncate">{e.address}</span>
                       </span>
                     ))}
                     {list.length > 2 && <span className="px-1 text-[11px] font-medium text-muted">+{list.length - 2} more</span>}
@@ -202,7 +207,10 @@ export function MonthCalendar({ events, isKeeper }: { events: CalEvent[]; isKeep
                 >
                   <div className="flex items-start justify-between gap-3">
                     <p className="pl-tnum text-sm font-semibold text-fg">{timeRange(e.startsAt, e.endsAt)}</p>
-                    <span className={`rounded-[var(--r-xs)] px-2 py-1 text-xs font-semibold ${CHIP[e.kind]}`}>{LABEL[e.kind]}</span>
+                    <span className={`rounded-[var(--r-xs)] px-2 py-1 text-xs font-semibold ${CHIP[e.kind]}`}>
+                      {LABEL[e.kind]}
+                      {e.slots ? ` · ${e.slots}` : ""}
+                    </span>
                   </div>
                   <p className="mt-2 truncate text-[15px] font-medium text-fg">{e.address}</p>
                   <p className="mt-0.5 text-sm text-muted">{e.sub}</p>

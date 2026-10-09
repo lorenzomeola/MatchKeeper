@@ -10,6 +10,7 @@ import { Button } from "@/components/platform/button";
 import { ListIcon, MapIcon } from "@/components/platform/icons";
 import { loadKeeperGames, loadPlayerMatches, TABS, type MatchTab } from "@/lib/data/matches";
 import { money } from "@/lib/format";
+import { keeperNames } from "@/lib/slots";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Matches", robots: { index: false } };
@@ -115,21 +116,30 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
         />
       ) : (
         <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {items.map(({ match, pending, keeper }) => {
+          {items.map(({ match, pending, keepers }) => {
             const status = MATCH_STATUS[match.status] ?? MATCH_STATUS.open;
+            const full = keepers.length >= match.keepers_needed;
+            const applied = pending > 0 ? `${pending} ${pending === 1 ? "keeper" : "keepers"} applied` : "No applications yet";
             return (
               <li key={match.id}>
                 <MatchCard
                   match={match}
                   href={`/matches/${match.id}`}
                   footer={
-                    keeper ? (
+                    keepers.length > 0 && (full || tab !== "open") ? (
                       <>
                         <span className="flex min-w-0 items-center gap-2">
-                          <Avatar name={keeper.name} src={keeper.avatarUrl} size="sm" className="!h-7 !w-7" />
-                          <span className="truncate font-medium text-fg">{keeper.name}</span>
+                          <Avatar name={keepers[0].name} src={keepers[0].avatarUrl} size="sm" className="!h-7 !w-7" />
+                          <span className="truncate font-medium text-fg">{keeperNames(keepers.map((k) => k.name))}</span>
                         </span>
                         <StatusBadge tone="accent">Booked</StatusBadge>
+                      </>
+                    ) : keepers.length > 0 ? (
+                      <>
+                        <span className="min-w-0 truncate font-medium text-fg">
+                          {keepers.length} of {match.keepers_needed} booked · {applied}
+                        </span>
+                        <span className="font-semibold text-accent-strong">{pending > 0 ? "Review" : "View"}</span>
                       </>
                     ) : tab === "past" ? (
                       <>
@@ -138,9 +148,7 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
                       </>
                     ) : (
                       <>
-                        <span className={pending > 0 ? "font-medium text-warning" : "text-muted"}>
-                          {pending > 0 ? `${pending} ${pending === 1 ? "keeper" : "keepers"} applied` : "No applications yet"}
-                        </span>
+                        <span className={pending > 0 ? "font-medium text-warning" : "text-muted"}>{applied}</span>
                         <span className="font-semibold text-accent-strong">{pending > 0 ? "Review" : "View"}</span>
                       </>
                     )

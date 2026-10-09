@@ -10,6 +10,7 @@ const url = "https://app.test/matches/1";
 const SAMPLES: MarketplaceTemplateData = {
   application_received_team: { keeperName: "Sam", rate: "£30.00", pitch: "Hackney Marshes", when: "Saturday 10 October, 10:00 to 11:00", matchUrl: url },
   application_not_selected_keeper: { pitch: "Hackney Marshes", when: "Saturday 10 October", browseUrl: url },
+  application_closed_keeper: { pitch: "Hackney Marshes", when: "Saturday 10 October", browseUrl: url },
   match_reopened_keeper: { pitch: "Hackney Marshes", when: "Saturday 10 October", matchUrl: url },
   keeper_approved: { dashboardUrl: url },
   review_received_keeper: { teamName: "Sunday FC", rating: 4, comment: "Great", pitch: "Hackney Marshes", profileUrl: url },

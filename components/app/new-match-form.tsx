@@ -10,7 +10,9 @@ import { createMatchAction, type MatchActionState } from "@/lib/actions/matches"
 import { londonLocalToIso, timeRange, todayLondon } from "@/lib/format";
 import { searchPlaces, type Place } from "@/lib/geocode";
 import { FORMAT_OPTIONS, NOTES_MAX, SURFACE_OPTIONS } from "@/lib/match-options";
+import { DURATION_OPTIONS, durationText, rangeText, recommendedRange, suggestedBudget } from "@/lib/pricing";
 import { AGE_FROM_OPTIONS, AGE_TO_OPTIONS } from "@/lib/profile";
+import { KEEPER_OPTIONS } from "@/lib/slots";
 
 const MapPicker = dynamic(() => import("@/components/map-picker"), {
   ssr: false,
@@ -25,11 +27,12 @@ const LONDON = { lat: 51.5074, lng: -0.1278 };
 type Values = {
   date: string;
   startTime: string;
-  endTime: string;
+  duration: string;
   address: string;
   format: string;
   surface: string;
   level: string;
+  keepers: string;
   budget: string;
   prefAgeMin: string;
   prefAgeMax: string;
@@ -40,15 +43,14 @@ type Errors = Partial<Record<keyof Values, string>>;
 
 const NOT_LOCATED = "Search for the pitch and choose it from the list, or place the pin on the map.";
 
-const STEP_ONE: (keyof Values)[] = ["date", "startTime", "endTime", "address"];
+const STEP_ONE: (keyof Values)[] = ["date", "startTime", "duration", "address"];
 
 function validateStepOne(v: Values, today: string): Errors {
   const e: Errors = {};
   if (!v.date) e.date = "Pick a date.";
   else if (v.date < today) e.date = "That date has already passed.";
   if (!v.startTime) e.startTime = "Pick a start time.";
-  if (!v.endTime) e.endTime = "Pick an end time.";
-  else if (v.startTime && v.endTime <= v.startTime) e.endTime = "The end time must be after the start.";
+  if (!v.duration) e.duration = "Choose how long the match lasts.";
   if (!v.address.trim()) e.address = "Add the pitch name or address.";
   return e;
 }
@@ -61,17 +63,20 @@ export function NewMatchForm({ initialDate = "" }: { initialDate?: string }) {
   const [v, setV] = useState<Values>({
     date: initialDate,
     startTime: "19:00",
-    endTime: "20:00",
+    duration: "60",
     address: "",
     format: "",
     surface: "",
     level: "",
-    budget: "30",
+    keepers: "1",
+    budget: "",
     prefAgeMin: "",
     prefAgeMax: "",
     notes: "",
   });
   const [pos, setPos] = useState(LONDON);
+  // El presupuesto sigue a formato y duración hasta que el jugador lo edita.
+  const [budgetTouched, setBudgetTouched] = useState(false);
   // La ubicación solo cuenta como puesta si salió de un resultado de búsqueda o el usuario movió el pin.
   const [placed, setPlaced] = useState<{ by: "search" | "map"; label: string } | null>(null);
   const addressId = useId();
@@ -140,8 +145,14 @@ export function NewMatchForm({ initialDate = "" }: { initialDate?: string }) {
     setFindNote("Pin placed. Drag it if it is not on the exact pitch.");
   }
 
+  const minutes = Number(v.duration);
+  const formatNum = v.format ? Number(v.format) : null;
+  const range = recommendedRange(formatNum, minutes);
+  const autoBudget = suggestedBudget(formatNum, minutes);
+  const budget = budgetTouched ? v.budget : autoBudget != null ? String(autoBudget) : "";
+
   const startIso = v.date && v.startTime ? londonLocalToIso(`${v.date}T${v.startTime}`) : null;
-  const endIso = v.date && v.endTime ? londonLocalToIso(`${v.date}T${v.endTime}`) : null;
+  const endIso = startIso && minutes > 0 ? new Date(Date.parse(startIso) + minutes * 60_000).toISOString() : null;
   const timeText = startIso && endIso ? timeRange(startIso, endIso) : "Date and time to be set";
   const preview = {
     id: "preview",
@@ -151,7 +162,8 @@ export function NewMatchForm({ initialDate = "" }: { initialDate?: string }) {
     level: v.level || null,
     format: v.format ? Number(v.format) : null,
     surface: v.surface || null,
-    budget_suggested: v.budget || null,
+    budget_suggested: budget || null,
+    keepers_needed: Number(v.keepers),
     pref_age_min: v.prefAgeMin || null,
     pref_age_max: v.prefAgeMax || null,
   };
@@ -230,14 +242,14 @@ export function NewMatchForm({ initialDate = "" }: { initialDate?: string }) {
               onChange={(e) => set("startTime", e.target.value)}
               error={err("startTime")}
             />
-            <TextField
-              label="Ends"
-              name="endTime"
-              type="time"
-              step={300}
-              value={v.endTime}
-              onChange={(e) => set("endTime", e.target.value)}
-              error={err("endTime")}
+            <SelectField
+              label="Duration"
+              name="duration"
+              placeholder="Choose"
+              options={DURATION_OPTIONS}
+              value={v.duration}
+              onChange={(e) => set("duration", e.target.value)}
+              error={err("duration")}
             />
           </div>
           <div className="grid gap-3">
@@ -389,8 +401,19 @@ export function NewMatchForm({ initialDate = "" }: { initialDate?: string }) {
             <p className="text-[13px] text-muted">Just a preference. Keepers of any age can still apply.</p>
           </fieldset>
 
+          <SelectField
+            label="Keepers needed"
+            name="keepers"
+            placeholder="Choose"
+            options={KEEPER_OPTIONS}
+            value={v.keepers}
+            onChange={(e) => set("keepers", e.target.value)}
+            error={err("keepers")}
+            hint={v.keepers === "2" ? "Each keeper applies, is booked and is paid separately." : undefined}
+          />
+
           <TextField
-            label="Suggested budget (£)"
+            label={v.keepers === "2" ? "Suggested budget per keeper (£)" : "Suggested budget (£)"}
             name="budget"
             type="number"
             inputMode="decimal"
@@ -398,9 +421,16 @@ export function NewMatchForm({ initialDate = "" }: { initialDate?: string }) {
             step="0.5"
             placeholder="30"
             tag="optional"
-            hint="What you expect to pay. Keepers still apply with their own rate."
-            value={v.budget}
-            onChange={(e) => set("budget", e.target.value)}
+            hint={
+              range
+                ? `Usual for ${durationText(minutes)} of ${v.format}-a-side: ${rangeText(range)}. Keepers still apply with their own rate.`
+                : "What you expect to pay. Keepers still apply with their own rate."
+            }
+            value={budget}
+            onChange={(e) => {
+              setBudgetTouched(true);
+              set("budget", e.target.value);
+            }}
             error={err("budget")}
           />
 

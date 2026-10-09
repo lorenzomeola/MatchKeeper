@@ -7,7 +7,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { loadBookingContext, type BookingCtx } from "./booking-context";
 import { cancelEmails, queueEmail } from "./outbox";
 import { notifyAdminBookingReview, notifyAdminKeeperStanding } from "./admin-emails";
-import { notifyNotSelected, notifyReopened } from "./marketplace-emails";
+import { notifyApplicationsClosed, notifyNotSelected, notifyReopened } from "./marketplace-emails";
 import { bookingSchedule } from "./schedule";
 
 const key = (bookingId: string, name: string) => `booking:${bookingId}:${name}`;
@@ -121,6 +121,10 @@ type CancelInput = {
   strikeKind: "late_cancel" | "no_show" | null;
   /** El partido vuelve a abrirse a otros candidatos. */
   reopened: boolean;
+  /** Candidaturas que estaban descartadas y vuelven a pendiente; las que ya esperaban no reciben aviso. */
+  restoredApplicationIds?: string[];
+  /** Candidaturas descartadas o pendientes antes de cancelar sin reabrir; las que sigan descartadas con el partido vivo reciben aviso de cierre. */
+  pendingApplicationIds?: string[];
 };
 
 /** Reserva cancelada: se anulan los avisos programados y se avisa a las dos partes (y al portero de su strike). */
@@ -181,7 +185,8 @@ export async function notifyBookingCancelled(bookingId: string, input: CancelInp
       await notifyAdminKeeperStanding(c, standing);
     }
   }
-  if (input.reopened) await notifyReopened(c);
+  if (input.reopened) await notifyReopened(c, input.restoredApplicationIds ?? []);
+  else await notifyApplicationsClosed(c, input.pendingApplicationIds ?? []);
 }
 
 /** Pago liberado al portero: aviso con lo que recibe, y los avisos al equipo que quedaban ya sobran. */

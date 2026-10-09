@@ -1,8 +1,9 @@
 -- Cobro al elegir portero (PAYMENTS_SPEC.md §4). Se pega entero en el SQL Editor de Supabase. Idempotente.
--- Requiere haber corrido antes db/policies.sql, db/payments.sql y db/migrations/0008_*.sql.
+-- Requiere haber corrido antes db/policies.sql, db/payments.sql y db/migrations/0008_*.sql (y 0014 para keepers_needed).
 --
 -- Cambia el flujo: elegir portero ya NO confirma nada. Crea una reserva `pending_payment`; la candidatura,
 -- el partido y las demás candidaturas solo cambian cuando el pago se confirma (confirm_booking_payment).
+-- Un partido admite 1 o 2 porteros (matches.keepers_needed): cada uno tiene su propia reserva y su propio pago.
 
 -- La versión de un solo argumento creaba una reserva confirmada sin pago: se elimina para que nadie la use.
 drop function if exists public.accept_application(uuid);
@@ -23,7 +24,8 @@ begin
     raise exception 'Application not found';
   end if;
 
-  select * into v_match from public.matches where id = v_application.match_id;
+  -- Bloquea el partido: dos reservas a la vez no pueden pasarse de la capacidad.
+  select * into v_match from public.matches where id = v_application.match_id for update;
   if not found then
     raise exception 'Match not found';
   end if;
@@ -70,7 +72,12 @@ begin
     raise exception 'Terms must be accepted';
   end if;
 
-  -- match_id es único: un solo intento de reserva por partido a la vez (el servidor limpia el pendiente anterior).
+  -- Las reservas vigentes (pagadas o pendientes de pago) ocupan plaza. El servidor descarta antes los intentos sobrantes.
+  if (select count(*) from public.bookings where match_id = v_match.id and status <> 'cancelled') >= v_match.keepers_needed then
+    raise exception 'Match is full';
+  end if;
+
+  -- Un portero solo puede ocupar una plaza del partido (lo refuerza el índice bookings_active_match_keeper_uq).
   insert into public.bookings (
     match_id, application_id, player_id, goalkeeper_id, rate,
     status, payment_status, terms_version, terms_accepted_at
@@ -102,6 +109,7 @@ as $$
 declare
   b public.bookings%rowtype;
   m public.matches%rowtype;
+  v_filled integer;
 begin
   select * into b from public.bookings where id = p_booking_id for update;
   if not found then
@@ -112,7 +120,7 @@ begin
     return;
   end if;
 
-  select * into m from public.matches where id = b.match_id;
+  select * into m from public.matches where id = b.match_id for update;
 
   update public.bookings
   set status = 'confirmed',
@@ -124,10 +132,18 @@ begin
   where id = b.id;
 
   update public.applications set status = 'accepted' where id = b.application_id;
-  update public.applications
-  set status = 'rejected'
-  where match_id = b.match_id and id <> b.application_id and status = 'pending';
-  update public.matches set status = 'assigned' where id = b.match_id;
+
+  -- Las demás candidaturas solo se rechazan cuando se ocupa la última plaza.
+  select count(*) into v_filled
+  from public.bookings
+  where match_id = b.match_id and status not in ('cancelled', 'pending_payment');
+
+  if v_filled >= m.keepers_needed then
+    update public.applications
+    set status = 'rejected'
+    where match_id = b.match_id and id <> b.application_id and status = 'pending';
+    update public.matches set status = 'assigned' where id = b.match_id;
+  end if;
 
   insert into public.booking_events (booking_id, type, data)
   values (b.id, 'payment_succeeded', jsonb_build_object('payment_intent', p_payment_intent, 'charge', p_charge));

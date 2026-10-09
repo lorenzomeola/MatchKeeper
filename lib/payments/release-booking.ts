@@ -95,7 +95,13 @@ export async function releaseBooking(bookingId: string): Promise<{ released: boo
     .select("id");
   if (!updated?.length) return { released: false };
 
-  await admin.from("matches").update({ status: "completed" }).eq("id", booking.match_id);
+  // Con 2 porteros, el partido se da por cerrado cuando ya no queda ninguna reserva por liberar.
+  const { count: stillOpen } = await admin
+    .from("bookings")
+    .select("id", { count: "exact", head: true })
+    .eq("match_id", booking.match_id)
+    .in("status", ["confirmed", "under_review", "pending_payment"]);
+  if (!stillOpen) await admin.from("matches").update({ status: "completed" }).eq("id", booking.match_id);
   await admin.from("booking_events").insert({
     booking_id: bookingId,
     type: "released",

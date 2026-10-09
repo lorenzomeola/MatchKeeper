@@ -6,6 +6,7 @@ import { Avatar } from "@/components/app/avatar";
 import { StatusBadge } from "@/components/app/status-badge";
 import { ChatIcon } from "@/components/platform/icons";
 import { money } from "@/lib/format";
+import { durationText, isDuration } from "@/lib/pricing";
 
 export type Applicant = {
   id: string;
@@ -29,7 +30,7 @@ const SORTS = [
 ] as const;
 type Sort = (typeof SORTS)[number]["value"];
 
-export function ApplicantList({ matchId, applicants }: { matchId: string; applicants: Applicant[] }) {
+export function ApplicantList({ matchId, applicants, minutes }: { matchId: string; applicants: Applicant[]; minutes: number }) {
   const [sort, setSort] = useState<Sort>("rate");
 
   const sorted = [...applicants].sort((a, b) => {
@@ -77,6 +78,7 @@ export function ApplicantList({ matchId, applicants }: { matchId: string; applic
                   </Link>
                   <div className="shrink-0 text-right">
                     <p className="pl-display pl-tnum text-fg [font-size:var(--t-2xl)]">{money(a.rate)}</p>
+                    {isDuration(minutes) && <p className="text-xs text-muted">for {durationText(minutes)}</p>}
                     {applicants.length > 1 && a.rate === lowest && (
                       <span className="text-xs font-semibold text-success">Lowest rate</span>
                     )}

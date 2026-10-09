@@ -35,7 +35,7 @@ function cancelConsequence(role: "owner" | "keeper", booking: BookingForCard, st
   return [
     "The team is refunded in full.",
     plan.strike ? "A strike is added to your profile, because it is less than 24 hours to kick-off." : "There is no penalty.",
-    plan.matchAfter === "open" ? "The match opens again for other keepers." : "The match is cancelled.",
+    plan.matchAfter === "open" ? "The match opens again for other keepers." : "The booking is cancelled.",
   ].join(" ");
 }
 
@@ -45,16 +45,19 @@ export function BookingCard({
   booking,
   startsAt,
   endsAt,
+  compact,
 }: {
   role: "owner" | "keeper";
   booking: BookingForCard;
   startsAt: string;
   endsAt: string;
+  /** Dentro de la tarjeta de un portero, con menos separación. */
+  compact?: boolean;
 }) {
   const now = new Date();
   const start = new Date(startsAt);
   const checkedIn = Boolean(booking.keeper_checked_in_at);
-  const shell = "pl-surface mt-8 grid gap-4 rounded-[var(--r-xl)] p-5 sm:p-6";
+  const shell = `pl-surface ${compact ? "mt-3" : "mt-8"} grid gap-4 rounded-[var(--r-xl)] p-5 sm:p-6`;
   // El equipo puede cancelar hasta el final del partido; el portero, hasta el inicio.
   const canCancel = booking.status === "confirmed" && (role === "owner" ? now < new Date(endsAt) : now < start);
   const cancelButton = canCancel ? (

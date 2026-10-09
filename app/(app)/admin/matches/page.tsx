@@ -6,6 +6,7 @@ import { MATCH_STATUS, StatusBadge } from "@/components/app/status-badge";
 import { Tabs } from "@/components/app/tabs";
 import { ListIcon } from "@/components/platform/icons";
 import { loadAdminMatches } from "@/lib/data/admin";
+import { keeperNames } from "@/lib/slots";
 
 export const metadata: Metadata = { title: "Matches", robots: { index: false } };
 
@@ -30,7 +31,7 @@ export default async function AdminMatchesPage({ searchParams }: { searchParams:
           {rows.map((m) => {
             const status = MATCH_STATUS[m.status] ?? MATCH_STATUS.open;
             const pending = m.applications.filter((a) => a.status === "pending").length;
-            const keeperId = m.applications.find((a) => a.status === "accepted")?.goalkeeper_id;
+            const keeperIds = m.applications.filter((a) => a.status === "accepted").map((a) => a.goalkeeper_id);
             return (
               <li key={m.id}>
                 <MatchCard
@@ -40,8 +41,8 @@ export default async function AdminMatchesPage({ searchParams }: { searchParams:
                   footer={
                     <>
                       <span className="min-w-0 truncate text-muted">
-                        {keeperId
-                          ? `Keeper: ${names.get(keeperId)?.name ?? "booked"}`
+                        {keeperIds.length > 0
+                          ? `${keeperIds.length > 1 ? "Keepers" : "Keeper"}: ${keeperNames(keeperIds.map((id) => names.get(id)?.name ?? "booked"))}${keeperIds.length < m.keepers_needed ? ` (${keeperIds.length} of ${m.keepers_needed})` : ""}`
                           : `${m.applications.length} ${m.applications.length === 1 ? "application" : "applications"}${pending ? `, ${pending} waiting` : ""}`}
                       </span>
                       <StatusBadge tone={status.tone}>{status.label}</StatusBadge>

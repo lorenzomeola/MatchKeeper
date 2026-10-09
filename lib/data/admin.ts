@@ -181,6 +181,7 @@ export async function loadAdminMatches(tab: "open" | "booked" | "past" | "cancel
     surface: string | null;
     level: string | null;
     budget_suggested: string | number | null;
+    keepers_needed: number;
     applications: { id: string; status: string; goalkeeper_id: string }[];
   }[];
 

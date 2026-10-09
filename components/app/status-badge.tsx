@@ -31,7 +31,7 @@ export function StatusBadge({
 
 export const MATCH_STATUS: Record<string, { label: string; tone: Tone }> = {
   open: { label: "Open", tone: "success" },
-  assigned: { label: "Keeper booked", tone: "accent" },
+  assigned: { label: "Booked", tone: "accent" },
   completed: { label: "Played", tone: "neutral" },
   cancelled: { label: "Cancelled", tone: "danger" },
 };

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { dateTile, money, SURFACE_LABEL, timeRange } from "@/lib/format";
+import { durationShort, isDuration, matchMinutes } from "@/lib/pricing";
 import { ageRangeText } from "@/lib/profile";
 
 type CardMatch = {
@@ -12,6 +13,7 @@ type CardMatch = {
   format: number | null;
   surface: string | null;
   budget_suggested: string | number | null;
+  keepers_needed?: number | null;
   pref_age_min?: string | null;
   pref_age_max?: string | null;
 };
@@ -35,12 +37,16 @@ export function DateTile({ iso, large }: { iso: string; large?: boolean }) {
 
 export function MatchChips({ match }: { match: CardMatch }) {
   const age = ageRangeText(match.pref_age_min, match.pref_age_max);
+  const minutes = matchMinutes(match.starts_at, match.ends_at);
+  const two = (match.keepers_needed ?? 1) > 1;
   const chips = [
+    isDuration(minutes) ? durationShort(minutes) : null,
+    two ? `${match.keepers_needed} keepers` : null,
     match.format ? `${match.format}-a-side` : null,
     match.surface ? (SURFACE_LABEL[match.surface] ?? match.surface) : null,
     match.level,
     age ? `Prefers age ${age}` : null,
-    money(match.budget_suggested) ? `${money(match.budget_suggested)} budget` : null,
+    money(match.budget_suggested) ? `${money(match.budget_suggested)} budget${two ? " each" : ""}` : null,
   ].filter((c): c is string => !!c);
 
   if (chips.length === 0) return null;

@@ -11,6 +11,7 @@ export type MatchRow = {
   surface: string | null;
   notes: string | null;
   budget_suggested: string | number | null;
+  keepers_needed: number;
   pref_age_min?: string | null;
   pref_age_max?: string | null;
   status: "open" | "assigned" | "completed" | "cancelled";
@@ -51,31 +52,33 @@ export async function loadPlayerHome(userId: string) {
 
   const matches = (data ?? []) as OwnMatch[];
   const upcoming = matches.filter((m) => isUpcoming(m, nowMs));
-  const played = matches.filter((m) => !isUpcoming(m, nowMs) && m.status !== "open").length;
+  const acceptedOf = (m: OwnMatch) => m.applications.filter((a) => a.status === "accepted");
+  // Un partido ya pasado con algún portero reservado se jugó, aunque no llegara a llenarse.
+  const played = matches.filter((m) => !isUpcoming(m, nowMs) && (m.status !== "open" || acceptedOf(m).length > 0)).length;
 
   const pendingOf = (m: OwnMatch) => m.applications.filter((a) => a.status === "pending").length;
   const needsAttention = upcoming.filter((m) => m.status === "open" && pendingOf(m) > 0);
-  const booked = upcoming.filter((m) => m.status === "assigned");
   const open = upcoming.filter((m) => m.status === "open");
+  const bookedCount = upcoming.reduce((sum, m) => sum + acceptedOf(m).length, 0);
 
-  const keeperIds = booked
-    .map((m) => m.applications.find((a) => a.status === "accepted")?.goalkeeper_id)
-    .filter((id): id is string => !!id);
+  const keeperIds = upcoming.flatMap((m) => acceptedOf(m).map((a) => a.goalkeeper_id));
   const keepers = await namesOf(supabase, keeperIds);
 
   const next = upcoming[0] ?? null;
-  const nextKeeper =
-    next && next.status === "assigned"
-      ? keepers.get(next.applications.find((a) => a.status === "accepted")?.goalkeeper_id ?? "") ?? null
-      : null;
+  const nextKeepers = next
+    ? acceptedOf(next)
+        .map((a) => keepers.get(a.goalkeeper_id))
+        .filter((k): k is { name: string; avatarUrl: string | null } => !!k)
+    : [];
 
   return {
     upcoming,
     next,
-    nextKeeper,
+    nextKeepers,
+    nextNeeded: next?.keepers_needed ?? 1,
     nextPending: next ? pendingOf(next) : 0,
     openCount: open.length,
-    bookedCount: booked.length,
+    bookedCount,
     waitingCount: needsAttention.reduce((sum, m) => sum + pendingOf(m), 0),
     playedCount: played,
     totalPosted: matches.length,

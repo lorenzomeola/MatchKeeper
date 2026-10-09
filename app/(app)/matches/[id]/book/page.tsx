@@ -57,6 +57,14 @@ export default async function BookPage({
   const totals = calculateTotals(Math.round(Number(app.rate) * 100), COMMISSION_PCT);
   const pitch = splitAddress(match.address);
 
+  const { count: bookedNow } = await supabase
+    .from("bookings")
+    .select("id", { count: "exact", head: true })
+    .eq("match_id", id)
+    .in("status", ["confirmed", "under_review", "completed"]);
+  const needed: number = match.keepers_needed ?? 1;
+  const closesOthers = (bookedNow ?? 0) + 1 >= needed;
+
   return (
     <>
       <Link
@@ -67,7 +75,11 @@ export default async function BookPage({
         Back to the match
       </Link>
 
-      <PageHeader eyebrow="Book a keeper" title="Review and pay" description="Your payment is held until the match is played." />
+      <PageHeader
+        eyebrow={needed > 1 ? `Book keeper ${(bookedNow ?? 0) + 1} of ${needed}` : "Book a keeper"}
+        title="Review and pay"
+        description="Your payment is held until the match is played."
+      />
 
       <div className="grid gap-5">
         <section className="pl-surface flex items-center gap-4 rounded-[var(--r-lg)] p-4 sm:p-5">
@@ -96,7 +108,10 @@ export default async function BookPage({
             </div>
           </dl>
           <p className="mt-3 text-xs leading-relaxed text-muted">
-            The keeper receives the full rate. Booking closes the other applications once the payment goes through.
+            The keeper receives the full rate.{" "}
+            {closesOthers
+              ? "Booking closes the other applications once the payment goes through."
+              : `Other applications stay open until you have all ${needed} keepers. Each keeper is paid for separately.`}
           </p>
         </section>
 

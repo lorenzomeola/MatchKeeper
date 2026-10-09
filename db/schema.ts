@@ -13,6 +13,7 @@ import {
   primaryKey,
   uniqueIndex,
   index,
+  check,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
@@ -136,11 +137,15 @@ export const matches = pgTable("matches", {
   prefAgeMax: text("pref_age_max"),
   notes: text("notes"),
   budgetSuggested: numeric("budget_suggested", { precision: 10, scale: 2 }),
+  // Porteros que necesita el partido (1 o 2). Baja solo al cancelar una reserva con otra aún vigente.
+  keepersNeeded: smallint("keepers_needed").notNull().default(1),
   status: matchStatus("status").notNull().default("open"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-});
+},
+(t) => [check("matches_keepers_needed_chk", sql`${t.keepersNeeded} in (1, 2)`)],
+);
 
 export const applications = pgTable(
   "applications",
@@ -223,8 +228,10 @@ export const bookings = pgTable(
   termsAcceptedAt: timestamp("terms_accepted_at", { withTimezone: true }),
   },
   (t) => [
-    // Una reserva activa por partido; las canceladas no cuentan, para poder reabrir y volver a reservar.
-    uniqueIndex("bookings_active_match_uq").on(t.matchId).where(sql`${t.status} <> 'cancelled'`),
+    // Un portero no puede tener dos reservas activas en el mismo partido. La capacidad (1 o 2) la fija accept_application.
+    uniqueIndex("bookings_active_match_keeper_uq")
+      .on(t.matchId, t.goalkeeperId)
+      .where(sql`${t.status} <> 'cancelled'`),
   ],
 );
 

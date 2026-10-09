@@ -20,6 +20,25 @@ export async function cancelBooking(input: {
   actorId: string | null;
 }): Promise<{ cancelled: boolean; moneyPending: boolean }> {
   const admin = createAdminClient();
+  // Candidaturas descartadas al llenarse el partido: las únicas que vuelven a estar disponibles al reabrir.
+  let restoredApplicationIds: string[] = [];
+  let pendingApplicationIds: string[] = [];
+  {
+    const { data: current } = await admin.from("bookings").select("match_id").eq("id", input.bookingId).maybeSingle();
+    if (current) {
+      const { data: apps } = await admin
+        .from("applications")
+        .select("id, status")
+        .eq("match_id", current.match_id)
+        .in("status", ["rejected", "pending"]);
+      if (input.plan.matchAfter === "open") {
+        restoredApplicationIds = (apps ?? []).filter((a) => a.status === "rejected").map((a) => a.id);
+      } else {
+        // Si queda otro portero el partido no se reabre: las candidaturas descartadas (y las pendientes que cierre la base de datos) ya no vuelven.
+        pendingApplicationIds = (apps ?? []).map((a) => a.id);
+      }
+    }
+  }
   const { data: ok, error } = await admin.rpc("cancel_booking", {
     p_booking_id: input.bookingId,
     p_by: input.by,
@@ -40,6 +59,8 @@ export async function cancelBooking(input: {
       keeperSharePence: input.plan.keeperSharePence,
       strikeKind: input.plan.strikeKind,
       reopened: input.plan.matchAfter === "open",
+      restoredApplicationIds,
+      pendingApplicationIds,
     }),
   );
   try {

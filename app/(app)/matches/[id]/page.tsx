@@ -17,6 +17,8 @@ import { ReviewCard } from "@/components/app/review-card";
 import { MATCH_STATUS, StatusBadge } from "@/components/app/status-badge";
 import { ArrowLeftIcon, ChatIcon, PinIcon, StarIcon, UsersIcon } from "@/components/platform/icons";
 import { daysAway, isPast, longDate, money, splitAddress, timeRange } from "@/lib/format";
+import { matchMinutes } from "@/lib/pricing";
+import { slotsLabel } from "@/lib/slots";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Match", robots: { index: false } };
@@ -104,10 +106,16 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
   }
 
   const expired = match.status === "open" && isPast(match.ends_at);
-  const status = expired ? { label: "Expired", tone: "neutral" as const } : (MATCH_STATUS[match.status] ?? MATCH_STATUS.open);
+  const needed: number = match.keepers_needed ?? 1;
+  const acceptedApps = applications.filter((a) => a.status === "accepted");
+  const slots = slotsLabel(needed, acceptedApps.length);
+  const status = expired
+    ? { label: "Expired", tone: "neutral" as const }
+    : isOwner && match.status === "open" && slots && acceptedApps.length > 0
+      ? { label: slots, tone: "accent" as const }
+      : (MATCH_STATUS[match.status] ?? MATCH_STATUS.open);
 
   const pending = applications.filter((a) => a.status === "pending");
-  const booked = applications.find((a) => a.status === "accepted");
   const applicants: Applicant[] = pending.map((a) => ({
     id: a.id,
     keeperId: a.goalkeeper_id,
@@ -125,38 +133,39 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
 
   const canApply = !isOwner && isKeeper && me?.approved && match.status === "open" && !expired && !mine;
 
-  // Reseña: solo el jugador que reservó, cuando el partido ya terminó.
-  let reviewBooking: { id: string; rating: number | null; comment: string | null } | null = null;
-  if (isOwner && booked && isPast(match.ends_at)) {
-    const { data: bk } = await supabase
-      .from("bookings")
-      .select("id")
-      .eq("match_id", id)
-      .neq("status", "cancelled")
-      .maybeSingle();
-    if (bk) {
-      const { data: rv } = await supabase.from("reviews").select("rating, comment").eq("booking_id", bk.id).maybeSingle();
-      reviewBooking = { id: bk.id, rating: rv?.rating ?? null, comment: rv?.comment ?? null };
-    }
-  }
-
-  // Última reserva del partido (pagada o cancelada). RLS oculta las pendientes de pago al portero.
-  let bookingCard: BookingForCard | null = null;
+  // Reservas del partido (el equipo ve todas; el portero, solo la suya). Las pendientes de pago no se muestran.
+  let bookings: (BookingForCard & { application_id: string })[] = [];
   if (isOwner || mine) {
     const { data: bk } = await supabase
       .from("bookings")
       .select(
-        "id, status, keeper_checked_in_at, team_response, auto_release_at, cancelled_by, cancellation_charge_pct, rate_pence, commission_pct",
+        "id, application_id, status, keeper_checked_in_at, team_response, auto_release_at, cancelled_by, cancellation_charge_pct, rate_pence, commission_pct",
       )
       .eq("match_id", id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (bk && bk.status !== "pending_payment") bookingCard = bk;
+      .order("created_at", { ascending: true });
+    bookings = (bk ?? []).filter((b) => b.status !== "pending_payment");
+  }
+  const latestFor = (applicationId: string) => [...bookings].reverse().find((b) => b.application_id === applicationId) ?? null;
+  const myBooking = mine ? latestFor(mine.id) : null;
+  // Reserva cancelada cuyo portero ya no figura como aceptado (p. ej. el partido se reabrió): se muestra aparte.
+  const orphanCancelled = isOwner
+    ? ([...bookings].reverse().find((b) => b.status === "cancelled" && !acceptedApps.some((a) => a.id === b.application_id)) ?? null)
+    : null;
+  const freeSlot = match.status === "open" && acceptedApps.length < needed;
+
+  // Reseñas: solo el jugador que reservó, por cada reserva vigente y cuando el partido ya terminó.
+  const reviewable = isOwner && isPast(match.ends_at) ? bookings.filter((b) => b.status !== "cancelled") : [];
+  const reviewOf = new Map<string, { rating: number | null; comment: string | null }>();
+  if (reviewable.length > 0) {
+    const { data: rvs } = await supabase
+      .from("reviews")
+      .select("booking_id, rating, comment")
+      .in("booking_id", reviewable.map((b) => b.id));
+    for (const r of rvs ?? []) reviewOf.set(r.booking_id, { rating: r.rating, comment: r.comment });
   }
 
   // Con el partido cancelado la candidatura aceptada sigue en base de datos, pero ya no hay reserva vigente.
-  const bookingEnded = bookingCard?.status === "cancelled" && match.status === "cancelled";
+  const bookingEnded = match.status === "cancelled" && (isOwner ? bookings.length > 0 : myBooking?.status === "cancelled");
 
   return (
     <>
@@ -221,40 +230,61 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
         </div>
       </section>
 
-      {bookingCard && (
-        <BookingCard role={isOwner ? "owner" : "keeper"} booking={bookingCard} startsAt={match.starts_at} endsAt={match.ends_at} />
+      {!isOwner && myBooking && (
+        <BookingCard role="keeper" booking={myBooking} startsAt={match.starts_at} endsAt={match.ends_at} />
+      )}
+      {orphanCancelled && (
+        <BookingCard role="owner" booking={orphanCancelled} startsAt={match.starts_at} endsAt={match.ends_at} />
       )}
 
       {isOwner ? (
         <>
-          {booked ? (
-            <Section title="Your keeper" className="mt-8">
-              <div className="pl-surface flex items-center gap-4 rounded-[var(--r-lg)] p-4 sm:p-5">
-                <Link href={`/keepers/${booked.goalkeeper_id}`} aria-label="Keeper profile" className="shrink-0">
-                  <Avatar name={booked.profiles?.display_name ?? "Goalkeeper"} src={booked.profiles?.avatar_url} size="lg" />
-                </Link>
-                <div className="min-w-0 flex-1">
-                  <Link href={`/keepers/${booked.goalkeeper_id}`} className="-my-2.5 block truncate py-2.5 text-base font-semibold text-fg hover:text-accent-strong">
-                    {booked.profiles?.display_name ?? "Goalkeeper"}
-                  </Link>
-                  <p className="text-sm text-muted">{money(booked.rate)} for this match</p>
-                  {!bookingEnded && (
-                    <div className="mt-1.5">
-                      <ApplicantStatus status="accepted" />
-                    </div>
-                  )}
-                </div>
-                <Link
-                  href={`/messages/${booked.id}`}
-                  className="inline-flex min-h-12 shrink-0 items-center gap-2 rounded-[var(--r-md)] border border-line-strong px-4 text-[15px] font-medium text-fg transition-colors duration-200 hover:border-accent"
-                >
-                  <ChatIcon className="h-[18px] w-[18px]" />
-                  Message
-                </Link>
-              </div>
+          {acceptedApps.length > 0 && (
+            <Section title={needed > 1 ? `Your keepers (${acceptedApps.length} of ${needed})` : "Your keeper"} className="mt-8">
+              <ul className="grid gap-4">
+                {acceptedApps.map((booked) => {
+                  const bk = latestFor(booked.id);
+                  return (
+                    <li key={booked.id}>
+                      <div className="pl-surface flex items-center gap-4 rounded-[var(--r-lg)] p-4 sm:p-5">
+                        <Link href={`/keepers/${booked.goalkeeper_id}`} aria-label="Keeper profile" className="shrink-0">
+                          <Avatar name={booked.profiles?.display_name ?? "Goalkeeper"} src={booked.profiles?.avatar_url} size="lg" />
+                        </Link>
+                        <div className="min-w-0 flex-1">
+                          <Link href={`/keepers/${booked.goalkeeper_id}`} className="-my-2.5 block truncate py-2.5 text-base font-semibold text-fg hover:text-accent-strong">
+                            {booked.profiles?.display_name ?? "Goalkeeper"}
+                          </Link>
+                          <p className="text-sm text-muted">{money(booked.rate)} for this match</p>
+                          {!bookingEnded && (
+                            <div className="mt-1.5">
+                              <ApplicantStatus status="accepted" />
+                            </div>
+                          )}
+                        </div>
+                        <Link
+                          href={`/messages/${booked.id}`}
+                          className="inline-flex min-h-12 shrink-0 items-center gap-2 rounded-[var(--r-md)] border border-line-strong px-4 text-[15px] font-medium text-fg transition-colors duration-200 hover:border-accent"
+                        >
+                          <ChatIcon className="h-[18px] w-[18px]" />
+                          Message
+                        </Link>
+                      </div>
+                      {bk && <BookingCard role="owner" booking={bk} startsAt={match.starts_at} endsAt={match.ends_at} compact />}
+                    </li>
+                  );
+                })}
+              </ul>
             </Section>
-          ) : (
+          )}
+
+          {(acceptedApps.length === 0 || freeSlot) && (
             <Section title={`Keepers who applied${applicants.length ? ` (${applicants.length})` : ""}`} className="mt-8">
+              {freeSlot && acceptedApps.length > 0 && (
+                <p className="pl-prose mb-4 text-[15px]">
+                  You still need {needed - acceptedApps.length} more {needed - acceptedApps.length === 1 ? "keeper" : "keepers"}.
+                  Each one is booked and paid separately.
+                </p>
+              )}
               {applicants.length === 0 ? (
                 <EmptyState
                   icon={UsersIcon}
@@ -266,24 +296,31 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
                   }
                 />
               ) : (
-                <ApplicantList matchId={match.id} applicants={applicants} />
+                <ApplicantList matchId={match.id} applicants={applicants} minutes={matchMinutes(match.starts_at, match.ends_at)} />
               )}
             </Section>
           )}
 
-          {reviewBooking && (
-            <Section title="Your review" className="mt-8">
-              {reviewBooking.rating != null ? (
-                <div className="pl-surface rounded-[var(--r-lg)] p-4 sm:p-5">
-                  <span className="inline-flex items-center gap-1 text-sm font-semibold text-fg">
-                    <StarIcon className="h-4 w-4 fill-current text-accent" />
-                    {reviewBooking.rating}/5
-                  </span>
-                  {reviewBooking.comment && <p className="mt-2 text-sm leading-relaxed text-fg-2">{reviewBooking.comment}</p>}
-                </div>
-              ) : (
-                <ReviewCard bookingId={reviewBooking.id} matchId={match.id} keeperName={booked?.profiles?.display_name ?? "your keeper"} />
-              )}
+          {reviewable.length > 0 && (
+            <Section title={reviewable.length > 1 ? "Your reviews" : "Your review"} className="mt-8">
+              <div className="grid gap-4">
+                {reviewable.map((b) => {
+                  const rv = reviewOf.get(b.id);
+                  const keeperName = acceptedApps.find((a) => a.id === b.application_id)?.profiles?.display_name ?? "your keeper";
+                  return rv?.rating != null ? (
+                    <div key={b.id} className="pl-surface rounded-[var(--r-lg)] p-4 sm:p-5">
+                      {reviewable.length > 1 && <p className="mb-1 text-xs font-medium text-muted">{keeperName}</p>}
+                      <span className="inline-flex items-center gap-1 text-sm font-semibold text-fg">
+                        <StarIcon className="h-4 w-4 fill-current text-accent" />
+                        {rv.rating}/5
+                      </span>
+                      {rv.comment && <p className="mt-2 text-sm leading-relaxed text-fg-2">{rv.comment}</p>}
+                    </div>
+                  ) : (
+                    <ReviewCard key={b.id} bookingId={b.id} matchId={match.id} keeperName={keeperName} />
+                  );
+                })}
+              </div>
             </Section>
           )}
         </>
@@ -302,7 +339,14 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
             </section>
           )}
 
-          {canApply && !suspended && paymentsReady && <ApplyCard matchId={match.id} budget={match.budget_suggested} />}
+          {canApply && !suspended && paymentsReady && (
+            <ApplyCard
+              matchId={match.id}
+              budget={match.budget_suggested}
+              format={match.format}
+              minutes={matchMinutes(match.starts_at, match.ends_at)}
+            />
+          )}
           {canApply && !suspended && !paymentsReady && <PaymentSetupCard resume={hasPayAccount} />}
           {canApply && suspended && <StandingCard level="suspended" />}
 
