@@ -3,7 +3,92 @@
 import { useState, useTransition } from "react";
 import { Sheet } from "@/components/app/sheet";
 import { useToast } from "@/components/app/toast";
-import { setKeeperApprovalAction, setReportStatusAction } from "@/lib/actions/admin";
+import { requestKeeperInfoAction, setKeeperApprovalAction, setReportStatusAction } from "@/lib/actions/admin";
+
+const QUESTION_STARTERS = [
+  "Where have you played as a keeper, and at what level?",
+  "Which days and areas of London can you usually play?",
+  "Could you add a clear photo of yourself to your profile?",
+];
+
+/** Pregunta algo al portero por email antes de aprobarlo; sus respuestas llegan al correo del admin. */
+export function InfoRequestControl({ profileId, name, asked }: { profileId: string; name: string; asked: boolean }) {
+  const { toast } = useToast();
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState("");
+  const [pending, startTransition] = useTransition();
+
+  function send() {
+    startTransition(async () => {
+      const res = await requestKeeperInfoAction(profileId, text);
+      if (res.error) {
+        toast(res.error, "error");
+        return;
+      }
+      setOpen(false);
+      setText("");
+      toast(`Question sent to ${name}.`);
+    });
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="inline-flex min-h-12 w-full items-center justify-center rounded-[var(--r-md)] border border-line-strong px-5 text-[15px] font-medium text-fg transition-colors duration-200 hover:border-accent"
+      >
+        {asked ? "Ask another question" : "Ask for more info"}
+      </button>
+
+      <Sheet open={open} title={`Ask ${name} a question`} onClose={() => !pending && setOpen(false)}>
+        <p className="pl-prose text-[15px]">They get your question by email and their reply comes straight to you.</p>
+        <ul className="mt-3 flex flex-wrap gap-1.5">
+          {QUESTION_STARTERS.map((s) => (
+            <li key={s}>
+              <button
+                type="button"
+                onClick={() => setText((t) => (t.trim() ? `${t.trim()}\n${s}` : s))}
+                className="rounded-[var(--r-xs)] bg-surface-2 px-2.5 py-1.5 text-left text-xs font-medium text-fg-2 transition-colors duration-200 hover:text-fg"
+              >
+                {s}
+              </button>
+            </li>
+          ))}
+        </ul>
+        <label htmlFor={`ask-${profileId}`} className="mt-4 block text-sm font-medium text-fg">
+          Your question
+        </label>
+        <textarea
+          id={`ask-${profileId}`}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          maxLength={1000}
+          rows={5}
+          className="pl-input mt-1.5"
+        />
+        <div className="mt-5 grid gap-2">
+          <button
+            type="button"
+            onClick={send}
+            disabled={pending || text.trim().length < 10}
+            className="inline-flex min-h-12 items-center justify-center rounded-[var(--r-md)] bg-accent px-5 text-[15px] font-semibold text-accent-ink transition-[transform,opacity] duration-150 active:scale-[0.98] disabled:opacity-50"
+          >
+            {pending ? "Sending…" : "Send by email"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            disabled={pending}
+            className="inline-flex min-h-12 items-center justify-center rounded-[var(--r-md)] px-5 text-[15px] font-medium text-fg-2"
+          >
+            Cancel
+          </button>
+        </div>
+      </Sheet>
+    </>
+  );
+}
 
 /** Aprobar o retirar la aprobación de un portero, con confirmación. */
 export function ApprovalControl({

@@ -103,6 +103,7 @@ export async function dispatchEmail(id: string): Promise<"sent" | "scheduled" | 
         subject,
         html: rendered.html,
         text: rendered.text,
+        ...(rendered.replyTo ? { replyTo: rendered.replyTo } : {}),
         ...(plan.kind === "schedule" ? { scheduledAt: plan.at.toISOString() } : {}),
       },
       { idempotencyKey: r.dedupe_key },

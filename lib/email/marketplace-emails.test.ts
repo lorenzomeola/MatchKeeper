@@ -14,6 +14,7 @@ const SAMPLES: MarketplaceTemplateData = {
   keeper_approved: { dashboardUrl: url },
   review_received_keeper: { teamName: "Sunday FC", rating: 4, comment: "Great", pitch: "Hackney Marshes", profileUrl: url },
   chat_unread: { senderName: "Sunday FC", pitch: "Hackney Marshes", chatUrl: url },
+  keeper_info_request: { question: "Where have you played?\nWhich days can you play?", replyTo: "admin@test.dev", profileUrl: url },
 };
 
 test("todas las plantillas de marketplace se generan con asunto, texto y enlace", () => {
@@ -31,7 +32,7 @@ test("lo que escribe un usuario se escapa en el HTML", () => {
   const poisoned = Object.entries(SAMPLES).map(([name, data]) => [
     name,
     Object.fromEntries(
-      Object.entries(data).map(([k, v]) => [k, ["keeperName", "teamName", "senderName", "pitch", "comment"].includes(k) ? evil : v]),
+      Object.entries(data).map(([k, v]) => [k, ["keeperName", "teamName", "senderName", "pitch", "comment", "question"].includes(k) ? evil : v]),
     ),
   ]);
   for (const [name, data] of poisoned) {
@@ -70,4 +71,16 @@ test("chat: leido despues del mensaje no avisa", () => {
 
 test("clave del aviso de chat: prefijo estable por hilo y destinatario", () => {
   assert.equal(chatKey("app1", "user1"), "chat_unread:app1:user1:");
+});
+
+test("pregunta del admin: cada linea es un parrafo y las respuestas van al admin", () => {
+  const r = renderEmail("keeper_info_request", SAMPLES.keeper_info_request, ctx);
+  assert.equal(r.replyTo, "admin@test.dev");
+  assert.ok(r.text.includes("Where have you played?\nWhich days can you play?"));
+  assert.ok(r.html.includes(">Where have you played?</p>") && r.html.includes(">Which days can you play?</p>"));
+  assert.ok(r.text.includes("Just reply to this email"));
+});
+
+test("las demas plantillas no llevan reply-to", () => {
+  assert.equal(renderEmail("chat_unread", SAMPLES.chat_unread, ctx).replyTo, undefined);
 });

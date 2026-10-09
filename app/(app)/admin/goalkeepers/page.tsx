@@ -4,7 +4,7 @@ import { KeeperReviewCard, SearchForm } from "@/components/app/admin-parts";
 import { PageHeader } from "@/components/app/page-header";
 import { Tabs } from "@/components/app/tabs";
 import { ShieldCheckIcon } from "@/components/platform/icons";
-import { loadKeepers } from "@/lib/data/admin";
+import { loadInfoRequests, loadKeepers } from "@/lib/data/admin";
 
 export const metadata: Metadata = { title: "Keepers", robots: { index: false } };
 
@@ -17,6 +17,7 @@ export default async function AdminKeepersPage({ searchParams }: { searchParams:
   const tab: Tab = TABS.includes(rawTab as Tab) ? (rawTab as Tab) : "pending";
   const q = (rawQ ?? "").trim().slice(0, 60);
   const { list, counts } = await loadKeepers(tab, q);
+  const requests = await loadInfoRequests(list.filter((p) => !p.approved).map((p) => p.id));
 
   return (
     <>
@@ -38,7 +39,7 @@ export default async function AdminKeepersPage({ searchParams }: { searchParams:
         <ul className="grid gap-4 lg:grid-cols-2">
           {list.map((p) => (
             <li key={p.id}>
-              <KeeperReviewCard p={p} />
+              <KeeperReviewCard p={p} requests={requests.get(p.id)} />
             </li>
           ))}
         </ul>

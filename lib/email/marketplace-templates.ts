@@ -8,6 +8,7 @@ export type MarketplaceTemplateData = {
   keeper_approved: { dashboardUrl: string };
   review_received_keeper: { teamName: string; rating: number; comment: string | null; pitch: string; profileUrl: string };
   chat_unread: { senderName: string; pitch: string; chatUrl: string };
+  keeper_info_request: { question: string; replyTo: string; profileUrl: string };
 };
 
 type Ctx = { siteUrl: string };
@@ -73,5 +74,21 @@ export const MARKETPLACE_BUILDERS: { [K in keyof MarketplaceTemplateData]: Build
     paragraphs: [`${d.senderName} sent you a message about ${d.pitch}.`],
     cta: { label: "Read the message", url: d.chatUrl },
     note: "We only email you about messages you haven't opened.",
+  }),
+
+  keeper_info_request: (d) => ({
+    title: "A question about your profile",
+    subject: "A quick question about your MatchKeeper profile",
+    paragraphs: [
+      "Before we approve your keeper profile, our team has a question:",
+      ...d.question
+        .split(/\n+/)
+        .map((p) => p.trim())
+        .filter(Boolean),
+      "Just reply to this email with your answer.",
+    ],
+    cta: { label: "Open your profile", url: d.profileUrl },
+    note: "Your reply goes straight to the MatchKeeper team.",
+    replyTo: d.replyTo,
   }),
 };

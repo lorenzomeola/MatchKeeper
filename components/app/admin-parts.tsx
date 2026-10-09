@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { Avatar } from "@/components/app/avatar";
-import { ApprovalControl } from "@/components/app/admin-controls";
+import { ApprovalControl, InfoRequestControl } from "@/components/app/admin-controls";
 import { StatusBadge } from "@/components/app/status-badge";
 import { ArrowRightIcon } from "@/components/platform/icons";
-import { profileRating, type AdminProfile } from "@/lib/data/admin";
+import { profileRating, type AdminProfile, type InfoRequest } from "@/lib/data/admin";
 import { dateTile } from "@/lib/format";
 
 export const joined = (iso: string) => {
@@ -12,7 +12,7 @@ export const joined = (iso: string) => {
 };
 
 /** Ficha completa de un portero para revisar y aprobar. */
-export function KeeperReviewCard({ p }: { p: AdminProfile }) {
+export function KeeperReviewCard({ p, requests = [] }: { p: AdminProfile; requests?: InfoRequest[] }) {
   const rating = profileRating(p);
   const missing = rating.requiredMissing.map((i) => i.label);
 
@@ -47,6 +47,16 @@ export function KeeperReviewCard({ p }: { p: AdminProfile }) {
         <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-fg-2">{p.bio?.trim() || "No bio yet."}</p>
       </div>
 
+      {requests.length > 0 && (
+        <div className="mt-3 rounded-[var(--r-md)] bg-surface px-4 py-3">
+          <p className="text-xs font-medium text-muted">
+            You asked · {joined(requests[0].askedAt)}
+            {requests.length > 1 ? ` (${requests.length - 1} earlier)` : ""}
+          </p>
+          <p className="mt-1 line-clamp-3 whitespace-pre-wrap text-sm leading-relaxed text-fg-2">{requests[0].question}</p>
+        </div>
+      )}
+
       {missing.length > 0 && !p.approved && (
         <p className="mt-3 text-[13px] text-warning">Missing required: {missing.join(", ").toLowerCase()}.</p>
       )}
@@ -60,6 +70,11 @@ export function KeeperReviewCard({ p }: { p: AdminProfile }) {
           <ArrowRightIcon className="h-4 w-4" />
         </Link>
         <ApprovalControl profileId={p.id} name={p.display_name} approved={p.approved} missing={missing} />
+        {!p.approved && (
+          <div className="sm:col-span-2">
+            <InfoRequestControl profileId={p.id} name={p.display_name} asked={requests.length > 0} />
+          </div>
+        )}
       </div>
     </article>
   );

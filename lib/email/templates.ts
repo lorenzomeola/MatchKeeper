@@ -13,7 +13,7 @@ export function escapeHtml(value: unknown): string {
     .replace(/'/g, "&#39;");
 }
 
-export type Rendered = { subject: string; html: string; text: string };
+export type Rendered = { subject: string; html: string; text: string; replyTo?: string };
 
 export type LayoutInput = {
   title: string;
@@ -24,6 +24,8 @@ export type LayoutInput = {
   cta?: { label: string; url: string };
   /** Texto pequeño bajo el contenido. */
   note?: string;
+  /** Las respuestas al email van a esta dirección. */
+  replyTo?: string;
 };
 
 const ACCENT = "#ff7a1a";
@@ -72,7 +74,7 @@ ${button}${note}
     `Questions? ${ctx.contactEmail}`,
   ].join("\n");
 
-  return { subject: input.subject ?? input.title, html, text };
+  return { subject: input.subject ?? input.title, html, text, replyTo: input.replyTo };
 }
 
 /** Datos que lleva cada plantilla en `email_outbox.payload`. */

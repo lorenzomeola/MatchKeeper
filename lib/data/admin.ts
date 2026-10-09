@@ -1,3 +1,4 @@
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { completeness, profileChecklist, valuesFromRow, type Role } from "@/lib/profile";
 import { isActiveStrike, keeperStanding } from "@/lib/strikes";
@@ -103,6 +104,35 @@ export async function loadKeepers(tab: "pending" | "approved" | "all", q: string
     count(supabase.from("profiles").select("id", { count: "exact", head: true }).eq("role", "goalkeeper")),
   ]);
   return { list: (data ?? []) as AdminProfile[], counts: { pending, approved, all } };
+}
+
+export type InfoRequest = { question: string; askedAt: string };
+
+/** Preguntas que el admin ya envió a cada portero (la cola de emails hace de registro), la más reciente primero. */
+export async function loadInfoRequests(keeperIds: string[]): Promise<Map<string, InfoRequest[]>> {
+  const out = new Map<string, InfoRequest[]>();
+  if (keeperIds.length === 0) return out;
+  // La cola solo la lee el servidor: antes se comprueba que quien pide es admin.
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return out;
+  const { data: me } = await supabase.from("profiles").select("is_admin").eq("id", user.id).maybeSingle();
+  if (!me?.is_admin) return out;
+
+  const { data } = await createAdminClient()
+    .from("email_outbox")
+    .select("to_user_id, payload, created_at")
+    .eq("template", "keeper_info_request")
+    .in("to_user_id", keeperIds)
+    .order("created_at", { ascending: false });
+  for (const r of data ?? []) {
+    const question = (r.payload as { question?: string } | null)?.question;
+    if (!r.to_user_id || !question) continue;
+    out.set(r.to_user_id, [...(out.get(r.to_user_id) ?? []), { question, askedAt: r.created_at }]);
+  }
+  return out;
 }
 
 export async function loadUsers(tab: "all" | "player" | "goalkeeper", q: string) {
