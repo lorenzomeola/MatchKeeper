@@ -818,6 +818,10 @@ Progreso a 2026-10-06 (todo lo marcado se probó en el sandbox, ver sección 15)
     del webhook con los eventos de `checkout.session.*` y `charge.dispute.*`, y el
     plan Pro para el cron cada hora; prueba del check-in en un móvil real; revisión
     legal; empresa constituida.
+    **Recordatorio de emails (2026-10-09):** `EMAIL_REDIRECT_TO` está hoy en Vercel para
+    Production y Preview, y manda todos los emails a una sola dirección. Antes de
+    lanzar hay que **quitarla de Production** (dejarla solo en Preview) y revisar
+    `RESEND_API_KEY`, `ADMIN_EMAIL` y `EMAIL_FROM` con el dominio verificado en Production.
 
 ## 18. Verificado frente a pendiente de verificar
 

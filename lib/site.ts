@@ -5,8 +5,8 @@ export const SITE_TAGLINE = "Every match deserves a real keeper";
 export const SITE_DESCRIPTION =
   "Find a goalkeeper for your amateur football match in London. A community project connecting teams with available goalkeepers so no game gets cancelled.";
 
-// Dominio de producción actual en Vercel. Cambiar cuando se compre el dominio propio (p. ej. matchkeeper.co.uk).
-export const SITE_URL = "https://matchkeeperservice.vercel.app";
+// Dominio de producción. Preview usa APP_URL (https://staging.matchkeeperuk.com) para los enlaces de pagos y emails.
+export const SITE_URL = "https://matchkeeperuk.com";
 
 export const CITY = "London";
 
