@@ -1,6 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { loadBookingContext } from "@/lib/email/booking-context";
+import { defer } from "@/lib/email/booking-emails";
+import { notifyNewReview } from "@/lib/email/marketplace-emails";
 import { createClient } from "@/lib/supabase/server";
 
 export type ReviewActionState = { error: string | null; done?: boolean };
@@ -47,6 +50,10 @@ export async function submitReviewAction(
     return { error: "We couldn't save your review. Please try again." };
   }
 
+  defer(async () => {
+    const ctx = await loadBookingContext(booking.id);
+    if (ctx) await notifyNewReview(ctx, rating, text || null);
+  });
   revalidatePath(`/matches/${matchId}`);
   revalidatePath(`/keepers/${booking.goalkeeper_id}`);
   return { error: null, done: true };

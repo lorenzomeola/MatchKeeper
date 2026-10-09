@@ -6,6 +6,7 @@ import { keeperStanding } from "@/lib/strikes";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { loadBookingContext, type BookingCtx } from "./booking-context";
 import { cancelEmails, queueEmail } from "./outbox";
+import { notifyNotSelected, notifyReopened } from "./marketplace-emails";
 import { bookingSchedule } from "./schedule";
 
 const key = (bookingId: string, name: string) => `booking:${bookingId}:${name}`;
@@ -69,6 +70,7 @@ export async function notifyBookingConfirmed(bookingId: string) {
   for (const item of bookingSchedule({ startsAt: c.startsAt, endsAt: c.endsAt, autoReleaseAt: c.autoReleaseAt }, new Date())) {
     await queueScheduled(c, item.template, item.sendAfter);
   }
+  await notifyNotSelected(c);
 }
 
 async function queueScheduled(c: BookingCtx, template: ReturnType<typeof bookingSchedule>[number]["template"], sendAfter: Date) {
@@ -116,6 +118,8 @@ type CancelInput = {
   refundPence: number;
   keeperSharePence: number;
   strikeKind: "late_cancel" | "no_show" | null;
+  /** El partido vuelve a abrirse a otros candidatos. */
+  reopened: boolean;
 };
 
 /** Reserva cancelada: se anulan los avisos programados y se avisa a las dos partes (y al portero de su strike). */
@@ -175,6 +179,7 @@ export async function notifyBookingCancelled(bookingId: string, input: CancelInp
       });
     }
   }
+  if (input.reopened) await notifyReopened(c);
 }
 
 /** Pago liberado al portero: aviso con lo que recibe, y los avisos al equipo que quedaban ya sobran. */

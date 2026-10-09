@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { defer } from "@/lib/email/booking-emails";
+import { notifyKeeperApproved } from "@/lib/email/marketplace-emails";
 import { createClient } from "@/lib/supabase/server";
 
 export type AdminActionState = { error: string | null; done?: boolean };
@@ -13,6 +15,7 @@ export async function setKeeperApprovalAction(profileId: string, approved: boole
     return { error: "We couldn't update this keeper. Check that db/admin.sql has been applied." };
   }
   revalidatePath("/admin", "layout");
+  if (approved) defer(() => notifyKeeperApproved(profileId));
   return { error: null, done: true };
 }
 

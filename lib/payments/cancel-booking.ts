@@ -38,6 +38,7 @@ export async function cancelBooking(input: {
       refundPence: input.plan.refundPence,
       keeperSharePence: input.plan.keeperSharePence,
       strikeKind: input.plan.strikeKind,
+      reopened: input.plan.matchAfter === "open",
     }),
   );
   try {

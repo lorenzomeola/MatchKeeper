@@ -24,7 +24,7 @@ export type BookingCtx = {
   paymentsUrl: string;
 };
 
-async function partyOf(id: string, fallbackName: string, teamName?: string): Promise<Party> {
+export async function partyOf(id: string, fallbackName: string, teamName?: string): Promise<Party> {
   const admin = createAdminClient();
   const [{ data: profile }, { data: auth }] = await Promise.all([
     admin.from("profiles").select("display_name").eq("id", id).maybeSingle(),

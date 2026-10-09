@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { loadMyStanding } from "@/lib/data/standing";
+import { defer } from "@/lib/email/booking-emails";
+import { notifyNewApplication } from "@/lib/email/marketplace-emails";
 import { createClient } from "@/lib/supabase/server";
 
 export type ApplicationActionState = { error: string | null; done?: boolean };
@@ -39,12 +41,16 @@ export async function applyToMatchAction(
     return { error: "Your account is suspended from applying to new matches." };
   }
 
-  const { error } = await supabase.from("applications").insert({
-    match_id: matchId,
-    goalkeeper_id: user.id,
-    rate,
-    message: message || null,
-  });
+  const { data: created, error } = await supabase
+    .from("applications")
+    .insert({
+      match_id: matchId,
+      goalkeeper_id: user.id,
+      rate,
+      message: message || null,
+    })
+    .select("id")
+    .maybeSingle();
 
   if (error) {
     // 23505: ya aplicó (índice único por partido y portero).
@@ -53,6 +59,7 @@ export async function applyToMatchAction(
     return { error: "We couldn't send your application. Please try again." };
   }
 
+  if (created) defer(() => notifyNewApplication(created.id));
   revalidatePath(`/matches/${matchId}`);
   return { error: null, done: true };
 }

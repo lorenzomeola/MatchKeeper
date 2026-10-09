@@ -1,6 +1,7 @@
 // Plantillas de email: HTML sencillo con estilos en línea (los clientes de correo no cargan CSS externo).
 // Todo texto que venga de un usuario pasa por `escapeHtml`.
 import { BOOKING_BUILDERS, type BookingTemplateData } from "./booking-templates.ts";
+import { MARKETPLACE_BUILDERS, type MarketplaceTemplateData } from "./marketplace-templates.ts";
 
 export function escapeHtml(value: unknown): string {
   return String(value ?? "")
@@ -74,15 +75,17 @@ ${button}${note}
 }
 
 /** Datos que lleva cada plantilla en `email_outbox.payload`. */
-export type TemplateData = BookingTemplateData & {
-  test: { message: string; url?: string };
-};
+export type TemplateData = BookingTemplateData &
+  MarketplaceTemplateData & {
+    test: { message: string; url?: string };
+  };
 export type TemplateName = keyof TemplateData;
 
 type Builder<K extends TemplateName> = (data: TemplateData[K], ctx: { siteUrl: string }) => LayoutInput;
 
 const BUILDERS: { [K in TemplateName]: Builder<K> } = {
   ...BOOKING_BUILDERS,
+  ...MARKETPLACE_BUILDERS,
   test: (d, ctx) => ({
     title: "MatchKeeper email test",
     paragraphs: [d.message],

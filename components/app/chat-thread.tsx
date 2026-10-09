@@ -8,6 +8,7 @@ import { Sheet } from "@/components/app/sheet";
 import { StatusBadge } from "@/components/app/status-badge";
 import { useToast } from "@/components/app/toast";
 import { ArrowLeftIcon, BlockIcon, FlagIcon, InfoIcon, MoreIcon, SendIcon } from "@/components/platform/icons";
+import { markThreadReadAction, sendMessageAction } from "@/lib/actions/messages";
 import type { ChatMessage, Thread } from "@/lib/data/messages";
 import { clockTime, dateTile, dayLabel, money } from "@/lib/format";
 import { createClient } from "@/lib/supabase/client";
@@ -52,9 +53,9 @@ export function ChatThread({ thread, userId }: { thread: Thread; userId: string 
   const otherId = thread.other.id;
 
   const markRead = useCallback(async () => {
-    await supabase.rpc("mark_thread_read", { p_application_id: applicationId });
+    await markThreadReadAction(applicationId);
     router.refresh();
-  }, [supabase, applicationId, router]);
+  }, [applicationId, router]);
 
   useEffect(() => {
     if (markedOnMount.current) return;
@@ -103,16 +104,13 @@ export function ChatThread({ thread, userId }: { thread: Thread; userId: string 
     if (!body || sending) return;
     setSending(true);
     setError(null);
-    const { data, error: rpcError } = await supabase.rpc("send_message", {
-      p_application_id: applicationId,
-      p_body: body,
-    });
+    const result = await sendMessageAction(applicationId, body);
     setSending(false);
-    if (rpcError) {
-      setError(rpcError.message);
+    if (result.error || !result.message) {
+      setError(result.error ?? "We couldn't send that message. Try again.");
       return;
     }
-    const row = data as ChatMessage;
+    const row = result.message;
     setMessages((prev) => (prev.some((m) => m.id === row.id) ? prev : [...prev, row]));
     setDraft("");
     if (textRef.current) textRef.current.style.height = "auto";

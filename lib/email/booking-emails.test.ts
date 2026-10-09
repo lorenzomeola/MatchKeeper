@@ -1,13 +1,14 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { bookingSchedule } from "./schedule.ts";
-import { renderEmail, type TemplateData, type TemplateName } from "./templates.ts";
+import type { BookingTemplateData } from "./booking-templates.ts";
+import { renderEmail } from "./templates.ts";
 
 const ctx = { siteUrl: "https://app.test", contactEmail: "help@test.dev" };
 const url = "https://app.test/matches/1";
 const base = { pitch: "Hackney Marshes", when: "Saturday 10 October, 10:00 to 11:00", matchUrl: url };
 
-const SAMPLES: { [K in Exclude<TemplateName, "test">]: TemplateData[K] } = {
+const SAMPLES: BookingTemplateData = {
   booking_confirmed_team: { ...base, keeperName: "Sam", total: "£34.50", rate: "£30.00", fee: "£4.50" },
   booking_confirmed_keeper: { ...base, teamName: "Sunday FC", rate: "£30.00" },
   keeper_checkin_24h: { ...base, teamName: "Sunday FC" },
@@ -47,21 +48,21 @@ test("lo que escribe un usuario (nombres, campo) se escapa en el HTML de cada pl
 });
 
 test("cancelaciones: el texto cambia segun quien cancela y lo que se devuelve", () => {
-  const team = (d: Partial<TemplateData["booking_cancelled_team"]>) =>
+  const team = (d: Partial<BookingTemplateData["booking_cancelled_team"]>) =>
     renderEmail("booking_cancelled_team", { ...SAMPLES.booking_cancelled_team, ...d }, ctx).text;
   assert.match(team({ by: "team", refund: "£34.50", keeperGets: null }), /You cancelled/);
   assert.match(team({ by: "team", refund: "£34.50", keeperGets: null }), /refunded £34.50/);
   assert.match(team({ by: "team", refund: null, keeperGets: "£30.00" }), /No refund applies/);
   assert.match(team({ by: "keeper", refund: "£34.50", keeperGets: null }), /other keepers can apply/);
   assert.match(team({ by: "system", refund: "£34.50", keeperGets: null }), /MatchKeeper cancelled/);
-  const keeper = (d: Partial<TemplateData["booking_cancelled_keeper"]>) =>
+  const keeper = (d: Partial<BookingTemplateData["booking_cancelled_keeper"]>) =>
     renderEmail("booking_cancelled_keeper", { ...SAMPLES.booking_cancelled_keeper, ...d }, ctx).text;
   assert.match(keeper({ share: "£15.00" }), /paid £15.00/);
   assert.match(keeper({ share: null }), /No payment is due/);
 });
 
 test("strike: el aviso depende del nivel", () => {
-  const strike = (level: TemplateData["keeper_strike"]["level"], kind: TemplateData["keeper_strike"]["kind"] = "late_cancel") =>
+  const strike = (level: BookingTemplateData["keeper_strike"]["level"], kind: BookingTemplateData["keeper_strike"]["kind"] = "late_cancel") =>
     renderEmail("keeper_strike", { ...SAMPLES.keeper_strike, level, kind }, ctx);
   assert.equal(strike("suspended").subject, "Your MatchKeeper account is suspended");
   assert.match(strike("suspended").text, /suspended/);
