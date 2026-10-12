@@ -37,7 +37,7 @@ async function ensureProfile(
     .eq("id", userId)
     .maybeSingle();
 
-  if (existing) return;
+  if (existing) return false;
 
   const { error } = await supabase.from("profiles").insert({
     id: userId,
@@ -46,6 +46,7 @@ async function ensureProfile(
     city: info.city,
   });
   if (!error && info.role === "goalkeeper") defer(() => notifyAdminNewKeeper(userId));
+  return !error;
 }
 
 export async function signUpAction(
@@ -111,13 +112,21 @@ export async function loginAction(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
     return { error: "Incorrect email or password.", values: { email } };
   }
 
-  redirect("/dashboard");
+  // Sin perfil, las páginas de la app mandan a /signup en bucle (el enlace de confirmación puede no haberlo creado).
+  const meta = data.user.user_metadata as { display_name?: string; role?: string; city?: string };
+  const created = await ensureProfile(supabase, data.user.id, {
+    displayName: meta.display_name?.trim() || data.user.email || "New member",
+    role: meta.role === "goalkeeper" ? "goalkeeper" : "player",
+    city: meta.city && isAvailableCity(meta.city) ? meta.city : null,
+  });
+
+  redirect(created ? "/onboarding" : "/dashboard");
 }
 
 export async function requestPasswordResetAction(
