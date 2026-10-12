@@ -4,8 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isAvailableCity } from "@/lib/profile";
-import { notifyAdminNewKeeper } from "@/lib/email/admin-emails";
-import { defer } from "@/lib/email/booking-emails";
+import { ensureProfile, profileInfoFromUser } from "@/lib/profile-ensure";
 
 export type AuthActionState = {
   error: string | null;
@@ -18,35 +17,6 @@ export type AuthActionState = {
 async function getOrigin() {
   const h = await headers();
   return h.get("origin") ?? `https://${h.get("host")}`;
-}
-
-type ProfileInfo = {
-  displayName: string;
-  role: "player" | "goalkeeper";
-  city: string | null;
-};
-
-async function ensureProfile(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  userId: string,
-  info: ProfileInfo,
-) {
-  const { data: existing } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("id", userId)
-    .maybeSingle();
-
-  if (existing) return false;
-
-  const { error } = await supabase.from("profiles").insert({
-    id: userId,
-    role: info.role,
-    display_name: info.displayName,
-    city: info.city,
-  });
-  if (!error && info.role === "goalkeeper") defer(() => notifyAdminNewKeeper(userId));
-  return !error;
 }
 
 export async function signUpAction(
@@ -119,12 +89,7 @@ export async function loginAction(
   }
 
   // Sin perfil, las páginas de la app mandan a /signup en bucle (el enlace de confirmación puede no haberlo creado).
-  const meta = data.user.user_metadata as { display_name?: string; role?: string; city?: string };
-  const created = await ensureProfile(supabase, data.user.id, {
-    displayName: meta.display_name?.trim() || data.user.email || "New member",
-    role: meta.role === "goalkeeper" ? "goalkeeper" : "player",
-    city: meta.city && isAvailableCity(meta.city) ? meta.city : null,
-  });
+  const created = await ensureProfile(supabase, data.user.id, profileInfoFromUser(data.user));
 
   redirect(created ? "/onboarding" : "/dashboard");
 }

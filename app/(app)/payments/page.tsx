@@ -4,6 +4,7 @@ import { KeeperPayments, TeamPayments } from "@/components/app/payment-history";
 import { PageHeader } from "@/components/app/page-header";
 import { PayoutProblemCard } from "@/components/app/payout-problem-card";
 import { loadKeeperPayments, loadPayoutProblem, loadTeamPayments } from "@/lib/data/payments";
+import { getOrCreateProfile } from "@/lib/profile-ensure";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Payments", robots: { index: false } };
@@ -15,7 +16,7 @@ export default async function PaymentsPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
+  const profile = await getOrCreateProfile(supabase, user);
   if (!profile) redirect("/signup");
 
   if (profile.role === "goalkeeper") {

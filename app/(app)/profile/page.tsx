@@ -6,6 +6,7 @@ import { LogOutIcon } from "@/components/platform/icons";
 import { signOutAction } from "@/lib/actions/auth";
 import { ProfileForm } from "@/components/platform/profile-form";
 import { valuesFromRow, type Role } from "@/lib/profile";
+import { getOrCreateProfile } from "@/lib/profile-ensure";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Your profile", robots: { index: false } };
@@ -17,7 +18,7 @@ export default async function ProfilePage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
+  const profile = await getOrCreateProfile(supabase, user);
   if (!profile) redirect("/signup");
 
   const role: Role = profile.role === "goalkeeper" ? "goalkeeper" : "player";

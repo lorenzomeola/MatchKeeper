@@ -6,6 +6,7 @@ import { FloodlightBackdrop } from "@/components/platform/floodlight-backdrop";
 import { ProfileForm } from "@/components/platform/profile-form";
 import { ThemeToggle } from "@/components/platform/theme";
 import { completeness, profileChecklist, valuesFromRow, type Role } from "@/lib/profile";
+import { getOrCreateProfile } from "@/lib/profile-ensure";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
@@ -22,11 +23,7 @@ export default async function OnboardingPage() {
 
   // "*" y no columnas sueltas: si la migración 0003 aún no está aplicada, la página
   // sigue cargando en vez de caer a /signup por un error de columna inexistente.
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .maybeSingle();
+  const profile = await getOrCreateProfile(supabase, user);
   if (!profile) redirect("/signup");
 
   const role: Role = profile.role === "goalkeeper" ? "goalkeeper" : "player";
