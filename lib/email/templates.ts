@@ -53,7 +53,7 @@ export function layout(input: LayoutInput, ctx: { siteUrl: string; contactEmail:
 <body style="margin:0;padding:0;background:#f4f1ec;">
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f1ec;padding:24px 12px;"><tr><td align="center">
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background:#ffffff;border-radius:12px;overflow:hidden;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;">
-<tr><td style="background:${INK};padding:18px 28px;"><span style="font-size:20px;font-weight:800;color:#ffffff;letter-spacing:-0.01em;">Match<span style="color:${ACCENT};">Keeper</span></span></td></tr>
+<tr><td style="background:${INK};padding:16px 28px 14px;"><a href="${escapeHtml(ctx.siteUrl)}" style="text-decoration:none;"><img src="${escapeHtml(ctx.siteUrl)}/brand/email-logo.png" width="260" height="58" alt="MatchKeeper" style="display:block;border:0;width:260px;max-width:100%;height:auto;font-size:20px;font-weight:800;color:#ffffff;"></a></td></tr>
 <tr><td style="height:4px;background:${ACCENT};line-height:4px;font-size:4px;">&nbsp;</td></tr>
 <tr><td style="padding:28px;">
 <h1 style="margin:0 0 18px;font-size:22px;line-height:1.3;color:#1a1a1a;">${escapeHtml(input.title)}</h1>

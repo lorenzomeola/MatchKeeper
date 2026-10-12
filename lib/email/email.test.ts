@@ -73,6 +73,12 @@ test("la plantilla trae asunto, boton, pie y version de texto", () => {
   assert.ok(r.text.includes("Open MatchKeeper: https://app.test"));
 });
 
+test("la cabecera lleva el logo de MatchKeeper desde la URL del sitio", () => {
+  const r = renderEmail("test", { message: "x" }, ctx);
+  assert.ok(r.html.includes('src="https://app.test/brand/email-logo.png"'));
+  assert.ok(r.html.includes('alt="MatchKeeper"'));
+});
+
 test("un enlace que no es http(s) no genera boton", () => {
   const r = layout({ title: "T", paragraphs: ["p"], cta: { label: "Click", url: "javascript:alert(1)" } }, ctx);
   assert.ok(!r.html.includes("javascript:"));
