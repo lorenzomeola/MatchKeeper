@@ -67,7 +67,7 @@ export function Field({
 }) {
   const shownTag = tag ?? (optional ? "optional" : undefined);
   return (
-    <div className="grid min-w-0 gap-1.5">
+    <div className="grid min-w-0 content-start gap-1.5">
       <div className="flex items-baseline justify-between gap-3">
         <label htmlFor={htmlFor} className="text-sm font-medium text-fg-2">
           {label}
