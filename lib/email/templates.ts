@@ -15,12 +15,15 @@ export function escapeHtml(value: unknown): string {
 
 export type Rendered = { subject: string; html: string; text: string; replyTo?: string };
 
+/** Un párrafo, o un bloque sombreado (por ejemplo la pregunta de un admin) con una etiqueta opcional. */
+export type Paragraph = string | { quote: string[]; label?: string };
+
 export type LayoutInput = {
   title: string;
   /** Asunto del email; por defecto el título. */
   subject?: string;
   /** Párrafos en texto plano; se escapan. */
-  paragraphs: string[];
+  paragraphs: Paragraph[];
   cta?: { label: string; url: string };
   /** Texto pequeño bajo el contenido. */
   note?: string;
@@ -38,9 +41,18 @@ function safeUrl(url: string): string | null {
 
 export function layout(input: LayoutInput, ctx: { siteUrl: string; contactEmail: string }): Rendered {
   const cta = input.cta && safeUrl(input.cta.url) ? input.cta : null;
-  const paragraphs = input.paragraphs.map(
-    (p) => `<p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#1a1a1a;">${escapeHtml(p)}</p>`,
-  );
+  const paragraphs = input.paragraphs.map((p) => {
+    if (typeof p === "string") {
+      return `<p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#1a1a1a;">${escapeHtml(p)}</p>`;
+    }
+    const label = p.label
+      ? `<p style="margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#c2540a;">${escapeHtml(p.label)}</p>`
+      : "";
+    const lines = p.quote
+      .map((line, i) => `<p style="margin:0 0 ${i === p.quote.length - 1 ? 0 : 10}px;font-size:16px;line-height:1.55;color:#1a1a1a;">${escapeHtml(line)}</p>`)
+      .join("\n");
+    return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 16px;"><tr><td style="background:#f6efe6;border-left:4px solid ${ACCENT};border-radius:6px;padding:14px 16px;">${label}${lines}</td></tr></table>`;
+  });
   const button = cta
     ? `<p style="margin:24px 0 8px;"><a href="${escapeHtml(cta.url)}" style="display:inline-block;background:${ACCENT};color:${INK};font-weight:700;font-size:16px;text-decoration:none;padding:13px 22px;border-radius:8px;">${escapeHtml(cta.label)}</a></p>`
     : "";
@@ -66,7 +78,7 @@ ${button}${note}
   const text = [
     input.title,
     "",
-    ...input.paragraphs,
+    ...input.paragraphs.flatMap((p) => (typeof p === "string" ? [p] : [...(p.label ? [`${p.label}:`] : []), ...p.quote])),
     ...(cta ? ["", `${cta.label}: ${cta.url}`] : []),
     ...(input.note ? ["", input.note] : []),
     "",

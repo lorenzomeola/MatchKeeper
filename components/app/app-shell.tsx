@@ -2,15 +2,16 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { signOutAction } from "@/lib/actions/auth";
 import { Logo, LogoMark } from "@/components/logo";
 import { Avatar } from "@/components/app/avatar";
 import { NAV, isActive, type NavItem, type NavVariant } from "@/components/app/nav-config";
+import { Sheet } from "@/components/app/sheet";
 import { ToastProvider } from "@/components/app/toast";
 import { FloodlightBackdrop } from "@/components/platform/floodlight-backdrop";
-import { LogOutIcon, PlusIcon, ShieldCheckIcon } from "@/components/platform/icons";
+import { LogOutIcon, MoreIcon, PlusIcon, ShieldCheckIcon } from "@/components/platform/icons";
 import { ThemeToggle } from "@/components/platform/theme";
 
 export type ShellBadges = { unread: number; pending: number; reports: number };
@@ -63,6 +64,10 @@ export function AppShell({
   const tabs = items.filter((i) => i.tab);
   const primary = items.find((i) => i.primary);
   const sidebarItems = items.filter((i) => !i.primary);
+  // En el panel de admin caben cinco pestañas; el resto se abre desde "More" en la barra inferior del móvil.
+  const moreItems = inAdmin ? items.filter((i) => !i.tab && !i.primary) : [];
+  const moreActive = moreItems.some((i) => isActive(pathname, i));
+  const [moreOpen, setMoreOpen] = useState(false);
   const scrollerRef = useRef<HTMLDivElement>(null);
 
   // Next solo restaura el scroll de la ventana; el contenedor interno de móvil hay que subirlo a mano.
@@ -222,7 +227,7 @@ export function AppShell({
           aria-label="Main"
           className={`pl-glass relative z-50 shrink-0 rounded-none border-x-0 border-b-0 bg-[color-mix(in_oklab,var(--bg-2)_94%,transparent)] pb-[env(safe-area-inset-bottom,0px)] ${inThread ? "hidden" : "lg:hidden"}`}
         >
-          <ul className="mx-auto grid max-w-md" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}>
+          <ul className="mx-auto grid max-w-md" style={{ gridTemplateColumns: `repeat(${tabs.length + (moreItems.length > 0 ? 1 : 0)}, minmax(0, 1fr))` }}>
             {tabs.map((item) => {
               const active = isActive(pathname, item);
               const count = countFor(item, badges);
@@ -266,8 +271,50 @@ export function AppShell({
                 </li>
               );
             })}
+            {moreItems.length > 0 && (
+              <li>
+                <button
+                  type="button"
+                  onClick={() => setMoreOpen(true)}
+                  aria-haspopup="dialog"
+                  aria-current={moreActive ? "page" : undefined}
+                  className="flex min-h-[3.75rem] w-full flex-col items-center justify-center gap-0.5 text-[11px] font-medium text-muted transition-colors duration-150 aria-[current=page]:text-accent-strong"
+                >
+                  <span
+                    className={`grid h-8 w-14 place-items-center rounded-full transition-colors duration-200 ${
+                      moreActive ? "bg-accent-soft" : ""
+                    }`}
+                  >
+                    <MoreIcon className="h-[22px] w-[22px]" />
+                  </span>
+                  More
+                </button>
+              </li>
+            )}
           </ul>
         </nav>
+
+        {/* Fuera de la barra: su desenfoque crearía un bloque contenedor y el panel quedaría recortado. */}
+        <Sheet open={moreOpen} title="More" onClose={() => setMoreOpen(false)}>
+          <ul className="grid gap-1">
+            {moreItems.map((item) => {
+              const active = isActive(pathname, item);
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    onClick={() => setMoreOpen(false)}
+                    aria-current={active ? "page" : undefined}
+                    className="flex min-h-12 items-center gap-3 rounded-[var(--r-md)] px-3 text-[15px] font-medium text-fg-2 transition-colors duration-200 hover:bg-surface hover:text-fg aria-[current=page]:bg-accent-soft aria-[current=page]:text-accent-strong"
+                  >
+                    <item.icon className="h-5 w-5 shrink-0" />
+                    {item.label}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </Sheet>
       </div>
     </ToastProvider>
   );

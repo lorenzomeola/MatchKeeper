@@ -93,10 +93,13 @@ export const MARKETPLACE_BUILDERS: { [K in keyof MarketplaceTemplateData]: Build
     subject: "A quick question about your MatchKeeper profile",
     paragraphs: [
       "Before we approve your keeper profile, our team has a question:",
-      ...d.question
-        .split(/\n+/)
-        .map((p) => p.trim())
-        .filter(Boolean),
+      {
+        label: "Message from the MatchKeeper team",
+        quote: d.question
+          .split(/\n+/)
+          .map((p) => p.trim())
+          .filter(Boolean),
+      },
       "Just reply to this email with your answer.",
     ],
     cta: { label: "Open your profile", url: d.profileUrl },
