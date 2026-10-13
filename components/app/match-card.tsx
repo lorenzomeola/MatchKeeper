@@ -77,7 +77,7 @@ export function MatchCard({
   return (
     <Link
       href={href}
-      className="pl-surface pl-lift block rounded-[var(--r-lg)] p-4 transition-colors"
+      className="pl-surface pl-lift flex h-full flex-col rounded-[var(--r-lg)] p-4 transition-colors"
     >
       <div className="flex items-start gap-4">
         <DateTile iso={match.starts_at} />
@@ -90,7 +90,12 @@ export function MatchCard({
           <MatchChips match={match} />
         </div>
       </div>
-      {footer && <div className="mt-4 flex items-center justify-between gap-3 border-t border-line pt-3 text-sm">{footer}</div>}
+      {/* En una fila de la cuadrícula, la tarjeta más corta se estira y su pie queda alineado abajo. */}
+      {footer && (
+        <div className="mt-auto pt-4">
+          <div className="flex items-center justify-between gap-3 border-t border-line pt-3 text-sm">{footer}</div>
+        </div>
+      )}
     </Link>
   );
 }

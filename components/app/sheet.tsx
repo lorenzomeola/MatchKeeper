@@ -16,16 +16,21 @@ export function Sheet({
   children: ReactNode;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
+  // onClose suele ser una función nueva en cada render; si fuera dependencia del efecto, el foco volvería al panel con cada tecla.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
 
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") onCloseRef.current();
     };
     document.addEventListener("keydown", onKey);
     panelRef.current?.focus();
     return () => document.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 
