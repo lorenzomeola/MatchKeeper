@@ -30,7 +30,18 @@ const SORTS = [
 ] as const;
 type Sort = (typeof SORTS)[number]["value"];
 
-export function ApplicantList({ matchId, applicants, minutes }: { matchId: string; applicants: Applicant[]; minutes: number }) {
+export function ApplicantList({
+  matchId,
+  applicants,
+  minutes,
+  free = false,
+}: {
+  matchId: string;
+  applicants: Applicant[];
+  minutes: number;
+  /** Beta sin pagos: elegir portero no cobra nada. */
+  free?: boolean;
+}) {
   const [sort, setSort] = useState<Sort>("rate");
 
   const sorted = [...applicants].sort((a, b) => {
@@ -123,7 +134,7 @@ export function ApplicantList({ matchId, applicants, minutes }: { matchId: strin
                 href={`/matches/${matchId}/book?application=${a.id}`}
                 className="inline-flex min-h-12 items-center justify-center rounded-[var(--r-md)] bg-accent text-[15px] font-semibold text-accent-ink transition-[transform,background-color] duration-150 hover:bg-accent-strong active:scale-[0.98]"
               >
-                Book
+                {free ? "Choose" : "Book"}
               </Link>
             </div>
           </li>

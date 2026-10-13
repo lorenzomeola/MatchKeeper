@@ -39,6 +39,7 @@ export function AppShell({
   userId,
   user,
   badges,
+  paymentsEnabled,
   children,
 }: {
   variant: NavVariant;
@@ -46,6 +47,7 @@ export function AppShell({
   userId: string;
   user: ShellUser;
   badges: ShellBadges;
+  paymentsEnabled: boolean;
   children: ReactNode;
 }) {
   const pathname = usePathname();
@@ -57,7 +59,7 @@ export function AppShell({
   const inMessages = pathname.startsWith("/messages");
   // El mapa ocupa el espacio entre las barras, sin márgenes en móvil.
   const inMap = pathname === "/map";
-  const items = NAV[inAdmin ? "admin" : variant];
+  const items = NAV[inAdmin ? "admin" : variant].filter((i) => paymentsEnabled || !i.paymentsOnly);
   const tabs = items.filter((i) => i.tab);
   const primary = items.find((i) => i.primary);
   const sidebarItems = items.filter((i) => !i.primary);

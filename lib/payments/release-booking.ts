@@ -2,7 +2,7 @@ import "server-only";
 import type Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { defer, notifyBookingInReview, notifyReleased } from "@/lib/email/booking-emails";
+import { defer, notifyBookingInReview, notifyMatchCompleted, notifyReleased } from "@/lib/email/booking-emails";
 
 /**
  * Transfiere dinero del cobro al portero. Idempotente: si ya hay una transferencia del grupo la reutiliza
@@ -60,6 +60,7 @@ export async function transferToKeeper(input: {
 /**
  * Paga al portero su tarifa íntegra y cierra la reserva. Idempotente: si ya se liberó no hace nada.
  * Vale para reservas confirmadas y para las que un admin resuelve desde revisión.
+ * Una reserva sin cobro (payment_status 'none', beta) solo se cierra: no hay dinero que transferir.
  */
 export async function releaseBooking(bookingId: string): Promise<{ released: boolean }> {
   const admin = createAdminClient();
@@ -70,23 +71,25 @@ export async function releaseBooking(bookingId: string): Promise<{ released: boo
     .eq("id", bookingId)
     .maybeSingle();
   if (!booking) throw new Error("Booking not found");
-  if (!["confirmed", "under_review"].includes(booking.status) || booking.payment_status !== "held") {
-    return { released: false };
-  }
-  if (!booking.keeper_payout_pence || !booking.stripe_charge_id) throw new Error("Booking has no payout data");
+  const free = booking.payment_status === "none";
+  if (!free && booking.payment_status !== "held") return { released: false };
+  if (!["confirmed", "under_review"].includes(booking.status)) return { released: false };
+  if (!free && (!booking.keeper_payout_pence || !booking.stripe_charge_id)) throw new Error("Booking has no payout data");
 
-  const { transfer, deductedPence } = await transferToKeeper({
-    bookingId,
-    goalkeeperId: booking.goalkeeper_id,
-    chargeId: booking.stripe_charge_id,
-    amountPence: booking.keeper_payout_pence,
-  });
+  const { transfer, deductedPence } = free
+    ? { transfer: null, deductedPence: 0 }
+    : await transferToKeeper({
+        bookingId,
+        goalkeeperId: booking.goalkeeper_id,
+        chargeId: booking.stripe_charge_id!,
+        amountPence: booking.keeper_payout_pence!,
+      });
 
   const { data: updated } = await admin
     .from("bookings")
     .update({
       status: "completed",
-      payment_status: "released",
+      ...(free ? {} : { payment_status: "released" }),
       stripe_transfer_id: transfer?.id ?? null,
       released_at: new Date().toISOString(),
     })
@@ -104,10 +107,16 @@ export async function releaseBooking(bookingId: string): Promise<{ released: boo
   if (!stillOpen) await admin.from("matches").update({ status: "completed" }).eq("id", booking.match_id);
   await admin.from("booking_events").insert({
     booking_id: bookingId,
-    type: "released",
-    data: { transfer: transfer?.id ?? null, amount: booking.keeper_payout_pence - deductedPence, debt_deducted: deductedPence },
+    type: free ? "completed_without_payment" : "released",
+    data: free
+      ? {}
+      : { transfer: transfer?.id ?? null, amount: booking.keeper_payout_pence! - deductedPence, debt_deducted: deductedPence },
   });
-  const paidPence = booking.keeper_payout_pence - deductedPence;
+  if (free) {
+    defer(() => notifyMatchCompleted(bookingId));
+    return { released: true };
+  }
+  const paidPence = booking.keeper_payout_pence! - deductedPence;
   defer(() => notifyReleased(bookingId, { amountPence: paidPence, debtPence: deductedPence }));
   return { released: true };
 }

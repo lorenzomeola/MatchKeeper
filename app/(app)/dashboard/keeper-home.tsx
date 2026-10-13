@@ -18,6 +18,7 @@ import { loadUnreadCount } from "@/lib/data/messages";
 import { loadPayoutProblem } from "@/lib/data/payments";
 import { loadMyStanding } from "@/lib/data/standing";
 import { dateTile, firstName, money, timeRange } from "@/lib/format";
+import { paymentsEnabled } from "@/lib/payments/mode";
 import type { completeness } from "@/lib/profile";
 import { createClient } from "@/lib/supabase/server";
 
@@ -29,6 +30,7 @@ type Props = {
 
 export async function KeeperHome({ userId, profile, rating }: Props) {
   const supabase = await createClient();
+  const payments = await paymentsEnabled();
   const [d, unread, { data: payAccount }, standing, debtPence, payoutProblem] = await Promise.all([
     loadKeeperHome(userId),
     loadUnreadCount(),
@@ -55,7 +57,7 @@ export async function KeeperHome({ userId, profile, rating }: Props) {
         <UnreadNotice count={unread} />
         <StandingCard level={standing.level} />
         <DebtCard pence={debtPence} />
-        {payoutProblem && <PayoutProblemCard message={payoutProblem.message} />}
+        {payments && payoutProblem && <PayoutProblemCard message={payoutProblem.message} />}
         {!profile.approved && (
           <section className="rounded-[var(--r-lg)] border border-warning/40 bg-[color-mix(in_oklab,var(--warning)_8%,transparent)] p-5">
             <div className="flex items-center gap-2">
@@ -68,7 +70,7 @@ export async function KeeperHome({ userId, profile, rating }: Props) {
           </section>
         )}
 
-        {profile.approved && !payAccount?.payouts_enabled && <PaymentSetupCard resume={Boolean(payAccount)} />}
+        {payments && profile.approved && !payAccount?.payouts_enabled && <PaymentSetupCard resume={Boolean(payAccount)} />}
 
         {(rating.requiredMissing.length > 0 || rating.percent < 100) && (
           <ProfileNudge
@@ -111,7 +113,7 @@ export async function KeeperHome({ userId, profile, rating }: Props) {
           <StatCard label="Games booked" value={d.bookedCount} hint="Upcoming" href="/calendar" tone="accent" />
           <StatCard label="Applications" value={d.totalApplied} hint="Sent so far" />
         </div>
-        {profile.approved && <PaymentsLink role="keeper" />}
+        {payments && profile.approved && <PaymentsLink role="keeper" />}
       </div>
 
       <Section

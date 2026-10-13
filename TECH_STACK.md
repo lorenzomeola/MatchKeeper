@@ -104,6 +104,18 @@ partido normal es £3.61. Detalle y casos en `PAYMENTS_SPEC.md`, sección 2.)
 
 ## 5. Próximo paso
 
+**Cambio de estrategia (2026-10-13): beta gratuita sin pagos.** Antes de lanzar con
+dinero real se hace una beta cerrada sin pagos (ver `PRODUCT_PLAN.md`, sección 13). Se
+implementa con un interruptor en la base de datos (`app_settings.payments_enabled`,
+función `public.payments_enabled()`), un valor nuevo `none` en `payment_status` para las
+reservas sin cobro, y condiciones en la interfaz y en las acciones del servidor. No se
+elimina nada de Stripe. Con el interruptor apagado no se necesita Stripe live, cuenta
+bancaria de empresa ni IVA; sí hace falta una base de datos de producción separada,
+quitar `EMAIL_REDIRECT_TO` de Production y un plan de Vercel acorde al uso.
+**Estado: construido y probado de extremo a extremo (2026-10-13), con el interruptor
+apagado y encendido; SQL ya aplicado en la base de pruebas (`0015`, `db/free-beta.sql`,
+`db/reviews.sql`, `db/keeper-profile.sql`). `/` redirige a `/home`.**
+
 **Estado a 2026-10-06:** la Fase 1 y los pagos de la Fase 2 están construidos; los
 pagos, strikes y disputas se probaron en el sandbox de Stripe (56 pruebas unitarias,
 más ejecuciones reales contra Stripe y Supabase). El detalle está en

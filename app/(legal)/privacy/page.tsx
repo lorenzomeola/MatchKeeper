@@ -7,15 +7,28 @@ export const metadata: Metadata = {
   description: "What MatchKeeper collects, why, and how it's protected.",
 };
 
+// El texto depende del interruptor de pagos: se regenera cada minuto para reflejar un cambio.
+export const revalidate = 60;
+
 export default function PrivacyPage() {
   return (
-    <LegalShell eyebrow="Legal" title="Privacy Policy" updated="2026-10-06">
+    <LegalShell eyebrow="Legal" title="Privacy Policy" updated="2026-10-13">
+      {(payments) => (
+        <>
       <p>
         <em>
-          MatchKeeper is currently in a pilot phase in London. This is a plain-language
+          {payments
+            ? "MatchKeeper is currently in a pilot phase in London."
+            : "MatchKeeper is currently in a free beta in London, with no payments through the platform."}{" "}
+          This is a plain-language
           summary of how we handle your data; it will be expanded into a full UK GDPR
           policy before the service scales beyond the pilot.
         </em>
+      </p>
+
+      <p>
+        MatchKeeper is operated by Lorenzo Meola, who decides how your data is used. MatchKeeper
+        is for people aged 18 or over, so we do not knowingly collect data from anyone younger.
       </p>
 
       <h2>1. What we collect</h2>
@@ -30,33 +43,38 @@ export default function PrivacyPage() {
           their coordinates at that moment and the distance to the pitch. We only read the
           location when they tap the button, never in the background.
         </li>
-        <li>
-          Payment information, handled entirely by Stripe. We never see or store your
-          card details.
-        </li>
+        {payments && (
+          <li>
+            Payment information, handled entirely by Stripe. We never see or store your card
+            details.
+          </li>
+        )}
       </ul>
 
       <h2>2. Why we collect it</h2>
       <p>
-        To operate the marketplace: match organisers with keepers, process payments, review
-        goalkeeper profiles, and let you contact the other side of a confirmed booking.
+        To operate the marketplace: match organisers with keepers,{" "}
+        {payments ? "process payments, " : ""}review goalkeeper profiles, and let you contact the
+        other side of a confirmed booking.
       </p>
       <p>
-        The check-in location exists for one purpose: to prove a goalkeeper turned up, so a team
-        that did not show up can be charged and a goalkeeper who did can be paid. The other side
-        of a booking can see that the goalkeeper checked in, not their exact coordinates, unless
-        it is needed to resolve a dispute.
+        {payments
+          ? "The check-in location exists for one purpose: to prove a goalkeeper turned up, so a team that did not show up can be charged and a goalkeeper who did can be paid."
+          : "The check-in location exists for one purpose: to show whether a goalkeeper turned up, so a disagreement about it can be settled."}{" "}
+        The other side of a booking can see that the goalkeeper checked in, not their exact
+        coordinates, unless it is needed to resolve a dispute.
       </p>
 
       <h2>3. Who it&apos;s shared with</h2>
       <ul>
         <li>The other party to a match you&apos;re booking or applying to (name, rating, price).</li>
-        <li>Stripe, to process payments.</li>
+        {payments && <li>Stripe, to process payments.</li>}
         <li>
           Supabase, our database and authentication provider, which stores your account data
           on our behalf.
         </li>
         <li>Vercel, which hosts the site and provides page-view analytics.</li>
+        <li>Resend, which sends our emails.</li>
         <li>Mapbox, which provides the maps.</li>
       </ul>
       <p>We do not sell your data.</p>
@@ -73,8 +91,11 @@ export default function PrivacyPage() {
         reasonable period afterwards for dispute resolution and legal record-keeping.
       </p>
       <p>
-        Check-in coordinates are kept for 120 days after the match, which covers the period in
-        which a card payment can be disputed. After that we delete the coordinates and keep only
+        Check-in coordinates are kept for 120 days after the match,{" "}
+        {payments
+          ? "which covers the period in which a card payment can be disputed."
+          : "which leaves time to resolve a disagreement about whether the goalkeeper turned up."}{" "}
+        After that we delete the coordinates and keep only
         the time of the check-in and whether it was at the pitch. If a dispute is still open, we
         keep them until it is resolved.
       </p>
@@ -84,6 +105,8 @@ export default function PrivacyPage() {
         Questions about this policy or your data:{" "}
         <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
       </p>
+        </>
+      )}
     </LegalShell>
   );
 }

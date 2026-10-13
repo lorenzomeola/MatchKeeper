@@ -212,3 +212,40 @@ Vercel y Stripe en modo real, la revisión legal y la empresa constituida.
 - # porteros activos y aprobados en Londres.
 - Rating promedio de porteros y tasa de cancelación (jugador vs portero).
 - Retención: % de jugadores/porteros que repiten en 30/60/90 días.
+
+## 13. Beta gratuita sin pagos (decidido 2026-10-13)
+
+**Objetivo:** validar con usuarios reales si la plataforma se usa, antes de asumir los
+costes y las obligaciones de mover dinero (empresa, Stripe real, IVA, revisión legal
+completa). La beta es la "versión gratuita" del producto.
+
+- **Alcance:** unos meses, grupo cerrado de 20-50 usuarios en Londres, solo mayores de
+  18, porteros aprobados a mano, etiqueta de beta en la web.
+- **Incluye:** cuentas, publicar partido, candidaturas, elección por el equipo, chat,
+  calendario, mapa, check-in, reseñas y strikes.
+- **No incluye:** cobro con tarjeta, comisión del 15 %, pagos a porteros, historial de
+  pagos. La tarifa del portero es orientativa y se acuerda fuera de la app. MatchKeeper
+  no cobra nada ni como depósito, comisión o propina.
+- **Decisión pendiente de confirmar:** en la beta el equipo elige entre los candidatos
+  (como hoy). El modo "el primero que aplica se queda" queda para un nivel gratuito
+  posterior.
+- **Implementación:** interruptor en base de datos (`payments_enabled`, apagado en la
+  beta); las reservas hechas sin pagos llevan `payment_status = 'none'`. El código de
+  pagos se conserva y vuelve al encender el interruptor. **Estado: construido y probado el 2026-10-13** con sesiones reales y la interfaz, con el
+  interruptor apagado y encendido (aplicar sin Stripe, elegir portero, check-in,
+  confirmar, no-show, cancelación tardía con strike, cron y cola de revisión, y el cobro
+  con Stripe Checkout al encender). No probado: emails en bandeja real, Vercel y Stripe live. Detalle en
+  `PAYMENTS_SPEC.md`, sección 0.
+- **Métricas a medir:** partidos publicados, % cubiertos, tiempo hasta la primera
+  candidatura, repetición a 30 días, no-shows y cuántos usuarios piden protección de
+  pago. Los umbrales de éxito se fijan antes de abrir la beta.
+- **Hoja de ruta tras la beta:** (1) "booking protegido" opcional con pago retenido,
+  reembolso por no-show y comisión del 15 % (ya construido); (2) suscripciones con
+  extras (ver candidatos ordenados, perfil destacado) solo si la demanda es clara. Las
+  suscripciones no son la base del negocio.
+- **Legal mínimo:** Términos con cláusulas de lesiones, responsabilidad y 18+ (hechas),
+  política de privacidad ajustada, checkbox de 18+ en el alta, comprobaciones de
+  protección de datos (el founder reside en Bélgica: aplica el GDPR de la UE y quizá el
+  británico; revisar tasa del ICO y representante en UK), nota interna del Online Safety
+  Act y consulta a un contable belga. La forma jurídica (autónomo o Ltd) **no está
+  decidida**; hace falta antes de cobrar.

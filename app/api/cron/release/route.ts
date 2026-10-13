@@ -19,7 +19,7 @@ export async function GET(req: Request) {
     .from("bookings")
     .select("id, keeper_checked_in_at, team_response, auto_release_at")
     .eq("status", "confirmed")
-    .eq("payment_status", "held")
+    .in("payment_status", ["held", "none"])
     .or(`auto_release_at.lte.${now.toISOString()},team_response.eq.confirmed`);
   if (error) {
     console.error("release cron query failed", error);

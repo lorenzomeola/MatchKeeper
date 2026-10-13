@@ -5,6 +5,7 @@ import { Logo } from "@/components/logo";
 import { FloodlightBackdrop } from "@/components/platform/floodlight-backdrop";
 import { CheckIcon } from "@/components/platform/icons";
 import { ThemeToggle } from "@/components/platform/theme";
+import { paymentsEnabled } from "@/lib/payments/mode";
 
 export type AuthAside = "login" | "join" | "player" | "goalkeeper";
 
@@ -33,6 +34,17 @@ const ASIDE: Record<AuthAside, { eyebrow: string; title: string; points: string[
   },
 };
 
+// Beta sin pagos: nada de pago retenido ni de Stripe.
+const ASIDE_BETA: Record<AuthAside, { eyebrow: string; title: string; points: string[] }> = {
+  login: { ...ASIDE.login, points: ["Verified keepers only", "Free during the beta", "Chat with your keeper"] },
+  join: { ...ASIDE.join, points: ["Verified keepers only", "Free during the beta", "Adults only (18+)"] },
+  player: {
+    ...ASIDE.player,
+    points: ["Free to post a match", "Keepers apply with the rate they ask for", "You agree the payment with the keeper"],
+  },
+  goalkeeper: { ...ASIDE.goalkeeper, points: ["Free to join", "Say what you would ask for each match", "Reviewed by a person before you apply"] },
+};
+
 const KEEPER_PHOTO = { src: "/hero-keeper.jpg", position: "object-[52%_42%]", filter: "saturate(0.72) contrast(1.06)" };
 // Cancha vista desde arriba: el registro de equipos no debe parecerse al de porteros.
 const PITCH_PHOTO = { src: "/signup-pitch.jpg", position: "object-center", filter: "saturate(0.85) contrast(1.04)" };
@@ -49,14 +61,14 @@ const PHOTO: Record<AuthAside, typeof KEEPER_PHOTO> = {
  * foto a la derecha (solo escritorio), igual que el hero de /home. En móvil la
  * foto se omite: la pantalla es para completar el formulario, no para mirar.
  */
-export function AuthShell({
+export async function AuthShell({
   aside,
   children,
 }: {
   aside: AuthAside;
   children: ReactNode;
 }) {
-  const copy = ASIDE[aside];
+  const copy = ((await paymentsEnabled()) ? ASIDE : ASIDE_BETA)[aside];
   const photo = PHOTO[aside];
 
   return (

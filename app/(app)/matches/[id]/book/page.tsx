@@ -8,6 +8,7 @@ import { ArrowLeftIcon } from "@/components/platform/icons";
 import { longDate, moneyPence, splitAddress, timeRange } from "@/lib/format";
 import { COMMISSION_PCT } from "@/lib/payments/config";
 import { calculateTotals } from "@/lib/payments/money";
+import { paymentsEnabled } from "@/lib/payments/mode";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Book a keeper", robots: { index: false } };
@@ -17,6 +18,12 @@ const POLICY = [
   ["Between 24 and 2 hours before", "You pay 50%. The other 50% is refunded."],
   ["Less than 2 hours, or no show", "You pay 100%."],
   ["If the keeper cancels or does not show", "You always get a full refund."],
+] as const;
+
+const FREE_POLICY = [
+  ["If you need to cancel", "Do it from the match page and tell the keeper in the chat."],
+  ["If the keeper cancels", "The match opens again for other keepers, if there is time."],
+  ["If the keeper does not show", "Report it after the match. The keeper gets a strike."],
 ] as const;
 
 export default async function BookPage({
@@ -55,6 +62,7 @@ export default async function BookPage({
     .maybeSingle();
 
   const totals = calculateTotals(Math.round(Number(app.rate) * 100), COMMISSION_PCT);
+  const free = !(await paymentsEnabled());
   const pitch = splitAddress(match.address);
 
   const { count: bookedNow } = await supabase
@@ -76,9 +84,13 @@ export default async function BookPage({
       </Link>
 
       <PageHeader
-        eyebrow={needed > 1 ? `Book keeper ${(bookedNow ?? 0) + 1} of ${needed}` : "Book a keeper"}
-        title="Review and pay"
-        description="Your payment is held until the match is played."
+        eyebrow={needed > 1 ? `${free ? "Choose" : "Book"} keeper ${(bookedNow ?? 0) + 1} of ${needed}` : free ? "Choose a keeper" : "Book a keeper"}
+        title={free ? "Confirm your keeper" : "Review and pay"}
+        description={
+          free
+            ? "MatchKeeper does not handle payments during the beta. You agree the payment with the keeper directly."
+            : "Your payment is held until the match is played."
+        }
       />
 
       <div className="grid gap-5">
@@ -93,32 +105,46 @@ export default async function BookPage({
         </section>
 
         <section className="pl-surface rounded-[var(--r-lg)] p-4 sm:p-5">
-          <dl className="grid gap-2.5 text-[15px]">
-            <div className="flex justify-between gap-4">
-              <dt className="text-fg-2">Keeper rate</dt>
-              <dd className="pl-tnum text-fg">{moneyPence(totals.ratePence)}</dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-fg-2">MatchKeeper service fee ({COMMISSION_PCT}%)</dt>
-              <dd className="pl-tnum text-fg">{moneyPence(totals.platformFeePence)}</dd>
-            </div>
-            <div className="flex justify-between gap-4 border-t border-line pt-3 font-semibold">
-              <dt className="text-fg">Total</dt>
-              <dd className="pl-tnum text-fg">{moneyPence(totals.totalPence)}</dd>
-            </div>
-          </dl>
-          <p className="mt-3 text-xs leading-relaxed text-muted">
-            The keeper receives the full rate.{" "}
-            {closesOthers
-              ? "Booking closes the other applications once the payment goes through."
-              : `Other applications stay open until you have all ${needed} keepers. Each keeper is paid for separately.`}
-          </p>
+          {free ? (
+            <>
+              <div className="flex justify-between gap-4 text-[15px]">
+                <span className="text-fg-2">Rate the keeper asked for</span>
+                <span className="pl-tnum font-semibold text-fg">{moneyPence(totals.ratePence)}</span>
+              </div>
+              <p className="mt-3 text-xs leading-relaxed text-muted">
+                Nothing is charged here. {closesOthers ? "Choosing this keeper closes the other applications." : `Other applications stay open until you have all ${needed} keepers.`}
+              </p>
+            </>
+          ) : (
+            <>
+              <dl className="grid gap-2.5 text-[15px]">
+                <div className="flex justify-between gap-4">
+                  <dt className="text-fg-2">Keeper rate</dt>
+                  <dd className="pl-tnum text-fg">{moneyPence(totals.ratePence)}</dd>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-fg-2">MatchKeeper service fee ({COMMISSION_PCT}%)</dt>
+                  <dd className="pl-tnum text-fg">{moneyPence(totals.platformFeePence)}</dd>
+                </div>
+                <div className="flex justify-between gap-4 border-t border-line pt-3 font-semibold">
+                  <dt className="text-fg">Total</dt>
+                  <dd className="pl-tnum text-fg">{moneyPence(totals.totalPence)}</dd>
+                </div>
+              </dl>
+              <p className="mt-3 text-xs leading-relaxed text-muted">
+                The keeper receives the full rate.{" "}
+                {closesOthers
+                  ? "Booking closes the other applications once the payment goes through."
+                  : `Other applications stay open until you have all ${needed} keepers. Each keeper is paid for separately.`}
+              </p>
+            </>
+          )}
         </section>
 
         <section className="pl-surface rounded-[var(--r-lg)] p-4 sm:p-5">
-          <p className="text-sm font-semibold text-fg">Cancellation policy</p>
+          <p className="text-sm font-semibold text-fg">{free ? "If plans change" : "Cancellation policy"}</p>
           <ul className="mt-3 grid gap-2.5 text-sm">
-            {POLICY.map(([when, what]) => (
+            {(free ? FREE_POLICY : POLICY).map(([when, what]) => (
               <li key={when} className="grid gap-0.5 sm:grid-cols-2 sm:gap-4">
                 <span className="text-fg-2">{when}</span>
                 <span className="text-fg">{what}</span>
@@ -127,7 +153,12 @@ export default async function BookPage({
           </ul>
         </section>
 
-        <BookingForm applicationId={app.id} total={moneyPence(totals.totalPence)} />
+        <BookingForm
+          applicationId={app.id}
+          total={moneyPence(totals.totalPence)}
+          free={free}
+          keeperName={keeper?.display_name ?? "this keeper"}
+        />
       </div>
     </>
   );

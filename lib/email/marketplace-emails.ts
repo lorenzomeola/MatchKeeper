@@ -1,6 +1,7 @@
 import "server-only";
 import { longDate, moneyPence, splitAddress, timeRange } from "@/lib/format";
 import { appUrl } from "@/lib/payments/app-url";
+import { paymentsEnabled } from "@/lib/payments/mode";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { partyOf, type BookingCtx } from "./booking-context";
 import { CHAT_DELAY_MS, chatKey, chatNoticeAllowed, readAfter } from "./chat-rules";
@@ -112,7 +113,7 @@ export async function notifyKeeperApproved(profileId: string) {
     toEmail: keeper.email,
     toUserId: keeper.id,
     dedupe: `keeper_approved:${profileId}`,
-    data: { dashboardUrl: `${appUrl()}/dashboard` },
+    data: { dashboardUrl: `${appUrl()}/dashboard`, payments: await paymentsEnabled() },
   });
 }
 

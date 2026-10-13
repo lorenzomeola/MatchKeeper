@@ -76,6 +76,24 @@ test("pago liberado: menciona la deuda solo si se descuenta", () => {
   assert.match(paid("£12.00"), /£12.00 was taken/);
 });
 
+test("beta sin pagos: ningun email de reserva habla de pago, comision ni reembolso", () => {
+  const free = { free: true };
+  const mails = [
+    renderEmail("booking_confirmed_team", { ...SAMPLES.booking_confirmed_team, ...free }, ctx),
+    renderEmail("booking_confirmed_keeper", { ...SAMPLES.booking_confirmed_keeper, ...free }, ctx),
+    renderEmail("team_played_prompt", { ...SAMPLES.team_played_prompt, ...free }, ctx),
+    renderEmail("team_played_reminder", { ...SAMPLES.team_played_reminder, ...free }, ctx),
+    renderEmail("booking_cancelled_team", { ...SAMPLES.booking_cancelled_team, refund: null, keeperGets: null, ...free }, ctx),
+    renderEmail("booking_cancelled_keeper", { ...SAMPLES.booking_cancelled_keeper, share: null, ...free }, ctx),
+    renderEmail("booking_review_team", { ...SAMPLES.booking_review_team, ...free }, ctx),
+    renderEmail("booking_review_keeper", { ...SAMPLES.booking_review_keeper, ...free }, ctx),
+  ];
+  for (const m of mails) {
+    assert.ok(!/refund|service fee|Stripe|payment is released|stays on hold|You paid|No payment is due/i.test(m.text), m.subject);
+  }
+  assert.match(mails[0].text, /does not handle payments during the beta/);
+});
+
 const H = 3_600_000;
 const NOW = new Date("2026-10-08T12:00:00Z");
 const at = (h: number) => new Date(NOW.getTime() + h * H);

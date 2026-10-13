@@ -22,6 +22,14 @@ day. Section A2 was built the week before; the rest of the board was reconciled 
 Naming: "phase 1" and "phase 2" in this file are the **visual redesign** phases.
 The Fase 1, 2 and 3 in PRODUCT_PLAN.md are **product roadmap** phases.
 
+**2026-10-13, change of plan:** the first public launch is a **free beta with no
+payments** (closed group in London, 18+ only, to measure whether teams and keepers use
+it). Payments stay built but switched off behind `payments_enabled`, and come back as an
+opt-in "protected booking" once the beta validates. Status: built and tested end to end
+on 2026-10-13 (switch off and on). See
+PRODUCT_PLAN.md section 13. Section D below (Stripe live, solicitor, company) applies to
+the paid launch, not to the beta.
+
 ### A. Done (phase 1)
 
 - Design system: tokens, motion, components, dark and light themes.

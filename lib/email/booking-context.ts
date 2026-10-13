@@ -18,6 +18,8 @@ export type BookingCtx = {
   feePence: number;
   totalPence: number;
   commissionPct: number;
+  /** Reserva sin cobro (beta): los emails no hablan de dinero. */
+  free: boolean;
   team: Party;
   keeper: Party;
   matchUrl: string;
@@ -39,7 +41,7 @@ export async function loadBookingContext(bookingId: string): Promise<BookingCtx 
   const { data: b } = await admin
     .from("bookings")
     .select(
-      "id, status, match_id, player_id, goalkeeper_id, rate_pence, platform_fee_pence, total_pence, commission_pct, auto_release_at, matches(address, starts_at, ends_at)",
+      "id, status, payment_status, match_id, player_id, goalkeeper_id, rate_pence, platform_fee_pence, total_pence, commission_pct, auto_release_at, matches(address, starts_at, ends_at)",
     )
     .eq("id", bookingId)
     .maybeSingle();
@@ -72,6 +74,7 @@ export async function loadBookingContext(bookingId: string): Promise<BookingCtx 
     feePence: b.platform_fee_pence ?? 0,
     totalPence: b.total_pence ?? rate,
     commissionPct: Number(b.commission_pct),
+    free: b.payment_status === "none",
     team: teamParty,
     keeper: keeperParty,
     matchUrl: `${appUrl()}/matches/${b.match_id}`,

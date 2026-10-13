@@ -16,11 +16,14 @@ export function ApplyCard({
   budget,
   format,
   minutes,
+  free = false,
 }: {
   matchId: string;
   budget: string | number | null;
   format: number | null;
   minutes: number;
+  /** Beta sin pagos: la tarifa es orientativa y se acuerda con el equipo. */
+  free?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(applyToMatchAction, initialState);
   const [rate, setRate] = useState("");
@@ -34,7 +37,9 @@ export function ApplyCard({
       <div>
         <p className="pl-display text-fg [font-size:var(--t-xl)]">Apply to this match</p>
         <p className="pl-prose mt-1.5 text-[15px]">
-          Set the rate you want for this game. The team compares keepers and picks one.
+          {free
+            ? "Say what you would ask for this game. The team compares keepers and picks one, then you agree the payment directly."
+            : "Set the rate you want for this game. The team compares keepers and picks one."}
         </p>
       </div>
 

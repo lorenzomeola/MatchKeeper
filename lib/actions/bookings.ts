@@ -3,6 +3,8 @@
 import { redirect } from "next/navigation";
 import { BookingError, startCheckout } from "@/lib/payments/checkout";
 import { TERMS_VERSION } from "@/lib/payments/config";
+import { acceptWithoutPayment } from "@/lib/payments/free-booking";
+import { paymentsEnabled } from "@/lib/payments/mode";
 import { createClient } from "@/lib/supabase/server";
 
 export type BookingActionState = { error: string | null };
@@ -19,17 +21,24 @@ export async function startCheckoutAction(
 
   const applicationId = String(formData.get("applicationId") ?? "");
   if (!applicationId) return { error: "Choose a keeper to book." };
+  const free = !(await paymentsEnabled());
   if (formData.get("terms") !== "on") {
-    return { error: "Accept the Terms and the cancellation policy to continue." };
+    return { error: free ? "Accept the Terms to continue." : "Accept the Terms and the cancellation policy to continue." };
   }
 
   let url: string;
   try {
-    url = await startCheckout(supabase, { id: user.id, email: user.email }, applicationId, TERMS_VERSION);
+    url = free
+      ? `/matches/${await acceptWithoutPayment(supabase, applicationId, TERMS_VERSION)}`
+      : await startCheckout(supabase, { id: user.id, email: user.email }, applicationId, TERMS_VERSION);
   } catch (e) {
     if (e instanceof BookingError) return { error: e.message };
     console.error("startCheckoutAction failed", e);
-    return { error: "We couldn't open the payment page. Please try again." };
+    return {
+      error: free
+        ? "We couldn't confirm the booking. Please try again."
+        : "We couldn't open the payment page. Please try again.",
+    };
   }
   redirect(url);
 }

@@ -123,6 +123,11 @@ export function SignupForm({ role }: { role: Role }) {
           minLength={8}
         />
 
+        <label className="flex min-h-11 cursor-pointer items-start gap-3 text-sm leading-relaxed text-fg-2">
+          <input type="checkbox" name="over18" required className="mt-1 h-5 w-5 shrink-0 accent-[var(--accent)]" />
+          <span>I am 18 or over. MatchKeeper is for adult football only.</span>
+        </label>
+
         <div className="grid grid-cols-1 gap-3 pt-1">
           <SubmitButton pending={pending} pendingLabel="Creating account…">
             {copy.cta}

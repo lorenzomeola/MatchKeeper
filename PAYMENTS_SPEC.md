@@ -7,6 +7,15 @@ temas, **este documento manda**.
 
 ## 0. Estado y cuándo se implementa
 
+- **Cambio de estrategia (2026-10-13): primero una beta gratuita sin pagos.** Este
+  documento sigue siendo la referencia del "booking protegido" (pago retenido, reembolso
+  por no-show, comisión del 15 %), que se activará como opción después de validar. La
+  beta funciona con un interruptor `payments_enabled` en la base de datos (apagado):
+  las reservas hechas sin pagos llevan `payment_status = 'none'`, no pasan por Stripe y
+  se completan sin transferencia. Las reservas con pago no cambian. **Construido y probado el
+  2026-10-13 (`db/free-beta.sql`, `lib/payments/mode.ts`, `lib/payments/free-booking.ts`):
+  RLS y funciones con sesiones reales, y la interfaz de extremo a extremo con el
+  interruptor apagado y encendido.** Plan en `PRODUCT_PLAN.md`, sección 13.
 - **Decidido el 2026-10-02.** Las cifras de Stripe se verificaron ese día en su
   documentación oficial (ver sección 18).
 - **Construido y probado en el sandbox de Stripe el 2026-10-06** (pasos 1 a 8 de la

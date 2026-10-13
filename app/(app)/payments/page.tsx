@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/app/page-header";
 import { PayoutProblemCard } from "@/components/app/payout-problem-card";
 import { loadKeeperPayments, loadPayoutProblem, loadTeamPayments } from "@/lib/data/payments";
 import { getOrCreateProfile } from "@/lib/profile-ensure";
+import { paymentsEnabled } from "@/lib/payments/mode";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Payments", robots: { index: false } };
@@ -15,6 +16,7 @@ export default async function PaymentsPage() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+  if (!(await paymentsEnabled())) redirect("/dashboard");
 
   const profile = await getOrCreateProfile(supabase, user);
   if (!profile) redirect("/signup");

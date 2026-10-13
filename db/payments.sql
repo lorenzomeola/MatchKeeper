@@ -76,19 +76,8 @@ $$;
 
 grant execute on function public.keeper_can_get_paid(uuid) to authenticated;
 
-drop policy if exists "applications_insert_own_goalkeeper" on public.applications;
-create policy "applications_insert_own_goalkeeper"
-on public.applications for insert
-to authenticated
-with check (
-  goalkeeper_id = auth.uid()
-  and exists (
-    select 1 from public.profiles p
-    where p.id = auth.uid() and p.role = 'goalkeeper' and p.approved = true
-  )
-  and public.keeper_can_get_paid(auth.uid())
-  and not public.keeper_is_suspended(auth.uid())
-);
+-- La política de insert de applications (que usa keeper_can_get_paid) vive ahora en db/free-beta.sql,
+-- porque depende del interruptor payments_enabled(). Corre free-beta.sql después de este archivo.
 
 -- ============ backfill de importes en bookings existentes ============
 -- Las reservas anteriores a los pagos solo tienen `rate` en libras. Se rellenan los peniques una vez.

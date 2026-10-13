@@ -18,6 +18,7 @@ import { MATCH_STATUS, StatusBadge } from "@/components/app/status-badge";
 import { ArrowLeftIcon, ChatIcon, PinIcon, StarIcon, UsersIcon } from "@/components/platform/icons";
 import { daysAway, isPast, longDate, money, splitAddress, timeRange } from "@/lib/format";
 import { matchMinutes } from "@/lib/pricing";
+import { paymentsEnabled } from "@/lib/payments/mode";
 import { slotsLabel } from "@/lib/slots";
 import { createClient } from "@/lib/supabase/server";
 
@@ -61,15 +62,20 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
   let paymentsReady = false;
   let hasPayAccount = false;
   let suspended = false;
+  const payments = await paymentsEnabled();
   if (isKeeper && !isOwner) {
     suspended = (await loadMyStanding(supabase, user.id)).level === "suspended";
-    const { data: payAccount } = await supabase
-      .from("keeper_stripe_accounts")
-      .select("payouts_enabled")
-      .eq("profile_id", user.id)
-      .maybeSingle();
-    hasPayAccount = Boolean(payAccount);
-    paymentsReady = payAccount?.payouts_enabled === true;
+    if (payments) {
+      const { data: payAccount } = await supabase
+        .from("keeper_stripe_accounts")
+        .select("payouts_enabled")
+        .eq("profile_id", user.id)
+        .maybeSingle();
+      hasPayAccount = Boolean(payAccount);
+      paymentsReady = payAccount?.payouts_enabled === true;
+    } else {
+      paymentsReady = true;
+    }
   }
 
   let applications: ApplicationRow[] = [];
@@ -139,7 +145,7 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
     const { data: bk } = await supabase
       .from("bookings")
       .select(
-        "id, application_id, status, keeper_checked_in_at, team_response, auto_release_at, cancelled_by, cancellation_charge_pct, rate_pence, commission_pct",
+        "id, application_id, status, payment_status, keeper_checked_in_at, team_response, auto_release_at, cancelled_by, cancellation_charge_pct, rate_pence, commission_pct",
       )
       .eq("match_id", id)
       .order("created_at", { ascending: true });
@@ -254,7 +260,9 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
                           <Link href={`/keepers/${booked.goalkeeper_id}`} className="-my-2.5 block truncate py-2.5 text-base font-semibold text-fg hover:text-accent-strong">
                             {booked.profiles?.display_name ?? "Goalkeeper"}
                           </Link>
-                          <p className="text-sm text-muted">{money(booked.rate)} for this match</p>
+                          <p className="text-sm text-muted">
+                            {money(booked.rate)} {payments ? "for this match" : "asked for this match"}
+                          </p>
                           {!bookingEnded && (
                             <div className="mt-1.5">
                               <ApplicantStatus status="accepted" />
@@ -282,7 +290,7 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
               {freeSlot && acceptedApps.length > 0 && (
                 <p className="pl-prose mb-4 text-[15px]">
                   You still need {needed - acceptedApps.length} more {needed - acceptedApps.length === 1 ? "keeper" : "keepers"}.
-                  Each one is booked and paid separately.
+                  {payments ? " Each one is booked and paid separately." : " Each one is booked separately."}
                 </p>
               )}
               {applicants.length === 0 ? (
@@ -296,7 +304,7 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
                   }
                 />
               ) : (
-                <ApplicantList matchId={match.id} applicants={applicants} minutes={matchMinutes(match.starts_at, match.ends_at)} />
+                <ApplicantList matchId={match.id} applicants={applicants} minutes={matchMinutes(match.starts_at, match.ends_at)} free={!payments} />
               )}
             </Section>
           )}
@@ -345,6 +353,7 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
               budget={match.budget_suggested}
               format={match.format}
               minutes={matchMinutes(match.starts_at, match.ends_at)}
+              free={!payments}
             />
           )}
           {canApply && !suspended && !paymentsReady && <PaymentSetupCard resume={hasPayAccount} />}

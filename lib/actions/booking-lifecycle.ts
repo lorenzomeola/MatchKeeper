@@ -96,7 +96,7 @@ async function loadTeamBooking(bookingId: string) {
     .eq("id", bookingId)
     .maybeSingle();
   if (!booking || booking.player_id !== user.id) return { error: "This booking is not yours." as const };
-  if (booking.status !== "confirmed" || booking.payment_status !== "held") {
+  if (booking.status !== "confirmed" || !["held", "none"].includes(booking.payment_status)) {
     return { error: "This booking can't be changed any more." as const };
   }
   if (booking.team_response) return { error: "You already answered for this match." as const };
@@ -187,7 +187,12 @@ export async function reportMatchAction(
     return {
       error: null,
       done: true,
-      message: result.moneyPending ? "Reported. Your refund is being processed." : "Reported. You have been refunded in full.",
+      message:
+        loaded.booking.payment_status === "none"
+          ? "Reported. We have recorded the no-show."
+          : result.moneyPending
+            ? "Reported. Your refund is being processed."
+            : "Reported. You have been refunded in full.",
     };
   }
   await moveToReview(bookingId, `team_reported_${kind}`, loaded.user.id);

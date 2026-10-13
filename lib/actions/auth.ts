@@ -28,11 +28,15 @@ export async function signUpAction(
   const displayName = String(formData.get("displayName") ?? "").trim();
   const role = formData.get("role") === "goalkeeper" ? "goalkeeper" : "player";
   const city = String(formData.get("city") ?? "").trim();
+  const over18 = formData.get("over18") === "on";
 
   const values = { displayName, city, email };
 
   if (!email || !password || !displayName) {
     return { error: "Please fill in your name, email and password.", values };
+  }
+  if (!over18) {
+    return { error: "MatchKeeper is for adults. Confirm that you are 18 or over to continue.", values };
   }
   if (!isAvailableCity(city)) {
     return { error: "Choose one of the available cities.", values };
@@ -48,7 +52,7 @@ export async function signUpAction(
     email,
     password,
     options: {
-      data: { display_name: displayName, role, city },
+      data: { display_name: displayName, role, city, age_confirmed_at: new Date().toISOString() },
       emailRedirectTo: `${origin}/auth/callback`,
     },
   });

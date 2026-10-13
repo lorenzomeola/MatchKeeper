@@ -101,6 +101,42 @@ tested, what was not), the status board in
 payments locally, copy `.env.local.example` to `.env.local`, run `npm run dev`, and
 forward webhooks with the Stripe CLI (the event list is in MASTER.md, A3 and D).
 
+## Free beta, no payments (decided 2026-10-13)
+
+**Goal:** find out, with real users in London and no money moving through the
+platform, whether teams and keepers actually use it: matches published, share of
+matches that get a keeper, repeat use, no-shows, and how many users ask for payment
+protection. The beta is meant to run for a few months with a small invited group
+(20-50 people), adults only (18+), with keepers approved by hand.
+
+- **Included:** accounts, posting matches, applying, the team picking a keeper, chat,
+  calendar, map, check-in, reviews and strikes.
+- **Not included:** card payments, the 15% fee, Stripe payouts and the payments
+  history. The keeper's rate is shown as a guide and the money is settled directly
+  between the team and the keeper. MatchKeeper takes no money in any form.
+- **How it is built:** a switch in the database (`payments_enabled`, off in the beta).
+  Bookings made while it is off carry no payment (`payment_status = 'none'`). The
+  Stripe code is not removed: turning the switch on brings back the current flow.
+  **Status: built and tested (2026-10-13). The SQL is applied in the test database. Tested
+  with real sessions and the UI, with the switch off and on: apply without Stripe, choose a
+  keeper, check-in, confirm, no-show report, late keeper cancel with strike, cron
+  completion and review queue, and the paid checkout still opening Stripe. 119 unit tests
+  pass.** The public pages (`/home`, Terms, Privacy, Safety), the sign-up form (18+
+  checkbox) and the booking emails have beta versions, and `/` now redirects to `/home`.
+  Not tested: emails in a real inbox (test addresses are `example.com`), the Stripe live
+  flow, the new pages on Vercel, and the lower sections of `/home` visually (only the hero
+  was checked on screen).
+- **Roadmap after the beta:** (1) opt-in "protected booking" with the held payment,
+  refund on no-show and the 15% fee (already built); (2) subscriptions with extras
+  (ranked applicants, featured profile) only if demand is clear.
+- **Legal minimum for the beta:** Terms (with the injury, liability and 18+ clauses,
+  done) and Privacy Policy that match what the app does, an 18+ checkbox at sign-up,
+  data protection checks (the founder lives in Belgium, so EU GDPR applies and UK GDPR
+  may too: check the ICO fee and UK representative question), a short Online Safety
+  Act risk note, and a Belgian accountant's view on whether a free beta needs a
+  self-employed registration. The company structure (sole trader vs Ltd) is **not
+  decided yet**; it is only needed before charging.
+
 ## Repo structure
 
 - `app/`, `components/`, `lib/` — the Next.js landing page (see

@@ -24,16 +24,25 @@ const STATS: Stat[] = [
   { value: 0, prefix: "£", label: "To join as a keeper", detail: "Free profile, you set your rate" },
 ];
 
-export function StatBand() {
+// Beta sin pagos: ni comisión ni retención de pago que mostrar.
+const STATS_BETA: Stat[] = [
+  { value: 0, prefix: "£", label: "To use the beta", detail: "No fees, no subscription" },
+  { value: 2, prefix: "<", suffix: " min", label: "To post a match", detail: "Date, pitch and level" },
+  { value: 100, suffix: "%", label: "Keepers reviewed", detail: "A person checks every profile" },
+  { value: 18, suffix: "+", label: "Adults only", detail: "Adult football in London" },
+];
+
+export function StatBand({ payments = true }: { payments?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { threshold: 0.4 });
+  const stats = payments ? STATS : STATS_BETA;
 
   return (
     <div
       ref={ref}
       className="grid grid-cols-2 gap-px overflow-hidden rounded-[var(--r-xl)] border border-line bg-line lg:grid-cols-4"
     >
-      {STATS.map((s, i) => (
+      {stats.map((s, i) => (
         <div key={s.label} className="bg-bg-2/60 p-5 backdrop-blur-sm sm:p-6">
           <p className="pl-display pl-tnum text-fg [font-size:var(--t-3xl)]">
             {s.prefix}

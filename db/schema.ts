@@ -40,6 +40,7 @@ export const paymentStatus = pgEnum("payment_status", [
   "pending",
   "partially_refunded",
   "disputed",
+  "none",
 ]);
 export const bookingStatus = pgEnum("booking_status", [
   "pending_payment",

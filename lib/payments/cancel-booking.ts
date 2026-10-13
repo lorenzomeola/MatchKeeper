@@ -3,7 +3,7 @@ import { getStripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { defer, notifyBookingCancelled } from "@/lib/email/booking-emails";
 import { notifyAdminPaymentProblem } from "@/lib/email/admin-emails";
-import { cancellationWork, type CancellationPlan } from "./money";
+import { cancellationWork, withoutMoney, type CancellationPlan } from "./money";
 import { transferToKeeper } from "./release-booking";
 
 export type CancelledBy = "team" | "keeper" | "admin" | "system";
@@ -24,7 +24,13 @@ export async function cancelBooking(input: {
   let restoredApplicationIds: string[] = [];
   let pendingApplicationIds: string[] = [];
   {
-    const { data: current } = await admin.from("bookings").select("match_id").eq("id", input.bookingId).maybeSingle();
+    const { data: current } = await admin
+      .from("bookings")
+      .select("match_id, payment_status")
+      .eq("id", input.bookingId)
+      .maybeSingle();
+    // Una reserva sin cobro (beta) conserva el strike y el estado del partido, pero no mueve dinero.
+    if (current?.payment_status === "none") input = { ...input, plan: withoutMoney(input.plan) };
     if (current) {
       const { data: apps } = await admin
         .from("applications")
@@ -86,6 +92,7 @@ export async function processCancellationMoney(bookingId: string) {
     .eq("id", bookingId)
     .maybeSingle();
   if (!b || b.status !== "cancelled" || b.cancellation_charge_pct === null) return;
+  if (b.payment_status === "none") return;
 
   const work = cancellationWork({
     ratePence: b.rate_pence,
