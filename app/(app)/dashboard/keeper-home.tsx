@@ -125,7 +125,7 @@ export async function KeeperHome({ userId, profile, rating }: Props) {
             Nothing open right now. New matches show up here as soon as a team posts them.
           </p>
         ) : (
-          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <ul className="pl-cards grid grid-cols-1 gap-3 sm:grid-cols-2">
             {d.available.map((m) => (
               <li key={m.id}>
                 <MatchCard

@@ -125,7 +125,7 @@ export async function PlayerHome({ userId, profile, teamName, kind, rating }: Pr
 
       {needsReply.length > 0 && (
         <Section title="Needs your reply">
-          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <ul className="pl-cards grid grid-cols-1 gap-3 sm:grid-cols-2">
             {needsReply.slice(0, 4).map(({ match, pending }) => (
               <li key={match.id}>
                 <MatchCard
@@ -148,7 +148,7 @@ export async function PlayerHome({ userId, profile, teamName, kind, rating }: Pr
 
       {rest.length > 0 && (
         <Section title="Coming up" action={<SectionLink href="/matches">All matches</SectionLink>}>
-          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <ul className="pl-cards grid grid-cols-1 gap-3 sm:grid-cols-2">
             {rest.map((m) => {
               const booked = m.applications.filter((a) => a.status === "accepted").length;
               const full = m.status === "assigned";

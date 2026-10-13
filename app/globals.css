@@ -492,6 +492,20 @@ body {
   box-shadow: var(--shadow-2), var(--ring-inset);
 }
 
+/* Rejilla de tarjetas: las de una misma fila miden lo mismo, sea cual sea su contenido.
+   Cada tarjeta es el hijo directo del <li> y reparte su interior con flex para fijar el pie abajo. */
+.pl-cards {
+  align-items: stretch;
+}
+.pl-cards > li {
+  display: flex;
+  min-width: 0;
+}
+.pl-cards > li > * {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 /* Elevación al hover: transform + sombra (ambas compuestas por GPU). */
 .pl-lift {
   transition:

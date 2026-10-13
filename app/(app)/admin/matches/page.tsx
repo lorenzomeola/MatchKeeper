@@ -27,7 +27,7 @@ export default async function AdminMatchesPage({ searchParams }: { searchParams:
       {rows.length === 0 ? (
         <EmptyState icon={ListIcon} title="No matches here" body="Matches show up as teams post them." />
       ) : (
-        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <ul className="pl-cards grid grid-cols-1 gap-3 sm:grid-cols-2">
           {rows.map((m) => {
             const status = MATCH_STATUS[m.status] ?? MATCH_STATUS.open;
             const pending = m.applications.filter((a) => a.status === "pending").length;

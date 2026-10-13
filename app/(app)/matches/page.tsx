@@ -61,7 +61,7 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
             }
           />
         ) : (
-          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <ul className="pl-cards grid grid-cols-1 gap-3 sm:grid-cols-2">
             {items.map(({ application: a, match, poster }) => {
               const s = APPLICATION_STATUS[a.status] ?? { label: a.status, tone: "neutral" as const };
               return (
@@ -115,7 +115,7 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
           }
         />
       ) : (
-        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <ul className="pl-cards grid grid-cols-1 gap-3 sm:grid-cols-2">
           {items.map(({ match, pending, keepers }) => {
             const status = MATCH_STATUS[match.status] ?? MATCH_STATUS.open;
             const full = keepers.length >= match.keepers_needed;
