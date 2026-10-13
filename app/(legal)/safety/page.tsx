@@ -75,7 +75,7 @@ export default function SafetyPage() {
 
       <h2>5. Reporting a problem</h2>
       <p>
-        Whether it&apos;s a safety concern, a payment issue, or behaviour that made you
+        Whether it&apos;s a safety concern, {payments ? "a payment issue" : "a problem with the payment you agreed"}, or behaviour that made you
         uncomfortable, tell us at{" "}
         <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>. During the pilot we review
         every report personally.
