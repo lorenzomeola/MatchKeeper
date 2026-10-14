@@ -13,6 +13,7 @@ const SAMPLES: BookingTemplateData = {
   booking_confirmed_keeper: { ...base, teamName: "Sunday FC", rate: "£30.00" },
   keeper_checkin_24h: { ...base, teamName: "Sunday FC" },
   keeper_checkin_30m: { ...base },
+  keeper_photo_team: { ...base, keeperName: "Sam" },
   team_played_prompt: { ...base, keeperName: "Sam" },
   team_played_reminder: { ...base, keeperName: "Sam" },
   team_autorelease_notice: { ...base, keeperName: "Sam", releaseOn: "13 Oct 2026" },

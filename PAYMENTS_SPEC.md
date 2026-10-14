@@ -269,6 +269,19 @@ El reembolso a la tarjeta tarda varios días en aparecer. Informarlo en el email
 - La ubicación se puede falsear: es una prueba fuerte pero no concluyente. Su
   valor está en combinarla con la confirmación del equipo.
 - Privacidad: la ubicación es dato personal (sección 13).
+- **Foto opcional (Beta y Booking protegido):** tras el check-in el portero puede añadir una
+  foto de dónde espera, para que el equipo lo encuentre. Una por reserva, hasta el fin del
+  partido; el portero puede quitarla. El navegador la reduce y el servidor la recodifica con
+  `sharp` (sin EXIF ni GPS) y solo acepta JPEG, PNG y WebP. Vive en el bucket **privado**
+  `checkin-photos` (`db/checkin-photos.sql`); nadie la lee ni la escribe desde el navegador.
+  El servidor genera enlaces temporales de 1 hora para el equipo de la reserva, el portero y
+  los admin. El equipo recibe el email `keeper_photo_team` con enlace a la página del
+  partido. Se borra a los 120 días del fin del partido, igual que las coordenadas, y se
+  retrasa con una disputa abierta (`checkin_photos_to_purge`, vía cron).
+- **Vista de admin:** `/admin/payments` ("Bookings" en Beta) muestra en cada reserva la hora
+  del check-in en hora UK, los minutos respecto al inicio, la distancia, un enlace a Maps con
+  la posición exacta mientras exista y la foto. Sin check-in, tras la ventana, aparece
+  "No check-in".
 
 ## 7. Confirmación y liberación
 
@@ -520,7 +533,7 @@ resolver revisión).
   disputas).
 - **Tarea programada construida:** `GET /api/cron/release` con `CRON_SECRET` como
   Bearer. Libera pagos vencidos, manda a revisión lo que no se puede liberar solo,
-  reanuda cancelaciones a medias y borra las coordenadas del check-in a los 120 días.
+  reanuda cancelaciones a medias y borra las coordenadas y las fotos del check-in a los 120 días.
   Es idempotente. `vercel.json` la programa **una vez al día** porque Vercel Hobby no
   permite más; para cada hora hace falta Vercel Pro (sección 16, decisión 5).
 - **Recordatorios: hechos** (emails, ver sección 11).

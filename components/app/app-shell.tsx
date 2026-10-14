@@ -63,7 +63,9 @@ export function AppShell({
   const inMessages = pathname.startsWith("/messages");
   // El mapa ocupa el espacio entre las barras, sin márgenes en móvil.
   const inMap = pathname === "/map";
-  const items = NAV[inAdmin ? "admin" : variant].filter((i) => paymentsEnabled || !i.paymentsOnly);
+  const items = NAV[inAdmin ? "admin" : variant]
+    .filter((i) => paymentsEnabled || !i.paymentsOnly)
+    .map((i) => (!paymentsEnabled && i.freeLabel ? { ...i, label: i.freeLabel } : i));
   const tabs = items.filter((i) => i.tab);
   const primary = items.find((i) => i.primary);
   const sidebarItems = items.filter((i) => !i.primary);

@@ -72,7 +72,8 @@ Este modelo corresponde únicamente a la versión **Booking protegido** y no se 
    en `design-system/matchkeeper/MASTER.md`, ítem 12.
 7. **Día del partido**: ambos ya tienen la info y ubicación en su calendario.
 8. **Check-in y confirmación:** el portero toca "I have arrived" al llegar al
-  campo. El equipo confirma o reporta durante los 3 días siguientes al fin del
+  campo y, si quiere, añade una foto de dónde espera para que el equipo lo encuentre
+  (opcional, privada, se borra a los 120 días). El equipo confirma o reporta durante los 3 días siguientes al fin del
   partido. Si nadie reporta y hubo check-in, en Beta se cierra la reserva; en
   Booking protegido se inicia la transferencia automática según
   `PAYMENTS_SPEC.md`.

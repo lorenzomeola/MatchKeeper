@@ -216,6 +216,9 @@ export const bookings = pgTable(
   checkInLat: doublePrecision("check_in_lat"),
   checkInLng: doublePrecision("check_in_lng"),
   checkInDistanceM: integer("check_in_distance_m"),
+  // Foto opcional del portero al llegar; el archivo vive en el bucket privado checkin-photos.
+  checkInPhotoPath: text("check_in_photo_path"),
+  checkInPhotoAt: timestamp("check_in_photo_at", { withTimezone: true }),
   teamResponse: teamResponse("team_response"),
   teamRespondedAt: timestamp("team_responded_at", { withTimezone: true }),
   teamReportNote: text("team_report_note"),

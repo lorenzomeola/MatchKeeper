@@ -91,6 +91,11 @@ export default function TermsPage() {
           to the pitch and around kick-off. This record is how we show that the goalkeeper
           turned up. See the <a href="/privacy">Privacy Policy</a> for how long we keep it.
         </li>
+        <li>
+          After checking in, a goalkeeper can add a photo of where they are waiting. It is
+          optional, only the team in that booking and MatchKeeper can see it, and it should show the
+          spot, not other people. Do not take photos of children or share the photo elsewhere.
+        </li>
         {payments && (
           <li>
             MatchKeeper adds a 15% platform fee on top of the keeper&apos;s rate. The team pays the

@@ -13,6 +13,7 @@ import { PaymentSetupCard } from "@/components/app/payment-setup-card";
 import { StandingCard } from "@/components/app/standing-card";
 import { PaymentModeNotice } from "@/components/platform/payment-mode-notice";
 import { loadMyStanding } from "@/lib/data/standing";
+import { signedCheckInPhotoUrls } from "@/lib/data/checkin-photos";
 import { PostedToast } from "@/components/app/posted-toast";
 import { ReviewCard } from "@/components/app/review-card";
 import { MATCH_STATUS, StatusBadge } from "@/components/app/status-badge";
@@ -148,12 +149,15 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
     const { data: bk } = await supabase
       .from("bookings")
       .select(
-        "id, application_id, status, payment_status, keeper_checked_in_at, team_response, auto_release_at, cancelled_by, cancellation_charge_pct, rate_pence, commission_pct",
+        "id, application_id, status, payment_status, keeper_checked_in_at, check_in_photo_path, team_response, auto_release_at, cancelled_by, cancellation_charge_pct, rate_pence, commission_pct",
       )
       .eq("match_id", id)
       .order("created_at", { ascending: true });
     bookings = (bk ?? []).filter((b) => b.status !== "pending_payment");
   }
+  // Las rutas salen de una consulta con RLS: solo el equipo de la reserva y el portero llegan a tener una foto que firmar.
+  const photoUrls = await signedCheckInPhotoUrls(bookings.map((b) => b.check_in_photo_path));
+  const photoOf = (b: { check_in_photo_path?: string | null }) => (b.check_in_photo_path ? (photoUrls.get(b.check_in_photo_path) ?? null) : null);
   const latestFor = (applicationId: string) => [...bookings].reverse().find((b) => b.application_id === applicationId) ?? null;
   const myBooking = mine ? latestFor(mine.id) : null;
   // Reserva cancelada cuyo portero ya no figura como aceptado (p. ej. el partido se reabrió): se muestra aparte.
@@ -242,7 +246,7 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
       </section>
 
       {!isOwner && myBooking && (
-        <BookingCard role="keeper" booking={myBooking} startsAt={match.starts_at} endsAt={match.ends_at} />
+        <BookingCard role="keeper" booking={myBooking} startsAt={match.starts_at} endsAt={match.ends_at} photoUrl={photoOf(myBooking)} />
       )}
       {orphanCancelled && (
         <BookingCard role="owner" booking={orphanCancelled} startsAt={match.starts_at} endsAt={match.ends_at} />
@@ -282,7 +286,7 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
                           Message
                         </Link>
                       </div>
-                      {bk && <BookingCard role="owner" booking={bk} startsAt={match.starts_at} endsAt={match.ends_at} compact />}
+                      {bk && <BookingCard role="owner" booking={bk} startsAt={match.starts_at} endsAt={match.ends_at} photoUrl={photoOf(bk)} compact />}
                     </li>
                   );
                 })}

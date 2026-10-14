@@ -58,6 +58,11 @@ export default function PrivacyPage() {
           their coordinates at that moment and the distance to the pitch. We only read the
           location when they tap the button, never in the background.
         </li>
+        <li>
+          Check-in photo (optional): after checking in, a goalkeeper can add a photo of where they
+          are waiting so the team can find them. We remove the camera metadata, including any
+          location it holds, before saving the photo. It is stored privately and is never public.
+        </li>
         {payments && (
           <li>
             Protected-booking records such as the amount, payment/refund status and Stripe reference
@@ -95,7 +100,9 @@ export default function PrivacyPage() {
           ? "The check-in location exists for one purpose: to prove a goalkeeper turned up, so a team that did not show up can be charged and a goalkeeper who did can be paid."
           : "The check-in location exists for one purpose: to show whether a goalkeeper turned up, so a disagreement about it can be settled."}{" "}
         The other side of a booking can see that the goalkeeper checked in, not their exact
-        coordinates, unless it is needed to resolve a dispute.
+        coordinates, unless it is needed to resolve a dispute. If the goalkeeper adds a photo, only
+        the team in that booking, the goalkeeper and MatchKeeper admins can see it, so the team can
+        find the goalkeeper; admins may also use it when reviewing a report or a dispute.
       </p>
 
       <h2>3. Who it&apos;s shared with</h2>
@@ -161,6 +168,11 @@ export default function PrivacyPage() {
         After the purge we retain the check-in time and the measured distance from the pitch; the
         distance is visible to admins reviewing a booking. If a dispute is still open, we keep
         the exact coordinates until it is resolved.
+      </p>
+      <p>
+        A check-in photo follows the same schedule: it is deleted 120 days after the match end, or
+        later if a dispute is open. A goalkeeper can remove their photo earlier from the booking
+        page.
       </p>
 
       <h2>8. Contact</h2>

@@ -107,6 +107,19 @@ async function queueScheduled(c: BookingCtx, template: ReturnType<typeof booking
   }
 }
 
+/** El portero añadió su foto: el equipo recibe el aviso con enlace a la página del partido, donde la ve. */
+export async function notifyKeeperPhoto(bookingId: string) {
+  const c = await loadBookingContext(bookingId);
+  if (!c || c.status !== "confirmed" || !c.team.email) return;
+  await queueEmail({
+    template: "keeper_photo_team",
+    toEmail: c.team.email,
+    toUserId: c.team.id,
+    dedupe: key(c.id, "keeper_photo_team"),
+    data: { keeperName: c.keeper.name, pitch: c.pitch, when: c.when, matchUrl: c.matchUrl },
+  });
+}
+
 /** El portero ya hizo el check-in: los recordatorios de check-in que quedaban sobran. */
 export async function notifyCheckedIn(bookingId: string) {
   await cancelPending(key(bookingId, "keeper_checkin_"));

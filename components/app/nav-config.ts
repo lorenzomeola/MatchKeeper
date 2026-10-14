@@ -33,6 +33,8 @@ export type NavItem = {
   badge?: "unread" | "pending" | "reports";
   /** Solo tiene sentido con los pagos encendidos; en la beta sin pagos se oculta. */
   paymentsOnly?: boolean;
+  /** Nombre que se muestra en la beta sin pagos, si es distinto. */
+  freeLabel?: string;
 };
 
 const PLAYER: NavItem[] = [
@@ -62,7 +64,7 @@ const ADMIN: NavItem[] = [
   { href: "/admin/users", label: "Users", icon: UsersIcon, tab: true },
   { href: "/admin/matches", label: "Matches", icon: ListIcon, tab: true },
   { href: "/admin/reports", label: "Reports", icon: FlagIcon, tab: true, badge: "reports" },
-  { href: "/admin/payments", label: "Payments", icon: WalletIcon },
+  { href: "/admin/payments", label: "Payments", freeLabel: "Bookings", icon: WalletIcon },
   { href: "/admin/strikes", label: "Strikes", icon: BlockIcon },
   { href: "/admin/disputes", label: "Disputes", icon: InfoIcon, paymentsOnly: true },
 ];

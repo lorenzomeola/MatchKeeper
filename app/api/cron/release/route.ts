@@ -1,6 +1,7 @@
 import { processCancellationMoney } from "@/lib/payments/cancel-booking";
 import { notifyAdminPaymentProblem } from "@/lib/email/admin-emails";
 import { defer } from "@/lib/email/booking-emails";
+import { CHECKIN_PHOTO_BUCKET } from "@/lib/payments/checkin-photo";
 import { cancellationWork } from "@/lib/payments/money";
 import { moveToReview, releaseBooking } from "@/lib/payments/release-booking";
 import { decideRelease } from "@/lib/payments/release";
@@ -26,7 +27,7 @@ export async function GET(req: Request) {
     return new Response("Query failed", { status: 500 });
   }
 
-  const summary = { released: 0, movedToReview: 0, skipped: 0, failed: 0, cancellationsResumed: 0, coordinatesPurged: 0 };
+  const summary = { released: 0, movedToReview: 0, skipped: 0, failed: 0, cancellationsResumed: 0, coordinatesPurged: 0, photosPurged: 0 };
 
   // Cancelaciones cuyo reembolso o pago al portero quedó a medias (p. ej. Stripe falló): se reanudan.
   const { data: cancelled } = await admin
@@ -62,6 +63,27 @@ export async function GET(req: Request) {
     summary.failed++;
   } else {
     summary.coordinatesPurged = purged ?? 0;
+  }
+
+  // Las fotos del check-in caducan igual: primero el archivo y, si se borra, la referencia.
+  const { data: stale, error: staleError } = await admin.rpc("checkin_photos_to_purge");
+  if (staleError) {
+    console.error("checkin_photos_to_purge failed", staleError);
+    summary.failed++;
+  } else if (stale?.length) {
+    const { error: removeError } = await admin.storage
+      .from(CHECKIN_PHOTO_BUCKET)
+      .remove(stale.map((s: { photo_path: string }) => s.photo_path));
+    if (removeError) {
+      console.error("check-in photo purge failed", removeError);
+      summary.failed++;
+    } else {
+      await admin
+        .from("bookings")
+        .update({ check_in_photo_path: null, check_in_photo_at: null })
+        .in("id", stale.map((s: { booking_id: string }) => s.booking_id));
+      summary.photosPurged = stale.length;
+    }
   }
 
   for (const b of due ?? []) {
