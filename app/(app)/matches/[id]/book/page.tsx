@@ -5,10 +5,11 @@ import { Avatar } from "@/components/app/avatar";
 import { BookingForm } from "@/components/app/booking-form";
 import { PageHeader } from "@/components/app/page-header";
 import { ArrowLeftIcon } from "@/components/platform/icons";
+import { PaymentModeNotice } from "@/components/platform/payment-mode-notice";
 import { longDate, moneyPence, splitAddress, timeRange } from "@/lib/format";
 import { COMMISSION_PCT } from "@/lib/payments/config";
 import { calculateTotals } from "@/lib/payments/money";
-import { paymentsEnabled } from "@/lib/payments/mode";
+import { getPaymentMode } from "@/lib/payments/mode";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Book a keeper", robots: { index: false } };
@@ -61,8 +62,25 @@ export default async function BookPage({
     .eq("id", app.goalkeeper_id)
     .maybeSingle();
 
+  const paymentMode = await getPaymentMode();
+  if (paymentMode === "unavailable") {
+    return (
+      <div className="grid gap-4">
+        <Link
+          href={`/matches/${id}`}
+          className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-muted hover:text-fg"
+        >
+          <ArrowLeftIcon className="h-4 w-4" />
+          Back to the match
+        </Link>
+        <PageHeader eyebrow="Booking" title="Booking unavailable" description="We could not confirm the current booking mode." />
+        <PaymentModeNotice />
+      </div>
+    );
+  }
+
   const totals = calculateTotals(Math.round(Number(app.rate) * 100), COMMISSION_PCT);
-  const free = !(await paymentsEnabled());
+  const free = paymentMode === "free";
   const pitch = splitAddress(match.address);
 
   const { count: bookedNow } = await supabase
@@ -89,7 +107,7 @@ export default async function BookPage({
         description={
           free
             ? "MatchKeeper does not handle payments during the beta. You agree the payment with the keeper directly."
-            : "Your payment is held until the match is played."
+            : "The keeper transfer is made after the match rules are met."
         }
       />
 

@@ -32,7 +32,7 @@ const PROBLEMS: Record<PaymentProblemKind, { title: string; what: string }> = {
   },
   refund_after_payout: {
     title: "Refund after the keeper was paid",
-    what: "The payment was refunded in Stripe after the keeper had already been paid. Nothing could be held back.",
+    what: "The payment was refunded in Stripe after the keeper had already been paid. No transfer could be reversed automatically.",
   },
 };
 
@@ -70,7 +70,7 @@ export const ADMIN_BUILDERS: { [K in keyof AdminTemplateData]: Builder<K> } = {
       `${d.keeperName} for ${d.teamName} at ${d.pitch}.`,
       d.when,
       reviewReasonText(d.reason),
-      `${d.amount} is held until you decide.`,
+      `No transfer has been made while this booking is under review (${d.amount}).`,
     ],
     cta: { label: "Review the booking", url: d.adminUrl },
   }),

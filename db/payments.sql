@@ -76,8 +76,8 @@ $$;
 
 grant execute on function public.keeper_can_get_paid(uuid) to authenticated;
 
--- La política de insert de applications (que usa keeper_can_get_paid) vive ahora en db/free-beta.sql,
--- porque depende del interruptor payments_enabled(). Corre free-beta.sql después de este archivo.
+-- La política de insert de applications (que usa keeper_can_get_paid) vive en db/free-beta.sql.
+-- payment-mode.sql define el modo antes de que se ejecute db/free-beta.sql.
 
 -- ============ backfill de importes en bookings existentes ============
 -- Las reservas anteriores a los pagos solo tienen `rate` en libras. Se rellenan los peniques una vez.

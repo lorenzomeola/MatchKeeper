@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { BookingError, startCheckout } from "@/lib/payments/checkout";
 import { TERMS_VERSION } from "@/lib/payments/config";
 import { acceptWithoutPayment } from "@/lib/payments/free-booking";
-import { paymentsEnabled } from "@/lib/payments/mode";
+import { getPaymentMode } from "@/lib/payments/mode";
 import { createClient } from "@/lib/supabase/server";
 
 export type BookingActionState = { error: string | null };
@@ -21,7 +21,11 @@ export async function startCheckoutAction(
 
   const applicationId = String(formData.get("applicationId") ?? "");
   if (!applicationId) return { error: "Choose a keeper to book." };
-  const free = !(await paymentsEnabled());
+  const paymentMode = await getPaymentMode();
+  if (paymentMode === "unavailable") {
+    return { error: "Bookings are temporarily unavailable. Please try again shortly." };
+  }
+  const free = paymentMode === "free";
   if (formData.get("terms") !== "on") {
     return { error: free ? "Accept the Terms to continue." : "Accept the Terms and the cancellation policy to continue." };
   }

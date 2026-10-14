@@ -1,34 +1,45 @@
 # MatchKeeper — Platform Design System ("Floodlight")
 
-Source of truth for the **authenticated platform** (`/home`, the legal pages
-`/terms`, `/privacy` and `/safety` and, from phase 2, `/login`, `/signup`,
-`/dashboard`, `/matches`, `/admin`).
-
-**Out of scope:** the public validation landing at `/` ([components/landing.tsx](../../components/landing.tsx)).
-It keeps the old `:root` tokens and must not be touched, apart from the Privacy and Terms links added to its footer.
-
-Implemented in [app/globals.css](../../app/globals.css) (section "PLATFORM DESIGN SYSTEM")
+Source of truth for platform design and release readiness. Product-version scope lives in
+[PRODUCT_PLAN.md](../../PRODUCT_PLAN.md); payment behavior lives in
+[PAYMENTS_SPEC.md](../../PAYMENTS_SPEC.md). Implemented in [app/globals.css](../../app/globals.css)
 and [components/platform/](../../components/platform/).
 
----
+## Status board (current)
 
-## Status board (read this first)
+Last reconciled: **2026-10-14**. This board supersedes the dated historical snapshot below.
 
-Last audited: **2026-10-06**. Section A3 below (payments) was built and tested that
-day. Section A2 was built the week before; the rest of the board was reconciled on
-2026-10-02 with this file, [PAYMENTS_SPEC.md](../../PAYMENTS_SPEC.md),
-[PRODUCT_PLAN.md](../../PRODUCT_PLAN.md) and [TECH_STACK.md](../../TECH_STACK.md).
+| Version | State | Release rule |
+|---|---|---|
+| Free Beta | Current target: public signup for adults 18+, London; keepers approved manually; no MatchKeeper payments | `payments_enabled=false`; a missing row defaults to free. A query error/invalid value blocks booking. |
+| Protected booking | Built and sandbox-tested; inactive | Requires explicit `payments_enabled=true` plus the paid-release gates in `PAYMENTS_SPEC.md`. Not part of the Beta release. |
+| Subscriptions | Not designed or built | No pricing or user-facing claims. Requires separate product approval after Beta evidence. |
 
-Naming: "phase 1" and "phase 2" in this file are the **visual redesign** phases.
-The Fase 1, 2 and 3 in PRODUCT_PLAN.md are **product roadmap** phases.
+The 20–50 beta figure is an acquisition target, not an invitation gate. The team chooses among keepers who apply. Direct payment between the team and keeper is outside MatchKeeper and is not collected or guaranteed by the platform.
 
-**2026-10-13, change of plan:** the first public launch is a **free beta with no
-payments** (closed group in London, 18+ only, to measure whether teams and keepers use
-it). Payments stay built but switched off behind `payments_enabled`, and come back as an
-opt-in "protected booking" once the beta validates. Status: built and tested end to end
-on 2026-10-13 (switch off and on). See
-PRODUCT_PLAN.md section 13. Section D below (Stripe live, solicitor, company) applies to
-the paid launch, not to the beta.
+### Staging-to-production policy
+
+- Work and verify on the existing `staging` branch and `staging.matchkeeperuk.com`.
+- `main` is production. Do not merge or deploy it until the staging checklist below is green and the owner separately confirms the final merge.
+- This checkout currently has local, uncommitted work. The hosted staging deployment and Supabase Preview do not receive these changes until a staging deployment and manual SQL application are approved/completed.
+- Supabase SQL changes are applied by hand in SQL Editor because the development VPN blocks direct Postgres connections. Apply/test the mode SQL in Preview first; Production uses its separate project and stays on the Beta flag `false`.
+- Latest local verification for this readiness pass: 127 unit tests pass, lint and Next 16.4.0 production build pass, and `npm audit --omit=dev --audit-level=high` reports 0 vulnerabilities. This local work is not yet deployed to hosted staging and the SQL changes have not yet been applied to Supabase Preview.
+- Full development audit still reports advisories in `braces` under `eslint-config-next` and `esbuild` under `drizzle-kit`'s legacy loader. `npm audit fix --force` would downgrade the toolchains; do not use it. These do not appear in the production-only audit.
+
+### Beta release gates
+
+- Local: focused payment-mode and legal-copy tests, full `npm test`, lint, production build, dependency audit, and `git diff --check`.
+- Staging: signup and email confirmation, password reset, player-to-keeper match lifecycle without platform payment, chat/calendar/check-in/review, no-show/cancellation, app email, legal pages, mobile layout and browser console.
+- Operations: verify Preview and Production point to separate Supabase projects; Production uses the Beta flag `false`; no `EMAIL_REDIRECT_TO` or Stripe-live activation in Production; confirm backups, support mailbox, cron secrets and credential rotation without exposing secret values.
+- Manual gates: apply SQL in Supabase; verify dashboard-only configuration and credential rotation; test GPS on a real phone and email links in a real inbox; obtain qualified legal/privacy and accounting advice. Record evidence and unresolved items instead of assuming success.
+
+### Paid-release gates (not Beta gates)
+
+Solicitor/privacy and tax review, legal entity/Stripe verification, Live-mode Connect setup and webhooks, Radar/descriptor review, paid E2E with Stripe live-safe test strategy, payout/reversal edge cases, cron plan and fee confirmation. Details remain in `PAYMENTS_SPEC.md`.
+
+### Historical snapshot
+
+The sections below preserve the 2026-10-06 implementation/design audit. Treat dated "still to build", "decision pending" and paid-launch notes as historical unless the current board above repeats them.
 
 ### A. Done (phase 1)
 
@@ -97,10 +108,7 @@ and 18. 56 unit tests (`npm test`).
 - Terms, Safety and FAQ updated with the real strike rule and the dispute recovery.
 - Reviews, the keeper dashboard and the calendar no longer show cancelled bookings as
   booked.
-- SQL to run by hand on a fresh database, after everything in A2: migrations `0007`
-  to `0011` in `db/migrations/`, then `strikes.sql`, `payments.sql`,
-  `booking-payments.sql`, `cancellations.sql`, `disputes.sql` and `retention.sql`. All
-  idempotent. Do not run `payments.sql` or `booking-payments.sql` before `strikes.sql`.
+- Historical SQL snapshot, superseded by the current checklist above and `PAYMENTS_SPEC.md`: after `strikes.sql` and `payments.sql`, run `payment-mode.sql` before `booking-payments.sql`, then `cancellations.sql`, `disputes.sql`, `retention.sql` and finally `free-beta.sql`. All are idempotent. Do not run `payments.sql` or `booking-payments.sql` before `strikes.sql`.
 
 ### B. Still to build
 

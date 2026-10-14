@@ -33,7 +33,7 @@ export default async function BookedPage({ searchParams }: { searchParams: Promi
           <>
             <StatusBadge tone="success">Payment received</StatusBadge>
             <p className="pl-prose text-[15px]">
-              Your keeper is booked. The payment is held and is only released after the match.
+              Your keeper is booked. The keeper transfer is pending until the match rules are met.
             </p>
           </>
         ) : (

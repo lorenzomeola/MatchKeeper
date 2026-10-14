@@ -12,7 +12,7 @@ export const revalidate = 60;
 
 export default function TermsPage() {
   return (
-    <LegalShell eyebrow="Legal" title="Terms of Service" updated="2026-10-13">
+    <LegalShell eyebrow="Legal" title="Terms of Service" updated="2026-10-14">
       {(payments) => (
         <>
       <p>
@@ -20,9 +20,9 @@ export default function TermsPage() {
           {payments
             ? "MatchKeeper is currently in a pilot phase in London."
             : "MatchKeeper is currently in a free beta in London, with no payments through the platform."}{" "}
-          These terms cover how the
-          platform works today; they will be expanded and formally reviewed by a solicitor
-          before the service scales beyond the pilot.
+          These draft terms describe the current release. A qualified solicitor must review them
+          before beta users are invited; payment terms apply only when protected bookings are
+          explicitly enabled.
         </em>
       </p>
 
@@ -70,11 +70,10 @@ export default function TermsPage() {
         <li>
           {payments ? (
             <>
-              Payment is taken when you book and held by Stripe. Goalkeepers confirm their arrival in
-              the app when they get to the pitch. The payment is released to the goalkeeper when the
-              team confirms the match, or automatically three days after the match ends if nobody
-              reports a problem and the goalkeeper checked in. See <a href="/safety">Safety</a> for
-              what happens if the goalkeeper does not turn up.
+              Stripe processes the payment when you book. MatchKeeper transfers the goalkeeper&apos;s
+              share when the team confirms the match, or automatically three days after the match
+              ends if nobody reports a problem and the goalkeeper checked in. See <a href="/safety">Safety</a>
+              for what happens if the goalkeeper does not turn up.
             </>
           ) : (
             <>
@@ -190,7 +189,7 @@ export default function TermsPage() {
         If the team does not show up and the goalkeeper checked in at the pitch, the check-in
         record is the evidence that the goalkeeper was there. The team is charged in full and the
         goalkeeper is paid, as set out above. If the team says the goalkeeper was not there, we
-        hold the payment and review the check-in record and the chat before deciding. A check-in
+        pause the transfer and review the check-in record and the chat before deciding. A check-in
         is strong evidence, but not the only thing we look at.
       </p>
         </>
@@ -208,8 +207,10 @@ export default function TermsPage() {
       {payments && (
         <>
       <p>
-        Payments are processed by Stripe. MatchKeeper never stores your card details. Stripe&apos;s
-        own terms apply to the processing of your payment.
+        Payments are processed through Stripe. MatchKeeper collects the payment on its Stripe
+        platform account and transfers the goalkeeper&apos;s share under these Terms. This is not a
+        separate escrow account. MatchKeeper never stores your card details. Stripe&apos;s own terms
+        apply to payment processing.
       </p>
       <p>
         If a team disputes a payment with its bank and the dispute results from the goalkeeper not

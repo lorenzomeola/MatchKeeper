@@ -94,6 +94,12 @@ test("beta sin pagos: ningun email de reserva habla de pago, comision ni reembol
   assert.match(mails[0].text, /does not handle payments during the beta/);
 });
 
+test("email de booking protegido describe la transferencia, no una custodia de Stripe", () => {
+  const r = renderEmail("booking_confirmed_team", { ...SAMPLES.booking_confirmed_team, free: false }, ctx);
+  assert.match(r.text, /keeper transfer is pending/i);
+  assert.doesNotMatch(r.text, /money is held|held by stripe/i);
+});
+
 const H = 3_600_000;
 const NOW = new Date("2026-10-08T12:00:00Z");
 const at = (h: number) => new Date(NOW.getTime() + h * H);

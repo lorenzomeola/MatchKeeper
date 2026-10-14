@@ -1,7 +1,7 @@
 import "server-only";
 import { longDate, moneyPence, splitAddress, timeRange } from "@/lib/format";
 import { appUrl } from "@/lib/payments/app-url";
-import { paymentsEnabled } from "@/lib/payments/mode";
+import { getPaymentMode } from "@/lib/payments/mode";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { partyOf, type BookingCtx } from "./booking-context";
 import { CHAT_DELAY_MS, chatKey, chatNoticeAllowed, readAfter } from "./chat-rules";
@@ -108,12 +108,13 @@ export async function notifyReopened(c: BookingCtx, restoredIds: string[]) {
 export async function notifyKeeperApproved(profileId: string) {
   const keeper = await partyOf(profileId, "Keeper");
   if (!keeper.email) return;
+  const mode = await getPaymentMode();
   await queueEmail({
     template: "keeper_approved",
     toEmail: keeper.email,
     toUserId: keeper.id,
     dedupe: `keeper_approved:${profileId}`,
-    data: { dashboardUrl: `${appUrl()}/dashboard`, payments: await paymentsEnabled() },
+    data: { dashboardUrl: `${appUrl()}/dashboard`, payments: mode === "unavailable" ? null : mode === "paid" },
   });
 }
 

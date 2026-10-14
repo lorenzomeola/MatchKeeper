@@ -68,11 +68,11 @@ const TEAM_FAQ: QA[] = [
     q: "When do I pay, and when is the money released?",
     a: (
       <>
-        Stripe holds your payment after you book. Goalkeepers tap &quot;I have arrived&quot; when they
-        get to the pitch. For three days after the match ends you can confirm that everything went
-        fine or report a problem. If you do nothing and the goalkeeper checked in, the payment is
-        released to them automatically when the three days are up. If they never checked in, we do
-        not release it. We hold it and contact you both.
+        Stripe processes your payment when you book. Goalkeepers tap &quot;I have arrived&quot; when
+        they get to the pitch. For three days after the match ends you can confirm that everything
+        went fine or report a problem. If you do nothing and the goalkeeper checked in, MatchKeeper
+        transfers their share automatically when the three days are up. If they never checked in,
+        no transfer is made and we contact you both.
       </>
     ),
   },
@@ -144,11 +144,12 @@ const KEEPER_FAQ: QA[] = [
     q: "When and how do I get paid?",
     a: (
       <>
-        Tap &quot;I have arrived&quot; in the app when you get to the pitch. Stripe holds the
-        team&apos;s payment from the moment they book, and releases it to you once the team confirms
+        Tap &quot;I have arrived&quot; in the app when you get to the pitch. Stripe processes the
+        team&apos;s payment when they book, and MatchKeeper transfers your share once the team confirms
         the match, or automatically three days after the match ends if they say nothing. If you
-        forgot to check in and the team stays silent, we hold the payment and contact you both
-        instead. Stripe then pays it out to your bank account on its normal payout schedule. If
+        forgot to check in and the team stays silent, no transfer is made and we contact you both
+        instead. Once transferred to your connected Stripe account, Stripe pays it out to your
+        bank on its normal payout schedule. If
         the team does not show up, you still get paid in full.
       </>
     ),
@@ -159,8 +160,8 @@ const KEEPER_FAQ: QA[] = [
       <>
         Tap &quot;I have arrived&quot; when you reach the pitch. We record the time and where you
         were, and that record shows you turned up. The team is charged in full and you are paid in
-        full. If the team says you were not there, we hold the payment and check your check-in and
-        the chat before deciding. Check-in only works near the pitch and around kick-off, so tap it
+        full. If the team says you were not there, we pause the transfer and review your check-in
+        and the chat before deciding. Check-in only works near the pitch and around kick-off, so tap it
         when you arrive. We keep the exact coordinates for 120 days, then delete them.
       </>
     ),

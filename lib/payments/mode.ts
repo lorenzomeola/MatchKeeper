@@ -1,21 +1,24 @@
 import "server-only";
 import { cache } from "react";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { readPaymentMode, type PaymentMode } from "./mode-state";
 
 /**
- * Si las reservas se cobran. Lee el mismo interruptor que la función SQL `payments_enabled()`
- * (tabla app_settings). Sin la fila, o si la lectura falla, se asume encendido: es el comportamiento
- * original y nunca deja pasar una reserva sin cobro por error.
+ * Lee el interruptor compartido con `public.payments_enabled()`. La fila ausente
+ * representa la beta gratuita; un error o valor desconocido nunca activa pagos.
  */
-export const paymentsEnabled = cache(async (): Promise<boolean> => {
-  const { data, error } = await createAdminClient()
-    .from("app_settings")
-    .select("value")
-    .eq("key", "payments_enabled")
-    .maybeSingle();
-  if (error) {
-    console.error("payments_enabled lookup failed, assuming payments are on", error);
-    return true;
+export const getPaymentMode = cache(async (): Promise<PaymentMode> => {
+  const result = await readPaymentMode(async () =>
+    createAdminClient()
+      .from("app_settings")
+      .select("value")
+      .eq("key", "payments_enabled")
+      .maybeSingle(),
+  );
+  if (result.mode === "unavailable") {
+    console.error("payments_enabled lookup failed or returned an invalid value", result.error);
   }
-  return data ? data.value === "true" : true;
+  return result.mode;
 });
+
+export type { PaymentMode } from "./mode-state";

@@ -11,6 +11,7 @@ import { DateTile, MatchChips } from "@/components/app/match-card";
 import { Section } from "@/components/app/page-header";
 import { PaymentSetupCard } from "@/components/app/payment-setup-card";
 import { StandingCard } from "@/components/app/standing-card";
+import { PaymentModeNotice } from "@/components/platform/payment-mode-notice";
 import { loadMyStanding } from "@/lib/data/standing";
 import { PostedToast } from "@/components/app/posted-toast";
 import { ReviewCard } from "@/components/app/review-card";
@@ -18,7 +19,7 @@ import { MATCH_STATUS, StatusBadge } from "@/components/app/status-badge";
 import { ArrowLeftIcon, ChatIcon, PinIcon, StarIcon, UsersIcon } from "@/components/platform/icons";
 import { daysAway, isPast, longDate, money, splitAddress, timeRange } from "@/lib/format";
 import { matchMinutes } from "@/lib/pricing";
-import { paymentsEnabled } from "@/lib/payments/mode";
+import { getPaymentMode } from "@/lib/payments/mode";
 import { slotsLabel } from "@/lib/slots";
 import { createClient } from "@/lib/supabase/server";
 
@@ -62,7 +63,9 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
   let paymentsReady = false;
   let hasPayAccount = false;
   let suspended = false;
-  const payments = await paymentsEnabled();
+  const paymentMode = await getPaymentMode();
+  const payments = paymentMode === "paid";
+  const modeUnavailable = paymentMode === "unavailable";
   if (isKeeper && !isOwner) {
     suspended = (await loadMyStanding(supabase, user.id)).level === "suspended";
     if (payments) {
@@ -73,7 +76,7 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
         .maybeSingle();
       hasPayAccount = Boolean(payAccount);
       paymentsReady = payAccount?.payouts_enabled === true;
-    } else {
+    } else if (paymentMode === "free") {
       paymentsReady = true;
     }
   }
@@ -137,7 +140,7 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
     ageRange: a.profiles?.age_range ?? null,
   }));
 
-  const canApply = !isOwner && isKeeper && me?.approved && match.status === "open" && !expired && !mine;
+  const canApply = !modeUnavailable && !isOwner && isKeeper && me?.approved && match.status === "open" && !expired && !mine;
 
   // Reservas del partido (el equipo ve todas; el portero, solo la suya). Las pendientes de pago no se muestran.
   let bookings: (BookingForCard & { application_id: string })[] = [];
@@ -186,6 +189,8 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
         <ArrowLeftIcon className="h-4 w-4" />
         {isKeeper ? "My games" : "My matches"}
       </Link>
+
+      {modeUnavailable && <PaymentModeNotice className="mb-6" />}
 
       <section className="pl-surface relative overflow-hidden rounded-[var(--r-xl)] p-5 sm:p-7">
         <div

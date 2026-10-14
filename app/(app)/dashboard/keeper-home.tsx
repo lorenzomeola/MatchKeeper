@@ -18,7 +18,7 @@ import { loadUnreadCount } from "@/lib/data/messages";
 import { loadPayoutProblem } from "@/lib/data/payments";
 import { loadMyStanding } from "@/lib/data/standing";
 import { dateTile, firstName, money, timeRange } from "@/lib/format";
-import { paymentsEnabled } from "@/lib/payments/mode";
+import { getPaymentMode } from "@/lib/payments/mode";
 import type { completeness } from "@/lib/profile";
 import { createClient } from "@/lib/supabase/server";
 
@@ -30,7 +30,7 @@ type Props = {
 
 export async function KeeperHome({ userId, profile, rating }: Props) {
   const supabase = await createClient();
-  const payments = await paymentsEnabled();
+  const payments = (await getPaymentMode()) === "paid";
   const [d, unread, { data: payAccount }, standing, debtPence, payoutProblem] = await Promise.all([
     loadKeeperHome(userId),
     loadUnreadCount(),

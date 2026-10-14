@@ -1,5 +1,5 @@
 -- Cobro al elegir portero (PAYMENTS_SPEC.md §4). Se pega entero en el SQL Editor de Supabase. Idempotente.
--- Requiere haber corrido antes db/policies.sql, db/payments.sql y db/migrations/0008_*.sql (y 0014 para keepers_needed).
+-- Requiere db/payment-mode.sql antes de este archivo, db/policies.sql, db/payments.sql y las migraciones 0008/0014.
 --
 -- Cambia el flujo: elegir portero ya NO confirma nada. Crea una reserva `pending_payment`; la candidatura,
 -- el partido y las demás candidaturas solo cambian cuando el pago se confirma (confirm_booking_payment).
@@ -19,6 +19,10 @@ declare
   v_match public.matches%rowtype;
   v_booking_id uuid;
 begin
+  if public.payment_mode() is distinct from 'paid' then
+    raise exception 'Paid bookings are unavailable';
+  end if;
+
   select * into v_application from public.applications where id = p_application_id;
   if not found then
     raise exception 'Application not found';

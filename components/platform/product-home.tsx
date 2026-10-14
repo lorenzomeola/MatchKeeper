@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Logo } from "@/components/logo";
 import { Button } from "@/components/platform/button";
 import { FloodlightBackdrop } from "@/components/platform/floodlight-backdrop";
 import { Faq } from "@/components/platform/faq";
@@ -17,6 +18,7 @@ import {
 } from "@/components/platform/icons";
 import { MATCH_EXAMPLES } from "@/components/platform/match-examples";
 import { PlatformNav } from "@/components/platform/nav";
+import { PaymentModeNotice } from "@/components/platform/payment-mode-notice";
 import { Reveal } from "@/components/platform/reveal";
 import { SiteFooter } from "@/components/platform/site-footer";
 import { StatBand } from "@/components/platform/stat-band";
@@ -38,7 +40,7 @@ const TEAM_STEPS = [
   },
   {
     title: "Pick and play",
-    body: "Stripe holds the payment and releases it after you confirm the match was played.",
+    body: "Stripe processes the charge when you book. MatchKeeper transfers the keeper's share after the match rules are met.",
   },
 ];
 
@@ -53,7 +55,7 @@ const KEEPER_STEPS = [
   },
   {
     title: "Play and get paid",
-    body: "Once the match is confirmed, Stripe releases your payment. You never have to ask anyone for the money.",
+    body: "After the match rules are met, MatchKeeper transfers your share to your connected Stripe account.",
   },
 ];
 
@@ -68,8 +70,8 @@ const TRUST_CARDS = [
   },
   {
     icon: LockIcon,
-    title: "Money held until it's played",
-    body: "Stripe holds the payment and releases it once both sides confirm the match happened.",
+    title: "Keeper paid after the match",
+    body: "Stripe processes the charge when you book. MatchKeeper transfers the keeper's share after the match rules are met.",
     span: "",
     stripe: true,
     checks: undefined,
@@ -155,7 +157,24 @@ const BETA_PROOFS = [
 
 /* ─────────────────────────────────────────────────────────────────────────── */
 
-export function ProductHome({ payments = true }: { payments?: boolean }) {
+export function ProductHome({ payments = true, modeUnavailable = false }: { payments?: boolean; modeUnavailable?: boolean }) {
+  if (modeUnavailable) {
+    return (
+      <div className="relative min-h-dvh bg-bg text-fg">
+        <FloodlightBackdrop />
+        <main className="mx-auto flex min-h-dvh max-w-[36rem] flex-col justify-center px-5 py-12 sm:px-8">
+          <Link href="/home" aria-label="MatchKeeper home" className="mb-8 inline-flex self-start">
+            <Logo iconClassName="h-8 w-9" wordmarkClassName="text-lg" />
+          </Link>
+          <PaymentModeNotice />
+          <Link href="/login" className="mt-5 inline-flex min-h-11 items-center text-sm font-semibold text-accent-strong underline underline-offset-4">
+            Log in
+          </Link>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="relative min-h-dvh bg-bg text-fg">
       <FloodlightBackdrop />
@@ -186,7 +205,7 @@ export function ProductHome({ payments = true }: { payments?: boolean }) {
    ─────────────────────────────────────────────────────────────────────────── */
 const HERO_TRUST = [
   { icon: ShieldCheckIcon, label: "Verified keepers" },
-  { icon: LockIcon, label: "Payment held until played" },
+  { icon: LockIcon, label: "Keeper paid after the match" },
   { icon: NoFeeIcon, label: "Free to post" },
 ];
 
@@ -235,7 +254,7 @@ function Hero({ payments }: { payments: boolean }) {
 
           <p className="pl-prose mx-auto mt-6 max-w-[30rem] [font-size:var(--t-lg)] lg:mx-0">
             {payments
-              ? "Post your match and nearby goalkeepers apply. Compare them by rating, matches played and price, then book one. Your payment is held until the match is played."
+              ? "Post your match and nearby goalkeepers apply. Compare them by rating, matches played and price, then book one. The keeper is paid after the match rules are met."
               : "Post your match and nearby goalkeepers apply. Look at their profiles and the rate they ask for, then pick one. The beta is free and has no payments: you agree the money with the keeper directly."}
           </p>
 
@@ -259,7 +278,7 @@ function Hero({ payments }: { payments: boolean }) {
 
           <ul className="mt-3 hidden flex-wrap items-center gap-x-5 gap-y-2 text-[13px] text-muted lg:flex">
             {(payments
-              ? ["Free to post", "Verified keepers only", "Payment held until it's played"]
+              ? ["Free to post", "Verified keepers only", "Keeper paid after the match"]
               : ["Free during the beta", "Verified keepers only", "Chat before the match"]
             ).map((t) => (
               <li key={t} className="flex items-center gap-1.5">

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
+  TEAM_STATE,
   buildKeeperHistory,
   buildTeamHistory,
   groupByMonth,
@@ -50,6 +51,7 @@ test("reserva por pagar o sin importes: no sale en el historial de ninguno", () 
 test("equipo: pago retenido, desglose y estados segun el partido", () => {
   const held = team(booking());
   assert.equal(held.state, "held");
+  assert.equal(TEAM_STATE[held.state].label, "Transfer pending");
   assert.deepEqual([held.ratePence, held.feePence, held.totalPence, held.costPence], [3000, 450, 3450, 3450]);
   assert.equal(held.refundStatus, "none");
   assert.equal(team(booking({ matches: past })).state, "awaiting_release");

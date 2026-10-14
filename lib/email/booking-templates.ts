@@ -51,7 +51,7 @@ export const BOOKING_BUILDERS: { [K in keyof BookingTemplateData]: Builder<K> } 
       d.when,
       d.free
         ? `${d.keeperName} asked for ${d.rate}. MatchKeeper does not handle payments during the beta, so agree with the keeper how you pay.`
-        : `You paid ${d.total} (${d.rate} keeper rate plus ${d.fee} service fee). The money is held and only goes to the keeper after the match is played.`,
+        : `You paid ${d.total} (${d.rate} keeper rate plus ${d.fee} service fee). The keeper transfer is pending until the match rules are met.`,
     ],
     cta: { label: "View the match", url: d.matchUrl },
     note: d.free
@@ -99,10 +99,10 @@ export const BOOKING_BUILDERS: { [K in keyof BookingTemplateData]: Builder<K> } 
       `Your match at ${d.pitch} has finished.`,
       d.free
         ? "Confirm it was played, or tell us if something went wrong."
-        : "Confirm it was played to release the payment, or tell us if something went wrong.",
+        : "Confirm it was played so the keeper's transfer can be sent, or tell us if something went wrong.",
       d.free
         ? "If you do nothing, we close the booking automatically three days after the match."
-        : "If you do nothing, the payment is released to the keeper automatically three days after the match.",
+        : "If you do nothing, the keeper's transfer is sent automatically three days after the match if they checked in.",
     ],
     cta: { label: "Answer now", url: d.matchUrl },
   }),
@@ -114,16 +114,16 @@ export const BOOKING_BUILDERS: { [K in keyof BookingTemplateData]: Builder<K> } 
       `We have not heard from you about the match with ${d.keeperName} at ${d.pitch}.`,
       d.free
         ? "Confirm it was played, or report a problem. Otherwise we close the booking automatically three days after the match."
-        : "Confirm it was played, or report a problem. Otherwise the payment is released to the keeper automatically three days after the match.",
+        : "Confirm it was played, or report a problem. Otherwise the keeper's transfer is sent automatically three days after the match if they checked in.",
     ],
     cta: { label: "Answer now", url: d.matchUrl },
   }),
 
   team_autorelease_notice: (d) => ({
-    title: "The payment will be released soon",
-    subject: `Payment for ${d.pitch} is released on ${d.releaseOn}`,
+    title: "The keeper transfer is due soon",
+    subject: `Transfer for ${d.pitch} is due on ${d.releaseOn}`,
     paragraphs: [
-      `The payment for ${d.keeperName} at ${d.pitch} will be released to the keeper automatically on ${d.releaseOn}.`,
+      `The transfer for ${d.keeperName} at ${d.pitch} is due automatically on ${d.releaseOn}.`,
       "If something went wrong, report it before then.",
     ],
     cta: { label: "Review the match", url: d.matchUrl },
@@ -210,7 +210,7 @@ export const BOOKING_BUILDERS: { [K in keyof BookingTemplateData]: Builder<K> } 
       `We are reviewing the match with ${d.keeperName} at ${d.pitch} (${d.when}).`,
       d.free
         ? "We will write to you when it is resolved."
-        : "The payment stays on hold until we decide. We will write to you when it is resolved.",
+        : "No transfer is made while we review the match. We will write to you when it is resolved.",
     ],
     cta: { label: "View the match", url: d.matchUrl },
   }),
@@ -222,7 +222,7 @@ export const BOOKING_BUILDERS: { [K in keyof BookingTemplateData]: Builder<K> } 
       `We are reviewing the match for ${d.teamName} at ${d.pitch} (${d.when}).`,
       d.free
         ? "We will write to you when it is resolved."
-        : "The payment stays on hold until we decide. We will write to you when it is resolved.",
+        : "No transfer is made while we review the match. We will write to you when it is resolved.",
     ],
     cta: { label: "View the match", url: d.matchUrl },
   }),

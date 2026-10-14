@@ -10,7 +10,7 @@ import { ListIcon } from "@/components/platform/icons";
 import { loadPlayerHome } from "@/lib/data/dashboard";
 import { loadUnreadCount } from "@/lib/data/messages";
 import { firstName } from "@/lib/format";
-import { paymentsEnabled } from "@/lib/payments/mode";
+import { getPaymentMode } from "@/lib/payments/mode";
 import { keeperNames } from "@/lib/slots";
 import type { completeness, PlayerKind } from "@/lib/profile";
 
@@ -23,7 +23,8 @@ type Props = {
 };
 
 export async function PlayerHome({ userId, profile, teamName, kind, rating }: Props) {
-  const [d, unread, payments] = await Promise.all([loadPlayerHome(userId), loadUnreadCount(), paymentsEnabled()]);
+  const [d, unread, mode] = await Promise.all([loadPlayerHome(userId), loadUnreadCount(), getPaymentMode()]);
+  const payments = mode === "paid";
   const isTeam = kind === "team";
   const rest = d.upcoming.filter((m) => m.id !== d.next?.id).slice(0, 4);
   const needsReply = d.needsAttention.filter(({ match }) => match.id !== d.next?.id);

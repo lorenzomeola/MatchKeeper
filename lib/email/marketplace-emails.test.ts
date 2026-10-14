@@ -85,3 +85,15 @@ test("pregunta del admin: cada linea es un parrafo y las respuestas van al admin
 test("las demas plantillas no llevan reply-to", () => {
   assert.equal(renderEmail("chat_unread", SAMPLES.chat_unread, ctx).replyTo, undefined);
 });
+
+test("aprobacion de keeper: el texto depende del modo de pagos conocido", () => {
+  const base = SAMPLES.keeper_approved;
+  const free = renderEmail("keeper_approved", { ...base, payments: false }, ctx).text;
+  const paid = renderEmail("keeper_approved", { ...base, payments: true }, ctx).text;
+  const unavailable = renderEmail("keeper_approved", { ...base, payments: null }, ctx).text;
+
+  assert.match(free, /apply to matches near you/i);
+  assert.match(paid, /set up payments/i);
+  assert.match(unavailable, /could not confirm.*booking settings/i);
+  assert.doesNotMatch(unavailable, /set up payments|apply to matches near you/i);
+});

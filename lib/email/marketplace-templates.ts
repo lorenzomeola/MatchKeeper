@@ -6,7 +6,7 @@ export type MarketplaceTemplateData = {
   application_not_selected_keeper: { pitch: string; when: string; browseUrl: string };
   application_closed_keeper: { pitch: string; when: string; browseUrl: string };
   match_reopened_keeper: { pitch: string; when: string; matchUrl: string };
-  keeper_approved: { dashboardUrl: string; payments?: boolean };
+  keeper_approved: { dashboardUrl: string; payments?: boolean | null };
   review_received_keeper: { teamName: string; rating: number; comment: string | null; pitch: string; profileUrl: string };
   chat_unread: { senderName: string; pitch: string; chatUrl: string };
   keeper_info_request: { question: string; replyTo: string; profileUrl: string };
@@ -65,7 +65,9 @@ export const MARKETPLACE_BUILDERS: { [K in keyof MarketplaceTemplateData]: Build
       "Your keeper profile has been approved.",
       d.payments === false
         ? "You can now apply to matches near you."
-        : "Set up payments to receive your fees, then apply to matches near you.",
+        : d.payments === true
+          ? "Set up payments to receive your fees, then apply to matches near you."
+          : "We could not confirm the current booking settings. Please try again shortly before applying to a match.",
     ],
     cta: { label: "Go to your dashboard", url: d.dashboardUrl },
   }),

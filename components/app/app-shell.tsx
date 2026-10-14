@@ -12,6 +12,7 @@ import { Sheet } from "@/components/app/sheet";
 import { ToastProvider } from "@/components/app/toast";
 import { FloodlightBackdrop } from "@/components/platform/floodlight-backdrop";
 import { LogOutIcon, MoreIcon, PlusIcon, ShieldCheckIcon } from "@/components/platform/icons";
+import { PaymentModeNotice } from "@/components/platform/payment-mode-notice";
 import { ThemeToggle } from "@/components/platform/theme";
 
 export type ShellBadges = { unread: number; pending: number; reports: number };
@@ -41,6 +42,7 @@ export function AppShell({
   user,
   badges,
   paymentsEnabled,
+  paymentModeUnavailable,
   children,
 }: {
   variant: NavVariant;
@@ -49,6 +51,7 @@ export function AppShell({
   user: ShellUser;
   badges: ShellBadges;
   paymentsEnabled: boolean;
+  paymentModeUnavailable: boolean;
   children: ReactNode;
 }) {
   const pathname = usePathname();
@@ -218,6 +221,7 @@ export function AppShell({
                   }`
             }`}
           >
+            {paymentModeUnavailable && <PaymentModeNotice className="mb-5" />}
             {children}
           </main>
         </div>

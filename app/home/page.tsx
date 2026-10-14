@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { ProductHome } from "@/components/platform/product-home";
-import { paymentsEnabled } from "@/lib/payments/mode";
+import { getPaymentMode } from "@/lib/payments/mode";
 
 // Landing REAL de producto (no la de validación en "/"). No enlazada desde
 // "/" todavía, solo accesible por URL directa.
@@ -15,5 +15,6 @@ export const metadata: Metadata = {
 export const revalidate = 60;
 
 export default async function HomePreview() {
-  return <ProductHome payments={await paymentsEnabled()} />;
+  const mode = await getPaymentMode();
+  return <ProductHome payments={mode === "paid"} modeUnavailable={mode === "unavailable"} />;
 }

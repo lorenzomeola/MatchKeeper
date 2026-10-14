@@ -144,7 +144,7 @@ export function BookingCard({
         <p className="pl-prose text-[15px]">
           {free
             ? "We are looking at this match. We will contact you both."
-            : "The payment is on hold while we look at this match. We will contact you both."}
+            : "The keeper transfer is paused while we review this match. We will contact you both."}
         </p>
       </section>
     );
@@ -167,7 +167,7 @@ export function BookingCard({
           </p>
         ) : now < opensAt ? (
           <p className="pl-prose text-[15px]">
-            {free ? "" : "The payment is held. "}Check-in opens at {londonTime(opensAt)}, when you are at the pitch.
+            {free ? "" : "Keeper transfer is pending. "}Check-in opens at {londonTime(opensAt)}, when you are at the pitch.
           </p>
         ) : now <= closesAt ? (
           <>
@@ -207,7 +207,7 @@ export function BookingCard({
         </>
       ) : (
         <p className="pl-prose text-[15px]">
-          {free ? "" : "Your payment is held until the match is played. "}After kick-off you can confirm it or report a problem
+          {free ? "" : "The keeper transfer is pending until the match rules are met. "}After kick-off you can confirm it or report a problem
           here.
         </p>
       )}

@@ -10,7 +10,7 @@ import { dateTile, moneyPence } from "@/lib/format";
 export const metadata: Metadata = { title: "Payments", robots: { index: false } };
 
 const STATUS: Record<string, { label: string; tone: "success" | "accent" | "warning" | "neutral" | "danger" }> = {
-  confirmed: { label: "Held", tone: "accent" },
+  confirmed: { label: "Transfer pending", tone: "accent" },
   completed: { label: "Paid out", tone: "success" },
   under_review: { label: "Needs review", tone: "warning" },
   cancelled: { label: "Cancelled", tone: "neutral" },
@@ -31,7 +31,7 @@ export default async function AdminPaymentsPage() {
       <PageHeader
         eyebrow="Admin"
         title="Payments"
-        description="Bookings paid through Stripe. Reservations that cannot be released on their own wait here for a decision."
+        description="Bookings paid through Stripe. Keeper transfers pending or paused for review appear here."
       />
 
       {review.length > 0 && (

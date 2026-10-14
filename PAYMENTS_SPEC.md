@@ -1,29 +1,25 @@
-# MatchKeeper: especificación de pagos, check-in y disputas
+# MatchKeeper: especificación de Booking protegido
 
-Documento listo para implementar. Recoge todo lo decidido sobre cómo se cobra,
-cómo se retiene y se libera el dinero, cómo funcionan las cancelaciones, el
-check-in del portero y las disputas. Si este documento y otro difieren en estos
-temas, **este documento manda**.
+> Esta especificación cubre la versión pagada futura, no la Beta actual. El Booking protegido está construido y permanece apagado detrás de `payments_enabled`; no activar cobros en staging ni Production durante el lanzamiento de la Beta. La Beta pública, sin pagos de plataforma, se define en `PRODUCT_PLAN.md` sección 13.
 
-## 0. Estado y cuándo se implementa
+Referencia de producto e implementación para el Booking protegido. Describe el cargo,
+las transferencias, cancelaciones, check-in y disputas de esa versión. No describe el
+lanzamiento Beta actual; si otra documentación contradice estas reglas pagadas, este
+documento manda para el Booking protegido.
 
-- **Cambio de estrategia (2026-10-13): primero una beta gratuita sin pagos.** Este
-  documento sigue siendo la referencia del "booking protegido" (pago retenido, reembolso
-  por no-show, comisión del 15 %), que se activará como opción después de validar. La
-  beta funciona con un interruptor `payments_enabled` en la base de datos (apagado):
-  las reservas hechas sin pagos llevan `payment_status = 'none'`, no pasan por Stripe y
-  se completan sin transferencia. Las reservas con pago no cambian. **Construido y probado el
-  2026-10-13 (`db/free-beta.sql`, `lib/payments/mode.ts`, `lib/payments/free-booking.ts`):
-  RLS y funciones con sesiones reales, y la interfaz de extremo a extremo con el
-  interruptor apagado y encendido.** Plan en `PRODUCT_PLAN.md`, sección 13.
+## 0. Estado y activación
+
+- **Versiones:** Beta gratuita = actual; Booking protegido = implementado, inactivo; suscripciones = posibilidad futura no diseñada ni ofrecida. No confundir los gates de esta especificación con los de la Beta.
+- **Beta gratuita:** `payments_enabled=false` o fila ausente; las reservas llevan `payment_status='none'`, nunca llaman Stripe y se completan sin transferencia. Un error de lectura o valor inválido bloquea las acciones de reserva. Ver `PRODUCT_PLAN.md` sección 13.
+- **Booking protegido:** se activa solo con `payments_enabled=true` y después de completar los requisitos legales, fiscales, operativos y E2E de esta especificación. El cambio de flag por sí solo no autoriza un lanzamiento.
+- Implementado y probado en staging/local con Supabase de prueba el 2026-10-13: ambos caminos del flag y el ciclo beta. La versión pagada se probó en sandbox de Stripe, no con dinero real. La revisión vigente de staging está en `design-system/matchkeeper/MASTER.md`.
 - **Decidido el 2026-10-02.** Las cifras de Stripe se verificaron ese día en su
   documentación oficial (ver sección 18).
 - **Construido y probado en el sandbox de Stripe el 2026-10-06** (pasos 1 a 8 de la
   sección 17, más strikes, borrado de coordenadas y solapamiento de calendario).
   Estado por sección, abajo y en las secciones 10, 11, 12, 15, 16 y 17.
-  **Pendiente:** emails y recordatorios (Resend),
-  herramientas de admin menores (sección 12) y todo lo de lanzamiento (sección 17,
-  paso 10). El historial de pagos (sección 12.1) está hecho; falta el recibo de Stripe
+  **Pendiente para activar pagos:** requisitos de lanzamiento real de la sección 17,
+  paso 10 y review legal. El historial de pagos (sección 12.1) está hecho; falta el recibo de Stripe
   del equipo. No se ha probado nada con
   dinero real ni en Vercel.
 - Las pruebas fueron contra el sandbox con tarjetas de prueba, en local con la CLI de
@@ -36,14 +32,9 @@ temas, **este documento manda**.
   con lo construido (strikes y recuperación en disputas actualizados el 2026-10-06).
 - **Antes de lanzar con pagos reales:** revisión de Términos por un abogado
   (sección 14) y empresa constituida con cuenta de Stripe verificada.
-- El sistema de diseño de las pantallas nuevas está en
+- El sistema de diseño de las pantallas de pago está en
   [design-system/matchkeeper/MASTER.md](design-system/matchkeeper/MASTER.md).
-- **Orden para montar una base de datos desde cero:** las migraciones `0007` a `0011`
-  de `db/migrations/` (pegadas en el SQL Editor de Supabase), y después
-  `db/strikes.sql`, `db/payments.sql`, `db/booking-payments.sql`,
-  `db/cancellations.sql`, `db/disputes.sql` y `db/retention.sql`. Todos son
-  idempotentes. `db/payments.sql` y `db/booking-payments.sql` no se pueden pasar antes
-  que `db/strikes.sql`, porque usan `keeper_is_suspended`.
+- **Actualización de una base ya preparada (este readiness pass):** ejecutar `db/payment-mode.sql`, después `db/booking-payments.sql` y luego `db/free-beta.sql` en ese orden; `db/payments.sql` y `db/strikes.sql` deben estar ya aplicados, y `db/migrations/0015_*.sql` debe existir. `payment-mode.sql` crea el flag y el modo; `booking-payments.sql` protege la RPC pagada; `free-beta.sql` instala la RPC/RLS Beta. No ejecutar `db/payments.sql` ni `db/booking-payments.sql` antes de `db/strikes.sql`. Para una base vacía, primero instalar el schema/policies y las migraciones numeradas en orden, luego los scripts de producto indicados en `MASTER.md` y este bloque.
 
 ## 1. Decisiones cerradas
 
@@ -534,11 +525,9 @@ resolver revisión).
   permite más; para cada hora hace falta Vercel Pro (sección 16, decisión 5).
 - **Recordatorios: hechos** (emails, ver sección 11).
 
-## 11. Emails y notificaciones
+## 11. Emails y notificaciones (Booking protegido)
 
-Proveedor elegido en [TECH_STACK.md](TECH_STACK.md): **Resend** (todavía no está
-instalado). Hay que añadir la dependencia, la clave y la verificación del dominio de
-envío.
+Proveedor: **Resend**, integrado mediante `email_outbox`. La versión Beta usa los textos sin pagos; los templates de Booking protegido solo se muestran cuando `payments_enabled=true`. Auth usa SMTP Resend configurado por separado en Supabase.
 
 - Reserva confirmada (equipo y portero), con recibo.
 - Recordatorio al portero 24 h antes y 30 minutos antes (check-in).
@@ -548,18 +537,10 @@ envío.
 - Strike emitido (portero).
 - Reserva en revisión (ambas partes).
 - Disputa recibida (admin).
-- Aprobación o rechazo del perfil del portero (pendiente del backlog de la fase 2).
-- Pago fallido (equipo) y pago a portero fallido (portero).
+- Aprobación del perfil del portero (email implementado); el rechazo no tiene template específico y se comunica manualmente.
+- Pago fallido del equipo (no hay template específico); el pago/payout fallido al portero sí tiene aviso.
 
-**Estado (2026-10-08):** construidos los emails de reservas y pagos (reserva
-confirmada, recordatorios de check-in, "¿jugó?", liberación y aviso previo,
-cancelación y reembolso, strike, revisión, pago a portero fallido, pago no
-completado). Van por la cola `email_outbox` con Resend; los recordatorios se
-programan en Resend y se cancelan si la reserva cambia. También están los emails
-de marketplace (candidaturas, aprobación, reseñas, chat sin leer) y los avisos al
-admin (`ADMIN_EMAIL`): portero nuevo, disputa, reserva en revisión, denuncia,
-strikes y dinero atascado. **Pendiente:** pago fallido del equipo y Supabase Auth
-por SMTP (necesita dominio).
+**Estado:** construidos los emails de reservas, marketplace y administración; los recordatorios se programan en Resend y se cancelan cuando cambia la reserva. Supabase Auth SMTP y sus plantillas se configuraron en Preview; Production debe verificarse por separado. El rechazo de perfil y el pago fallido del equipo no tienen template específico (no son requisito de la Beta gratuita). La entrega y enlaces reales deben probarse en una bandeja externa antes de invitar usuarios; los tests de plantilla no prueban entrega en Production.
 
 ## 12. Herramientas de admin
 
@@ -812,7 +793,7 @@ Progreso a 2026-10-06 (todo lo marcado se probó en el sandbox, ver sección 15)
 4. **Cobro al elegir portero:** checkout con 3D Secure, casilla de Términos,
    webhook y reserva confirmada. *Hecho.*
 5. **Check-in y respuesta del equipo:** botones, recordatorios, registro de eventos.
-   *Hecho, salvo los recordatorios (Resend).*
+  *Hecho; envío real en Production pendiente de verificación para el release con pagos.*
 6. **Liberación automática y cola de revisión:** tarea programada y herramientas
    de admin. *Hecho.*
 7. **Cancelaciones, reembolsos y strikes.** *Hecho (strikes con el sistema de puntos).*
@@ -821,16 +802,14 @@ Progreso a 2026-10-06 (todo lo marcado se probó en el sandbox, ver sección 15)
 9. **Endurecimiento:** Radar, monitorización del ratio de disputas, revisión del
    registro de auditoría y pruebas de extremo a extremo. *Ratio de disputas y webhooks
    hechos. Pendientes: Radar y repetir las pruebas en modo real.*
-10. **Lanzamiento (añadido el 2026-10-06):** Resend con dominio verificado; Stripe en
-    modo real; en Vercel las variables de entorno (`STRIPE_SECRET_KEY`,
-    `STRIPE_WEBHOOK_SECRET`, `CRON_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`), el endpoint
-    del webhook con los eventos de `checkout.session.*` y `charge.dispute.*`, y el
-    plan Pro para el cron cada hora; prueba del check-in en un móvil real; revisión
-    legal; empresa constituida.
-    **Recordatorio de emails (2026-10-09):** `EMAIL_REDIRECT_TO` está hoy en Vercel para
-    Production y Preview, y manda todos los emails a una sola dirección. Antes de
-    lanzar hay que **quitarla de Production** (dejarla solo en Preview) y revisar
-    `RESEND_API_KEY`, `ADMIN_EMAIL` y `EMAIL_FROM` con el dominio verificado en Production.
+10. **Activación del Booking protegido (no requisito de la Beta):** revisión legal/fiscal,
+  entidad y cuenta Stripe aprobadas; Live Connect configurado como el sandbox; webhooks
+  de cuenta y plataforma verificados; variables de Production revisadas sin divulgar
+  secretos; `EMAIL_REDIRECT_TO` ausente de Production; `RESEND_API_KEY`, `EMAIL_FROM` y
+  `ADMIN_EMAIL` confirmados; cron y plan Vercel adecuados; check-in probado en teléfono
+  real; escenarios de checkout, cancelación, transferencia, disputa y rollback probados.
+  Solo entonces un operador autorizado podrá cambiar `payments_enabled` a `true` y hacer
+  una prueba controlada. No activar este modo como parte del lanzamiento de Beta.
 
 ## 18. Verificado frente a pendiente de verificar
 

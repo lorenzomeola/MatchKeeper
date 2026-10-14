@@ -1,37 +1,14 @@
 -- Beta gratuita sin pagos (PRODUCT_PLAN.md sección 13). Se pega entero en el SQL Editor de Supabase. Idempotente.
 -- Requiere db/migrations/0015_*.sql (valor 'none' de payment_status), ejecutada ANTES y por separado,
--- y haber corrido db/payments.sql, db/booking-payments.sql y db/strikes.sql.
+-- y haber corrido db/payment-mode.sql, db/payments.sql, db/booking-payments.sql y db/strikes.sql.
 --
 -- Un solo interruptor, `payments_enabled`, decide si las reservas se cobran. Apagado (beta): el equipo elige portero
 -- y la reserva nace confirmada con payment_status = 'none', sin Stripe. Encendido: todo sigue como antes.
 -- Para cambiarlo:  update public.app_settings set value = 'true' where key = 'payments_enabled';
 
-create table if not exists public.app_settings (
-  key text primary key,
-  value text not null,
-  updated_at timestamptz not null default now()
-);
-
-alter table public.app_settings enable row level security;
-revoke all on table public.app_settings from anon, authenticated;
-grant all on table public.app_settings to service_role;
-
 -- La beta arranca con los pagos apagados. Si la fila ya existe no se toca (on conflict do nothing).
 insert into public.app_settings (key, value) values ('payments_enabled', 'false')
 on conflict (key) do nothing;
-
--- Sin fila el comportamiento es el de siempre (pagos encendidos).
-create or replace function public.payments_enabled()
-returns boolean
-language sql
-security definer
-set search_path = public
-stable
-as $$
-  select coalesce((select value = 'true' from public.app_settings where key = 'payments_enabled'), true);
-$$;
-
-grant execute on function public.payments_enabled() to anon, authenticated, service_role;
 
 -- Sin pagos, un portero aprobado y sin suspender puede aplicar aunque no tenga cuenta de Stripe.
 -- Esta política sustituye a la que antes vivía en db/payments.sql.
@@ -45,7 +22,10 @@ with check (
     select 1 from public.profiles p
     where p.id = auth.uid() and p.role = 'goalkeeper' and p.approved = true
   )
-  and (not public.payments_enabled() or public.keeper_can_get_paid(auth.uid()))
+  and (
+    public.payment_mode() = 'free'
+    or (public.payment_mode() = 'paid' and public.keeper_can_get_paid(auth.uid()))
+  )
   and not public.keeper_is_suspended(auth.uid())
 );
 
@@ -64,8 +44,8 @@ declare
   v_rate_pence integer;
   v_filled integer;
 begin
-  if public.payments_enabled() then
-    raise exception 'Payments are enabled';
+  if public.payment_mode() is distinct from 'free' then
+    raise exception 'Free bookings are unavailable';
   end if;
 
   select * into v_application from public.applications where id = p_application_id;

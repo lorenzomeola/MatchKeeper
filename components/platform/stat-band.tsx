@@ -20,7 +20,7 @@ type Stat = {
 const STATS: Stat[] = [
   { value: 15, suffix: "%", label: "Platform fee", detail: "No subscription or listing cost" },
   { value: 2, prefix: "<", suffix: " min", label: "To post a match", detail: "Date, pitch and level" },
-  { value: 100, suffix: "%", label: "Held until confirmed", detail: "Stripe releases after the match" },
+  { value: 100, suffix: "%", label: "Keeper rate paid", detail: "Transferred after the match rules are met" },
   { value: 0, prefix: "£", label: "To join as a keeper", detail: "Free profile, you set your rate" },
 ];
 

@@ -4,7 +4,7 @@ import { CONTACT_EMAIL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Safety",
-  description: "How MatchKeeper reviews goalkeepers, protects payments, and handles problems.",
+  description: "How MatchKeeper reviews goalkeeper profiles and handles match safety reports.",
 };
 
 // El texto depende del interruptor de pagos: se regenera cada minuto para reflejar un cambio.
@@ -12,7 +12,7 @@ export const revalidate = 60;
 
 export default function SafetyPage() {
   return (
-    <LegalShell eyebrow="Legal" title="Safety" updated="2026-10-13">
+    <LegalShell eyebrow="Legal" title="Safety" updated="2026-10-14">
       {(payments) => (
         <>
       <p>
@@ -25,7 +25,7 @@ export default function SafetyPage() {
       <p>Before a goalkeeper profile can apply to a single match, an admin checks:</p>
       <ul>
         {payments ? (
-          <li>Identity, so the person who turns up is the person you booked.</li>
+          <li>Stripe Connect&apos;s identity requirements, which apply only when protected bookings are enabled.</li>
         ) : (
           <li>That the profile is complete and credible: photo, bio and experience.</li>
         )}
@@ -33,14 +33,15 @@ export default function SafetyPage() {
         <li>That the profile hasn&apos;t previously been removed for a no-show or a complaint.</li>
       </ul>
 
-      <h2>{payments ? "2. Payments held until the match is done" : "2. Check-in and payments"}</h2>
+      <h2>{payments ? "2. Payment and check-in" : "2. Check-in and payments"}</h2>
       {payments ? (
         <p>
-          Stripe holds your payment from the moment you book, and goalkeepers tap &quot;I have
-          arrived&quot; when they get to the pitch. After the match you have three days to confirm
+          Stripe processes your payment when you book; MatchKeeper transfers the goalkeeper&apos;s
+          share under the Terms. Goalkeepers tap &quot;I have arrived&quot; when they get to the pitch.
+          After the match you have three days to confirm
           it went fine or report a problem. If nobody says anything and the goalkeeper checked in,
-          the payment is released to them automatically. If they did not check in, we hold the
-          payment and contact you both. If nobody applies to your match, you are not charged. The
+          their share is transferred automatically. If they did not check in, no transfer is made
+          and we contact you both. If nobody applies to your match, you are not charged. The
           cancellation rules are on the <a href="/home#cancellations">home page</a> and in the{" "}
           <a href="/terms">Terms</a>.
         </p>

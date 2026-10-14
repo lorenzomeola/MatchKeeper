@@ -119,7 +119,7 @@ export function TeamResponseActions({ bookingId, free = false }: { bookingId: st
           <p className="text-xs leading-relaxed text-muted">
             {free
               ? "If the keeper never checked in, a no show report is recorded straight away and the keeper gets a strike. In any other case we review it."
-              : "If the keeper never checked in, a no show report refunds you in full straight away. In any other case we hold the payment and review it, and nobody is paid until it is resolved."}
+              : "If the keeper never checked in, a no-show report triggers a full refund. In any other case we pause the keeper transfer while we review the match."}
           </p>
           <button
             type="button"

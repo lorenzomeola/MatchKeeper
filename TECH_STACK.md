@@ -5,6 +5,12 @@
 > suscripciones pagas, y usar servicios "managed" para no reinventar
 > auth/pagos/chat desde cero.
 
+## Versiones
+
+- **Beta gratuita (actual):** app pública para mayores de 18 en Londres, con revisión manual de porteros; MatchKeeper no recibe ni garantiza pagos.
+- **Booking protegido (posterior):** Stripe Connect y el ciclo de pago están implementados, pero inactivos. Requieren `payments_enabled=true` y gates propios de lanzamiento.
+- **Suscripciones (futuro no diseñado):** no hay billing, funciones premium, precio ni proveedor decididos.
+
 ## 1. Resumen del stack
 
 | Capa | Elección | Por qué |
@@ -12,17 +18,17 @@
 | Framework | **Next.js** (App Router) | Ya usado en la landing; fullstack en un repo (marketing + app); Server Components; integración de primera clase con Vercel/Stripe/Supabase |
 | Lenguaje | TypeScript | Ya usado en el repo actual |
 | Backend/DB | **Supabase** (Postgres + Auth + Realtime + Storage) | Un solo servicio cubre DB, login, chat y fotos de perfil — menos suscripciones que mantener |
-| Autenticación | **Supabase Auth** | Incluido en Supabase, sin costo/servicio extra; soporta email+password y OAuth (Google) |
-| Pagos | **Stripe** (Connect Express + Separate Charges and Transfers) | Ver `PAYMENTS_SPEC.md`. Sin cuota fija, solo % por transacción |
+| Autenticación | **Supabase Auth** | Email/password, confirmación y recuperación por SMTP Resend. Google OAuth no está implementado. |
+| Pagos | **Stripe Connect** (integración existente para Booking protegido) | Inactivo durante la Beta; ver `PAYMENTS_SPEC.md` para sus activaciones |
 | Chat 1:1 | **Supabase Realtime** (canales Postgres) | Suficiente para chat simple del MVP, incluido en el mismo plan de Supabase |
 | Mapa | **Mapbox** (fallback: MapLibre + OSM si el volumen crece) | 50k cargas/mes gratis, geocoding y estilos de mapa listos para usar |
 | Hosting | **Vercel** | Mismo proveedor que la landing actual, deploy automático desde git |
-| Estilos/UI | Tailwind CSS (ya usado en la landing) + shadcn/ui para componentes de app (formularios, tablas, modales) | Consistencia con la landing, componentes accesibles listos |
+| Estilos/UI | Tailwind CSS + sistema propio Floodlight | Tokens y componentes en `app/globals.css` y `components/platform`; shadcn/ui no está instalado. |
 | Acceso a datos (runtime) | **`supabase-js`** (PostgREST) sobre HTTPS, no conexión directa a Postgres | Ver §1.1 — necesario por la VPN corporativa del founder |
 | Esquema/migraciones | Drizzle Kit (`db/schema.ts` → SQL) | Solo para generar y versionar el SQL del esquema, no para queries en runtime |
-| Jobs programados (confirmación auto de partido) | Vercel Cron (o `pg_cron` de Supabase) llamando una API route cada hora | No requiere infraestructura extra. **Construido** en `/api/cron/release` (libera pagos, reanuda cancelaciones, borra coordenadas). `vercel.json` la lanza una vez al día porque Hobby no permite más: para cada hora hace falta Vercel Pro |
-| Email transaccional | Resend (recibos, notificaciones de aplicación/aceptación) | Buen free tier, integración simple con Next.js. **Todavía no está instalado**: no se envía ningún email |
-| Analytics/errores | Vercel Analytics + Sentry (free tier) | Monitoreo básico sin costo al inicio |
+| Jobs programados | Vercel Cron llama rutas protegidas | `/api/cron/release` completa reservas y retención; `/api/cron/emails` reintenta la cola. `vercel.json` programa ambas diariamente; límites/cadencia dependen del plan contratado. |
+| Email transaccional | Resend + `email_outbox` | Integrado para Auth, marketplace, administración y reservas. En Preview se usa `EMAIL_REDIRECT_TO`; nunca configurar ese redirect en Production. |
+| Analytics/errores | Vercel Analytics; Sentry no configurado | Analytics de páginas está instalado; no hay captura de errores Sentry activa. |
 
 ### 1.1 Por qué no hay conexión directa a Postgres en runtime
 
@@ -53,7 +59,9 @@ pasar HTTPS normal. Por eso:
 - Costo: **sin cambio** — el Data API/PostgREST viene incluido en el plan
   Supabase Pro ya presupuestado.
 
-## 2. Costos estimados (piloto Londres)
+## 2. Costos por versión
+
+La Beta no cobra a los usuarios. Los costes de Vercel, Supabase, Mapbox y Resend dependen del plan elegido y del uso real; confirma el presupuesto en los paneles de cada proveedor. Los costes de Stripe de abajo aplican solo al Booking protegido, no a la Beta.
 
 | Servicio | Plan inicial | Costo/mes |
 |---|---|---|
@@ -68,7 +76,7 @@ pasar HTTPS normal. Por eso:
 Se puede arrancar en $0/mes con los planes Free (Vercel Hobby + Supabase Free)
 durante pruebas internas, y subir a Pro justo antes de lanzar con pagos reales.
 
-## 3. Comisión y ejemplo de márgenes
+## 3. Comisión y ejemplo de márgenes (Booking protegido, no Beta)
 
 - **Comisión de MatchKeeper: 15%**, cobrada al jugador además de la tarifa
   que fija el portero (config, ajustable sin tocar el modelo de datos).
@@ -92,7 +100,7 @@ partido normal es £3.61. Detalle y casos en `PAYMENTS_SPEC.md`, sección 2.)
 - `teams` — perfil opcional creado por un `player`; `team_members` (roster).
 - `matches` — publicado por un `player` (o `team`): fecha, ubicación (lat/lng), duración, presupuesto sugerido, estado (`open` → `assigned` → `completed`/`cancelled`).
 - `applications` — portero aplica a un `match` con su tarifa; estado (`pending`/`accepted`/`rejected`).
-- `bookings` — se crea al elegir portero (`pending_payment`) y pasa a `confirmed` cuando Stripe confirma el cobro. Guarda importes en peniques, check-in, respuesta del equipo, ids de Stripe y la aceptación de los Términos (ver `PAYMENTS_SPEC.md`, secciones 4 y 9). Una sola reserva activa por partido.
+- `bookings` — en Beta, elegir portero crea una reserva `confirmed` con `payment_status='none'`; en Booking protegido, la elección crea `pending_payment` y solo Stripe la confirma. Guarda importes en peniques, check-in, respuesta del equipo, ids de Stripe y aceptación de Términos (ver `PAYMENTS_SPEC.md`).
 - `booking_events` — registro de auditoría solo de inserción; base de la evidencia de disputas.
 - `keeper_stripe_accounts` — cuenta Connect del portero, aparte de `profiles` porque `profiles` lo leen los equipos.
 - `disputes` — disputas con el banco: evidencia preparada, culpa, recuperación y devolución si se gana.
@@ -104,32 +112,8 @@ partido normal es £3.61. Detalle y casos en `PAYMENTS_SPEC.md`, sección 2.)
 
 ## 5. Próximo paso
 
-**Cambio de estrategia (2026-10-13): beta gratuita sin pagos.** Antes de lanzar con
-dinero real se hace una beta cerrada sin pagos (ver `PRODUCT_PLAN.md`, sección 13). Se
-implementa con un interruptor en la base de datos (`app_settings.payments_enabled`,
-función `public.payments_enabled()`), un valor nuevo `none` en `payment_status` para las
-reservas sin cobro, y condiciones en la interfaz y en las acciones del servidor. No se
-elimina nada de Stripe. Con el interruptor apagado no se necesita Stripe live, cuenta
-bancaria de empresa ni IVA; sí hace falta una base de datos de producción separada,
-quitar `EMAIL_REDIRECT_TO` de Production y un plan de Vercel acorde al uso.
-**Estado: construido y probado de extremo a extremo (2026-10-13), con el interruptor
-apagado y encendido; SQL ya aplicado en la base de pruebas (`0015`, `db/free-beta.sql`,
-`db/reviews.sql`, `db/keeper-profile.sql`). `/` redirige a `/home`.**
+La rama `staging` es la candidata de lanzamiento de la Beta. Ejecuta los gates actuales de `design-system/matchkeeper/MASTER.md`; no promover a `main` hasta pasar pruebas locales y staging.
 
-**Estado a 2026-10-06:** la Fase 1 y los pagos de la Fase 2 están construidos; los
-pagos, strikes y disputas se probaron en el sandbox de Stripe (56 pruebas unitarias,
-más ejecuciones reales contra Stripe y Supabase). El detalle está en
-`PAYMENTS_SPEC.md` y en el "Status board" de `design-system/matchkeeper/MASTER.md`.
+Para una base nueva, aplica SQL en Supabase SQL Editor en el orden de `PAYMENTS_SPEC.md`. El nuevo `db/payment-mode.sql` debe aplicarse antes de `db/booking-payments.sql` y `db/free-beta.sql`. En Production verifica que el proyecto Supabase sea independiente y que `payments_enabled=false`; la Beta no necesita Stripe live ni webhooks live.
 
-Lo que falta, por orden:
-1. **Resend** con un dominio verificado: emails y recordatorios de pagos, strikes,
-   revisiones y disputas.
-2. ~~Webhooks de Stripe que faltan~~ hechos el 2026-10-08 (estado de la cuenta del
-   portero, pagos fallidos, reembolsos y transferencias revertidas; dos destinos de
-   webhook en Stripe). Pendiente: Stripe Radar.
-3. ~~Historial de pagos (`/payments`)~~ hecho el 2026-10-08 para el portero (con CSV) y
-   para el equipo; falta el recibo descargable de Stripe del equipo, ver
-   `PAYMENTS_SPEC.md`, sección 12.1.
-4. **Preparar el lanzamiento:** variables de entorno y webhook en Vercel, plan Pro de
-   Vercel para el cron cada hora, Stripe en modo real, prueba del check-in en un
-   móvil real, revisión legal y empresa constituida.
+El booking protegido y las suscripciones son versiones separadas. La primera necesita los gates legales, de Stripe, operación y E2E en `PAYMENTS_SPEC.md`; las suscripciones no tienen implementación ni checklist hasta que se decidan.
