@@ -7,7 +7,7 @@ and [components/platform/](../../components/platform/).
 
 ## Status board (current)
 
-Last reconciled: **2026-10-14**. This board supersedes the dated historical snapshot below.
+Last local dependency verification: **2026-10-23**. Release scope last reconciled: **2026-10-14**. This board supersedes the dated historical snapshot below.
 
 | Version | State | Release rule |
 |---|---|---|
@@ -23,8 +23,8 @@ The 20–50 beta figure is an acquisition target, not an invitation gate. The te
 - `main` is production. Do not merge or deploy it until the staging checklist below is green and the owner separately confirms the final merge.
 - This checkout currently has local, uncommitted work. The hosted staging deployment and Supabase Preview do not receive these changes until a staging deployment and manual SQL application are approved/completed.
 - Supabase SQL changes are applied by hand in SQL Editor because the development VPN blocks direct Postgres connections. Apply/test the mode SQL in Preview first; Production uses its separate project and stays on the Beta flag `false`.
-- Latest local verification for this readiness pass: 127 unit tests pass, lint and Next 16.4.0 production build pass, and `npm audit --omit=dev --audit-level=high` reports 0 vulnerabilities. This local work is not yet deployed to hosted staging and the SQL changes have not yet been applied to Supabase Preview.
-- Full development audit still reports advisories in `braces` under `eslint-config-next` and `esbuild` under `drizzle-kit`'s legacy loader. `npm audit fix --force` would downgrade the toolchains; do not use it. These do not appear in the production-only audit.
+- Local verification on 2026-10-23: Next and `eslint-config-next` updated to 16.4.2; 130 unit tests pass, lint and production build pass, and `npm audit --omit=dev --audit-level=high` reports 0 vulnerabilities. The dependency update has not been deployed to hosted staging. Supabase Preview SQL application was not verified in this pass.
+- Full development audit on 2026-10-23 reports 9 affected packages (5 high, 4 moderate), from advisories in `braces` under `eslint-config-next` and `esbuild` under `drizzle-kit`'s legacy loader. `npm audit fix --force` would downgrade the toolchains; do not use it. These do not appear in the production-only audit.
 
 ### Beta release gates
 

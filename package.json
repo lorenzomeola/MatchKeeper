@@ -18,7 +18,7 @@
     "@vercel/analytics": "^2.0.1",
     "drizzle-orm": "^0.45.3",
     "mapbox-gl": "^3.31.0",
-    "next": "16.4.0",
+    "next": "16.4.2",
     "postgres": "^3.4.9",
     "react": "19.2.8",
     "react-dom": "19.2.8",
@@ -35,7 +35,7 @@
     "dotenv-cli": "^11.0.0",
     "drizzle-kit": "^0.31.11",
     "eslint": "^9",
-    "eslint-config-next": "16.4.0",
+    "eslint-config-next": "16.4.2",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
