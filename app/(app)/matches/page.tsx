@@ -4,12 +4,13 @@ import { Avatar } from "@/components/app/avatar";
 import { EmptyState } from "@/components/app/empty-state";
 import { MatchCard } from "@/components/app/match-card";
 import { PageHeader } from "@/components/app/page-header";
-import { APPLICATION_STATUS, MATCH_STATUS, StatusBadge } from "@/components/app/status-badge";
+import { APPLICATION_STATUS, StatusBadge } from "@/components/app/status-badge";
 import { Tabs } from "@/components/app/tabs";
 import { Button } from "@/components/platform/button";
 import { ListIcon, MapIcon } from "@/components/platform/icons";
 import { loadKeeperGames, loadPlayerMatches, TABS, type MatchTab } from "@/lib/data/matches";
 import { money } from "@/lib/format";
+import { bookingListStatus, matchListStatus } from "@/lib/match-list-status";
 import { keeperNames } from "@/lib/slots";
 import { createClient } from "@/lib/supabase/server";
 
@@ -62,8 +63,8 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
           />
         ) : (
           <ul className="pl-cards grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {items.map(({ application: a, match, poster }) => {
-              const s = APPLICATION_STATUS[a.status] ?? { label: a.status, tone: "neutral" as const };
+            {items.map(({ application: a, match, poster, bookingStatus }) => {
+              const s = bookingListStatus(bookingStatus) ?? APPLICATION_STATUS[a.status] ?? { label: a.status, tone: "neutral" as const };
               return (
                 <li key={a.id}>
                   <MatchCard
@@ -116,8 +117,8 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
         />
       ) : (
         <ul className="pl-cards grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {items.map(({ match, pending, keepers }) => {
-            const status = MATCH_STATUS[match.status] ?? MATCH_STATUS.open;
+          {items.map(({ match, pending, keepers, bookingStatuses }) => {
+            const status = matchListStatus(match.status, bookingStatuses);
             const full = keepers.length >= match.keepers_needed;
             const applied = pending > 0 ? `${pending} ${pending === 1 ? "keeper" : "keepers"} applied` : "No applications yet";
             return (
@@ -132,7 +133,7 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
                           <Avatar name={keepers[0].name} src={keepers[0].avatarUrl} size="sm" className="!h-7 !w-7" />
                           <span className="truncate font-medium text-fg">{keeperNames(keepers.map((k) => k.name))}</span>
                         </span>
-                        <StatusBadge tone="accent">Booked</StatusBadge>
+                        <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
                       </>
                     ) : keepers.length > 0 ? (
                       <>
@@ -143,7 +144,7 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
                       </>
                     ) : tab === "past" ? (
                       <>
-                        <span className="text-muted">Played</span>
+                        <span className="text-muted">No keeper booked</span>
                         <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
                       </>
                     ) : (
