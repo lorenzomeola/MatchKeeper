@@ -9,7 +9,7 @@ const base =
   "inline-flex min-h-11 items-center justify-center rounded-[var(--r-md)] px-4 text-sm font-semibold transition-[transform,opacity] duration-150 active:scale-[0.98] disabled:opacity-50";
 
 /** Decisiones del admin sobre una reserva en revisión. Cada una pide confirmación del navegador. */
-export function ReviewActions({ bookingId }: { bookingId: string }) {
+export function ReviewActions({ bookingId, free = false }: { bookingId: string; free?: boolean }) {
   const { toast } = useToast();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -32,26 +32,26 @@ export function ReviewActions({ bookingId }: { bookingId: string }) {
       <button
         type="button"
         disabled={pending}
-        onClick={() => decide("release", "Pay the keeper in full? The team will not be refunded.")}
+        onClick={() => decide("release", free ? "Mark this booking as played? No payment is handled by MatchKeeper." : "Pay the keeper in full? The team will not be refunded.")}
         className={`${base} bg-accent text-accent-ink`}
       >
-        Pay the keeper
+        {free ? "Mark as played" : "Pay the keeper"}
       </button>
       <button
         type="button"
         disabled={pending}
-        onClick={() => decide("refund", "Refund the team in full? The keeper will not be paid.")}
+        onClick={() => decide("refund", free ? "Cancel this booking without a strike? No payment is handled by MatchKeeper." : "Refund the team in full? The keeper will not be paid.")}
         className={`${base} border border-line-strong text-fg`}
       >
-        Refund the team
+        {free ? "Cancel without strike" : "Refund the team"}
       </button>
       <button
         type="button"
         disabled={pending}
-        onClick={() => decide("refund_strike", "Refund the team in full AND add a no-show strike to the keeper?")}
+        onClick={() => decide("refund_strike", free ? "Cancel this booking AND add a no-show strike to the keeper? No payment is handled by MatchKeeper." : "Refund the team in full AND add a no-show strike to the keeper?")}
         className={`${base} border border-danger/50 text-danger`}
       >
-        Refund and strike keeper
+        {free ? "Cancel and strike keeper" : "Refund and strike keeper"}
       </button>
     </div>
   );

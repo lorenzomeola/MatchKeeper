@@ -6,7 +6,7 @@ export type PaymentProblemKind = "cancellation" | "release" | "refund_after_payo
 export type AdminTemplateData = {
   admin_new_keeper: { name: string; city: string | null; adminUrl: string };
   admin_dispute: { inquiry: boolean; amount: string; reason: string; dueBy: string | null; matched: boolean; adminUrl: string };
-  admin_booking_review: { reason: string; pitch: string; when: string; keeperName: string; teamName: string; amount: string; adminUrl: string };
+  admin_booking_review: { reason: string; pitch: string; when: string; keeperName: string; teamName: string; amount: string; adminUrl: string; free?: boolean };
   admin_report: { reporterName: string; reportedName: string; reason: string; details: string | null; adminUrl: string };
   admin_keeper_standing: { keeperName: string; level: "review" | "suspended"; points: number; removalCandidate: boolean; adminUrl: string };
   admin_payment_problem: { kind: PaymentProblemKind; pitch: string; keeperName: string; teamName: string; detail: string | null; adminUrl: string };
@@ -70,7 +70,9 @@ export const ADMIN_BUILDERS: { [K in keyof AdminTemplateData]: Builder<K> } = {
       `${d.keeperName} for ${d.teamName} at ${d.pitch}.`,
       d.when,
       reviewReasonText(d.reason),
-      `No transfer has been made while this booking is under review (${d.amount}).`,
+      d.free
+        ? "This is a free-beta booking. MatchKeeper does not handle payments; review the match outcome only."
+        : `No transfer has been made while this booking is under review (${d.amount}).`,
     ],
     cta: { label: "Review the booking", url: d.adminUrl },
   }),

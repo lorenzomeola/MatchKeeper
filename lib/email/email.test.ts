@@ -15,6 +15,21 @@ const at = (ms: number) => new Date(NOW.getTime() + ms);
 const MIN = 60_000;
 const DAY = 24 * 60 * MIN;
 
+test("admin booking review distinguishes a free-beta outcome from a held payment", () => {
+  const data = {
+    reason: "no_checkin_no_response", pitch: "QA pitch", when: "Friday",
+    keeperName: "Keeper", teamName: "Team", amount: "£20.00",
+    adminUrl: "https://example.com/admin/payments",
+  };
+  const context = { siteUrl: "https://example.com", contactEmail: "support@example.com" };
+  const free = renderEmail("admin_booking_review", { ...data, free: true }, context);
+  assert.match(free.text, /MatchKeeper does not handle payments/);
+  assert.doesNotMatch(free.text, /No transfer has been made/);
+  const paid = renderEmail("admin_booking_review", { ...data, free: false }, context);
+  assert.match(paid.text, /No transfer has been made/);
+  assert.doesNotMatch(paid.text, /free-beta booking/);
+});
+
 test("plan de envio: ya, programado en Resend o esperar", () => {
   assert.deepEqual(planSend(at(-5 * MIN), NOW), { kind: "now" });
   assert.deepEqual(planSend(at(30_000), NOW), { kind: "now" });

@@ -82,7 +82,6 @@ export async function cancelBooking(input: {
 /** Reembolsa al equipo y paga al portero lo que corresponda. Idempotente y reanudable. */
 export async function processCancellationMoney(bookingId: string) {
   const admin = createAdminClient();
-  const stripe = getStripe();
 
   const { data: b } = await admin
     .from("bookings")
@@ -93,6 +92,7 @@ export async function processCancellationMoney(bookingId: string) {
     .maybeSingle();
   if (!b || b.status !== "cancelled" || b.cancellation_charge_pct === null) return;
   if (b.payment_status === "none") return;
+  const stripe = getStripe();
 
   const work = cancellationWork({
     ratePence: b.rate_pence,

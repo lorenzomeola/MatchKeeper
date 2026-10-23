@@ -78,7 +78,7 @@ export default async function AdminPaymentsPage() {
                     <li>{b.team_response ? RESPONSE[b.team_response] : "Team did not answer"}</li>
                     {b.team_report_note && <li>Note: {b.team_report_note}</li>}
                   </ul>
-                  <ReviewActions bookingId={b.id} />
+                  <ReviewActions bookingId={b.id} free={b.payment_status === "none"} />
                 </li>
               );
             })}

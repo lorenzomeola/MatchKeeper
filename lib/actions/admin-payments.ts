@@ -23,21 +23,22 @@ export async function resolveReviewAction(bookingId: string, decision: ReviewDec
   const admin = createAdminClient();
   const { data: b } = await admin
     .from("bookings")
-    .select("id, status, rate_pence, commission_pct")
+    .select("id, status, payment_status, rate_pence, commission_pct")
     .eq("id", bookingId)
     .maybeSingle();
   if (!b) return { error: "Booking not found." };
   if (b.status !== "under_review") return { error: "This booking is not waiting for review." };
 
+  const free = b.payment_status === "none";
   let message = "Done.";
   try {
     if (decision === "release") {
       const res = await releaseBooking(bookingId);
-      if (!res.released) return { error: "The payment could not be released." };
+      if (!res.released) return { error: free ? "The booking could not be marked as played." : "The payment could not be released." };
       await admin
         .from("booking_events")
         .insert({ booking_id: bookingId, type: "admin_resolved", actor_id: user.id, data: { decision } });
-      message = "Keeper paid.";
+      message = free ? "Booking marked as played." : "Keeper paid.";
     } else {
       const plan =
         decision === "refund_strike"
@@ -45,7 +46,7 @@ export async function resolveReviewAction(bookingId: string, decision: ReviewDec
           : fullRefundPlan(b.rate_pence, Number(b.commission_pct));
       const res = await cancelBooking({ bookingId, by: "admin", plan, reason: `admin_${decision}`, actorId: user.id });
       if (!res.cancelled) return { error: "This booking was already resolved." };
-      message = res.moneyPending ? "Cancelled. The refund is being processed." : "Team refunded.";
+      message = free ? "Booking cancelled." : res.moneyPending ? "Cancelled. The refund is being processed." : "Team refunded.";
     }
   } catch (e) {
     console.error("resolveReviewAction failed", e);
