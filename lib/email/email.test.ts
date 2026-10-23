@@ -36,6 +36,7 @@ test("fallos de Resend: red y limites se reintentan, errores de datos no", () =>
   assert.equal(classifyFailure({ statusCode: 500, name: "internal_server_error" }), "retry");
   assert.equal(classifyFailure({ statusCode: null, name: "application_error" }), "retry");
   assert.equal(classifyFailure({ statusCode: 409, name: "concurrent_idempotent_requests" }), "retry");
+  assert.equal(classifyFailure({ statusCode: 409, name: "resource_locked" }), "retry");
   assert.equal(classifyFailure({ statusCode: 422, name: "validation_error" }), "permanent");
   assert.equal(classifyFailure({ statusCode: 403, name: "invalid_access" }), "permanent");
   assert.equal(classifyFailure({ statusCode: 401, name: "invalid_api_key" }), "permanent");

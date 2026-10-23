@@ -486,6 +486,7 @@ export const emailOutbox = pgTable(
     payload: jsonb("payload").notNull().default({}),
     sendAfter: timestamp("send_after", { withTimezone: true }).notNull().defaultNow(),
     // pending | sending | scheduled | sent | failed | cancelled | skipped
+    // cancel_after_send | cancel_pending | cancelling | cancel_failed (send_after = next cancellation attempt)
     status: text("status").notNull().default("pending"),
     attempts: integer("attempts").notNull().default(0),
     lastError: text("last_error"),
