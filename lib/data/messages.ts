@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { isChatParticipant } from "@/lib/chat-participant";
 
 type Client = Awaited<ReturnType<typeof createClient>>;
 
@@ -72,7 +73,11 @@ export async function loadConversations(userId: string): Promise<Conversation[]>
   ]);
 
   const readAt = new Map((reads ?? []).map((r) => [r.application_id, Date.parse(r.last_read_at)]));
-  const appMap = new Map(((apps ?? []) as unknown as AppWithMatch[]).map((a) => [a.id, a]));
+  const appMap = new Map(
+    ((apps ?? []) as unknown as AppWithMatch[])
+      .filter((a) => isChatParticipant(a, userId))
+      .map((a) => [a.id, a]),
+  );
 
   const otherIdOf = (a: AppWithMatch) => (a.matches?.created_by === userId ? a.goalkeeper_id : a.matches?.created_by ?? "");
   const people = await peopleById(supabase, [...new Set([...appMap.values()].map(otherIdOf).filter(Boolean))]);
@@ -127,10 +132,9 @@ export async function loadThread(applicationId: string, userId: string): Promise
     .eq("id", applicationId)
     .maybeSingle();
   const a = app as unknown as AppWithMatch | null;
-  if (!a || !a.matches) return null;
+  if (!a || !a.matches || !isChatParticipant(a, userId)) return null;
 
   const iAmPlayer = a.matches.created_by === userId;
-  if (!iAmPlayer && a.goalkeeper_id !== userId) return null;
   const otherId = iAmPlayer ? a.goalkeeper_id : a.matches.created_by;
 
   const [people, { data: msgs }, { data: otherRead }, { data: blocks }, teamRes] = await Promise.all([

@@ -28,6 +28,9 @@ The 20–50 beta figure is an acquisition target, not an invitation gate. The te
 
 ### Beta release gates
 
+- Chat regression (2026-10-23): personal inboxes now use the same participant check as thread pages. Admin moderation visibility must not list other users' conversations in the personal inbox; moderation remains in admin reports. Three regression tests added; all 133 unit tests, lint and production build pass locally.
+- Staging acceptance (2026-10-23): created the clearly labelled QA match `8bfb6778-4158-4ecc-ad26-3d52920d0aa2` through the player UI, applied through the keeper UI, exchanged persistent chat messages in both directions, confirmed a free booking and checked in through the keeper UI using simulated pitch coordinates. Check-in persisted after reload and appeared to the player. This does not verify real-device GPS, inbox delivery, post-match completion or the automatic cron.
+
 - Local: focused payment-mode and legal-copy tests, full `npm test`, lint, production build, dependency audit, and `git diff --check`.
 - Staging: signup and email confirmation, password reset, player-to-keeper match lifecycle without platform payment, chat/calendar/check-in/review, no-show/cancellation, app email, legal pages, mobile layout and browser console.
 - Operations: verify Preview and Production point to separate Supabase projects; Production uses the Beta flag `false`; no `EMAIL_REDIRECT_TO` or Stripe-live activation in Production; confirm backups, support mailbox, cron secrets and credential rotation without exposing secret values.
