@@ -220,3 +220,52 @@ This direction does not execute or by itself authorise a merge/deployment operat
 separate final promotion confirmation and perform Production Auth/template, email and automatic
 cron checks before opening publicly. Mapbox storage permission and billing remain unresolved
 and are not validated by the owner's willingness to launch.
+
+## 9. Controlled Production promotion (2026-10-26)
+
+The owner subsequently gave separate deployment and scoped Production-QA authorisation.
+Candidate `01c447c` passed 174 tests, full lint, build/TypeScript and the production dependency
+audit (zero vulnerabilities). Merge `db46d98` had the same tree as that candidate and deployed
+as `dpl_CbNiQPHXrwG8d7yaFXajEisRZmx6` on `https://matchkeeperuk.com`.
+
+Acceptance evidence:
+
+- Production Supabase was distinct from Preview, mode was `free`, all 20 public tables had
+  RLS, and the required booking/photo/purge functions and bucket settings were present.
+- Public/legal/auth routes passed smoke checks. Anonymous cron requests returned 401;
+  a real non-admin QA account saw `No access` in admin, payment-page redirect to dashboard
+  and export rejection in free mode, and working dashboard/messages/calendar/match-form pages.
+- Signup and recovery templates were changed only after compatible code was live and were
+  checked after reload. Site URL is `https://matchkeeperuk.com`; the redirect allowlist now
+  contains only the two Production HTTPS Auth callbacks, with no localhost entries.
+- Real signup/confirmation, saved profile and password recovery succeeded. The old password
+  was rejected and the new password logged in. Reused signup/recovery links were rejected.
+  Resend reported confirmation delivered. The owner confirmed recovery in the actual inbox;
+  Resend's API still reported `queued` at the final check, so provider metadata was not used
+  as proof of inbox placement or non-delivery. No real user's credentials were changed.
+- A rolled-back DB transaction exercised authenticated application RLS, free booking acceptance,
+  confirmed/`none` payment state, zero platform fee, paid-path rejection, duplicate rejection
+  and unrelated-user booking isolation. Independent queries found no transactional fixtures.
+  This does not repeat the full browser post-match lifecycle already accepted in Preview.
+- Production's five-minute email cron ran automatically at `2026-10-26T13:55:46.095Z`, HTTP 200,
+  `vercel-cron/1.0`, on the new deployment. Daily release cron returned 200 when invoked manually
+  through Vercel after checking the empty active-booking/outbox/due-photo inventory. Verify the
+  next automatic daily run separately, at 06:00 UTC on 27 October. No live 120-day-expiry
+  deletion, financial release or backup restoration was claimed by these empty-inventory runs.
+- The new QA Auth account, profile and sessions were deleted and verified absent; its login
+  then failed. No QA Storage files or active outbox schedules remained. The local link helper
+  was stopped/deleted and browser-held QA credentials removed. Delivered emails/provider
+  logs remain subject to provider retention; deleting Auth does not delete those messages.
+
+### Rollback boundary
+
+Previous Production deployment `dpl_9767j7ETDwEnvjEnbP8PpWvNkwpS`, commit
+`46ff4f5764aaa1d0465e47fa94179896ebeeb486`, remains the pre-promotion reference.
+Rollback was not exercised. A rollback to pre-token-hash callback code must coordinate restoring
+the legacy `{{ .ConfirmationURL }}` signup/recovery templates and checking the old cron definitions;
+do not assume a deployment rollback also reverses Supabase dashboard configuration. Prefer a
+tested forward fix or a rollback that retains the compatible callback.
+
+This acceptance does not resolve the legal/provider matrix above, Mapbox storage rights/billing,
+real-pitch GPS accuracy, general credential rotation or untested restore/Storage-backup limits.
+No paid service or Stripe-live mode was enabled.
