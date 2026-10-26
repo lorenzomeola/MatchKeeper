@@ -191,7 +191,7 @@ export function NewMatchForm({ initialDate = "" }: { initialDate?: string }) {
             if (Object.keys(e1).length > 0) setStep(1);
           }
         }}
-        className="grid min-w-0 gap-7"
+        className="grid min-w-0 grid-cols-1 gap-7"
       >
         <div>
           <div className="flex items-baseline justify-between gap-3">
@@ -329,7 +329,7 @@ export function NewMatchForm({ initialDate = "" }: { initialDate?: string }) {
           </CtaAction>
         </div>
 
-        <div className={step === 2 ? "grid gap-6" : "hidden"}>
+        <div className={step === 2 ? "grid min-w-0 grid-cols-1 gap-6" : "hidden"}>
           <div className="flex items-center gap-4 rounded-[var(--r-lg)] border border-line bg-surface p-4 xl:hidden">
             <DateTile iso={preview.starts_at} />
             <div className="min-w-0 flex-1">
@@ -374,8 +374,8 @@ export function NewMatchForm({ initialDate = "" }: { initialDate?: string }) {
             tag="recommended"
           />
 
-          <fieldset className="grid gap-2.5">
-            <legend className="mb-1 flex w-full items-baseline justify-between text-sm font-medium text-fg-2">
+          <fieldset className="grid min-w-0 gap-2.5">
+            <legend className="mb-1 flex w-full flex-wrap items-baseline justify-between gap-2 text-sm font-medium text-fg-2">
               Preferred keeper age
               <RequirementTag tag="optional" />
             </legend>
