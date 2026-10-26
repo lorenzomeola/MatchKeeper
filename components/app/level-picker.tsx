@@ -21,9 +21,9 @@ export function LevelPicker({
   tag?: FieldTag;
 }) {
   return (
-    <fieldset className="relative grid gap-2.5">
-      <legend className="mb-1 flex w-full items-center justify-between text-sm font-medium text-fg-2">
-        <span className="flex items-center gap-2">
+    <fieldset className="relative grid min-w-0 gap-2.5">
+      <legend className="mb-1 flex w-full flex-wrap items-center justify-between gap-2 text-sm font-medium text-fg-2">
+        <span className="flex min-w-0 items-center gap-2">
           {label}
           <InfoTip label="What do the levels mean?">
             <span className="block font-semibold text-fg">{intro}</span>
