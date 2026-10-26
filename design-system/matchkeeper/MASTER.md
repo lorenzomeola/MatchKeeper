@@ -52,6 +52,42 @@ The 20–50 beta figure is an acquisition target, not an invitation gate. The te
 - Privacy follow-up acceptance (2026-10-26): the Preview rehearsal is now complete for three new synthetic accounts: scoped access export; full erasure without history; safe rejection of shared-profile deletion; partial erasure/pseudonymisation with a simulated open-review retention reason and preserved counterparty RLS access; old sign-in/refresh rejected. All run-owned Auth/DB/Storage fixtures cleaned and absence checked, no emails or Production mutations. See the runbook for limitations, including no real identity/delivery exercise, provider correspondence or backup restore. Provider/contact research found DPA incorporation for Supabase, Vercel Pro and Resend, but consumer Gmail is not established as covered by Workspace terms; legal geographic contact/territorial scope, Cloudflare/Mapbox agreement evidence and transfer/cookie assessment remain open. Low beta traffic is not by itself a legal exemption; no extra subscription or contract was authorised.
 - Manual gates: apply SQL in Supabase; verify dashboard-only configuration and credential rotation; test GPS on a real phone and email links in a real inbox; obtain qualified legal/privacy and accounting advice. Record evidence and unresolved items instead of assuming success.
 
+### Controlled Production promotion (2026-10-26)
+
+The owner separately authorised the promotion, new scoped Production QA fixtures, their cleanup,
+emails to the owner's QA inbox and the two Auth-template changes after compatible code deployed.
+Release candidate `01c447c` passed 174 tests, full lint, build/TypeScript and the production
+dependency audit (zero vulnerabilities). It was merged into `main` as `db46d98`, with an identical
+tree to the tested candidate, and deployed successfully as `dpl_CbNiQPHXrwG8d7yaFXajEisRZmx6`.
+Production now serves the public free beta at `https://matchkeeperuk.com`, not just the old landing.
+Unrelated local product-plan, maintenance and screenshot changes were excluded.
+
+- Production project separation, `payment_mode() = 'free'`, all 20 public tables under RLS,
+  required free-booking/photo/purge RPCs and public/private bucket configuration checked.
+- Public/legal/auth pages, unauthenticated cron 401s, authenticated non-admin denial, free-mode
+  payment-page redirect/export rejection, dashboard, messages, calendar and match form checked.
+- Compatible signup/recovery templates saved and reloaded; Production Site URL and only the two
+  HTTPS callback redirects verified after removing temporary localhost entries.
+- Real signup, confirmation, profile save, recovery, changed-password login, rejection of the old
+  password and rejection of reused signup/recovery links passed. Confirmation was reported delivered
+  by Resend; the owner confirmed recovery arrived in the inbox even though Resend's API still
+  reported `queued`. Do not use that stale provider status as proof of non-delivery.
+- Transactional Production DB/RLS acceptance verified keeper application, free confirmation,
+  no platform fee/payment, paid-path and duplicate rejection, and hidden booking for an unrelated
+  identity. All fixture writes were rolled back and absence checked; this was not a second full
+  Production browser lifecycle or a real-pitch test.
+- Automatic email cron observed at `2026-10-26T13:55:46.095Z`, HTTP 200, `vercel-cron/1.0`, on
+  the new Production deployment. Daily release cron manually invoked through Vercel returned 200.
+  Its next automatic 06:00 UTC execution is still to be checked on 27 October; manual success
+  does not close that automatic-scheduling check.
+- The real QA account/profile/Auth sessions were deleted and verified absent; its login was
+  rejected afterward. No QA Storage files or active outbox schedules remained. Temporary helper
+  and browser-held QA credentials were removed.
+
+See [Production acceptance and rollback notes](../../docs/privacy-support-operations.md#9-controlled-production-promotion-2026-10-26).
+No Stripe activation, paid add-on, backup restore, general credential rotation, legal certification
+or Mapbox storage permission was performed or inferred.
+
 ### Post-match staging acceptance (2026-10-23)
 
 Owner authorized controlled QA fixtures, time adjustments, test strikes/reviews, a temporary QA admin, app emails and staging-only fixes. Eleven isolated booking scenarios were exercised against the published app and Preview DB:
@@ -69,18 +105,18 @@ The agreed post-match functional block is accepted in staging. Real-phone GPS/ca
 
 ### End-of-day handoff and remaining order (2026-10-23)
 
-**Paused by owner. Next session starts with item 2; do not start new QA or production work automatically.** Functional acceptance is not a claim of a bug-free app or production readiness.
+**Historical handoff, superseded by the 26 October Production record above.** Do not automatically repeat completed QA. Functional acceptance is not a claim of a bug-free app or legal certification.
 
 | Priority | State | Next action / evidence required |
 |---|---|---|
 | 1. Complete post-match lifecycle | Accepted in staging | Eleven scenarios, 35 delivered notices, two cancelled reminders; details above. Fixes `7c45d59` and `fc9b722` deployed; acceptance documentation `d38d8f5` also deployed successfully. No need to repeat the whole block without a relevant change. |
 | 2. Real-phone acceptance | Mobile UX checks accepted for beta; real-pitch accuracy deferred until production feedback | User confirmed that the mobile checks work well for now, including landscape navigation and Explore. Gmail-to-Safari recovery link, GPS map centering, check-in, camera/photo upload, denied-location feedback and no-zoom-on-input also worked on the user's phone. The private Preview fixture, precise check-in coordinates and uploaded photo were deleted and verified absent afterward. The user lives in Ghent and has no London contact available to validate GPS/check-in at a real pitch before launch. The fixture used the user's location as a simulated QA pitch outside London, so real-pitch distance accuracy remains unverified; this is not a beta launch blocker and should be monitored through production user feedback and complaints. |
-| 3. Email timing and operations | Staging checks complete; Production operations deferred | Both timed Preview QA emails (unread chat and keeper check-in) were delivered to the QA redirect inbox; cancelling the test booking cancelled its two remaining Resend schedules. A Vercel alert rule for 5xx anomalies on project `matchkeeper` is configured for medium/high severity, team owners, and web/email notifications, but Observability Plus was not enabled (owner declined variable event-based billing), so alert activation remains pending. Automatic Production cron is intentionally deferred until the other release gates are complete and the owner authorizes the merge to `main`; verify it after that deployment and before public launch. Manual protected cron and cancellation retries passed in staging; Preview does not run automatic Vercel crons. |
-| 4. Infrastructure and providers | Partially configured | Vercel Pro confirmed. Confirm Supabase Pro, leaked-password protection, backups and recovery including Storage. Mapbox card/alerts and separate restricted Production token configured; sales response on Search Box result storage authorization and exact forward-search billing pending. Alerts are not a spending cap; avoid persisting new Search Box results meanwhile. |
-| 5. Legal, privacy and support | Pending | Qualified review of drafts, controller/contact details, deletion/retention process, support readiness and final admin/credential checks. The 120-day retention job has not been exercised live. |
-| 6. Controlled Production promotion | Not authorized | Recheck environment separation and beta flag, remove temporary localhost auth redirects, deploy compatible auth code before Production templates, retest emails and smoke-test. Obtain separate explicit approval before merging `staging` into `main`. |
+| 3. Email timing and operations | Production email cron observed; automatic daily release check pending | Staging timing/cancellation acceptance remains valid. Production signup/recovery passed and automatic five-minute email cron returned 200 on the new deployment. Daily release cron returned 200 when run manually; observe its 27 October 06:00 UTC automatic execution separately. Paid Observability Plus remains declined, so configured anomaly alerts are not delivering. |
+| 4. Infrastructure and providers | Production configuration reviewed; known recovery/licensing limits accepted or open | Vercel/Supabase Pro, leaked-password protection, daily DB backups, RLS and Storage configuration checked. No backup restore or external Storage backup; owner accepts possible photo loss for beta. Mapbox Search Box storage permission, agreement scope and endpoint billing remain unresolved; a sales non-response is not approval. |
+| 5. Legal, privacy and support | Technical/privacy-operation work accepted; legal/provider questions remain open | Updated notices and manual operations runbook deployed; Preview erasure rehearsal complete and support monitored by owner. Geographic contact/territorial questions, consumer Gmail terms, Cloudflare/Mapbox agreement evidence and transfer/cookie assessment are not legally signed off. Production cron success on an empty due inventory does not test an actual 120-day expiry. |
+| 6. Controlled Production promotion | Authorised and deployed; scoped Production acceptance passed | `db46d98` published the tested candidate. Production-only Auth redirects/templates, real signup/recovery, free-booking transactional RLS checks and QA cleanup passed. Remaining operational follow-up: automatic daily release execution at its next scheduled time. |
 
-Today's completed work also includes Next/ESLint 16.4.2, personal-chat participant filtering, cross-browser signup/recovery on staging, and durable scheduled-email cancellation with hosted retry acceptance. Production Supabase/SMTP and environment separation were configured/reviewed earlier with the owner, but the application has not been promoted: Production still serves the older landing. Production auth templates/retests remain pending. Stripe live stays disabled for the free beta.
+The earlier staging work includes Next/ESLint 16.4.2, personal-chat participant filtering, cross-browser signup/recovery and durable scheduled-email cancellation with hosted retry acceptance. The old landing-only Production status is superseded by the 26 October promotion above. Stripe live stays disabled for the free beta.
 
 Cleanup is complete for today's post-match run: temporary admin revoked, photo/helper removed, browser signed out, QA matches closed and no active QA reminder schedules remain. Terminal QA records, reviews and strikes intentionally remain in Preview as evidence. The one separately authorized older test booking remains under review; it was not resolved as part of cleanup. Unrelated local maintenance/screenshots are not part of these release commits.
 
