@@ -73,12 +73,72 @@ export function AppShell({
   const moreItems = inAdmin ? items.filter((i) => !i.tab && !i.primary) : [];
   const moreActive = moreItems.some((i) => isActive(pathname, i));
   const [moreOpen, setMoreOpen] = useState(false);
+  const [landscapeNavHidden, setLandscapeNavHidden] = useState(false);
   const scrollerRef = useRef<HTMLDivElement>(null);
+  const lastScrollTopRef = useRef(0);
+  const scrollDirectionRef = useRef<"up" | "down" | null>(null);
+  const scrollDistanceRef = useRef(0);
 
   // Next solo restaura el scroll de la ventana; el contenedor interno de móvil hay que subirlo a mano.
   useEffect(() => {
-    scrollerRef.current?.scrollTo(0, 0);
+    const scroller = scrollerRef.current;
+    scroller?.scrollTo(0, 0);
+    lastScrollTopRef.current = 0;
+    scrollDirectionRef.current = null;
+    scrollDistanceRef.current = 0;
   }, [pathname]);
+
+  useEffect(() => {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+
+    const landscapePhone = window.matchMedia(
+      "(orientation: landscape) and (max-height: 500px) and (max-width: 950px)",
+    );
+    const handleScroll = () => {
+      const currentTop = scroller.scrollTop;
+      if (!landscapePhone.matches || inThread) {
+        lastScrollTopRef.current = currentTop;
+        scrollDirectionRef.current = null;
+        scrollDistanceRef.current = 0;
+        setLandscapeNavHidden(false);
+        return;
+      }
+
+      const delta = currentTop - lastScrollTopRef.current;
+      if (currentTop <= 16) {
+        scrollDirectionRef.current = null;
+        scrollDistanceRef.current = 0;
+        setLandscapeNavHidden(false);
+      } else if (delta !== 0) {
+        const direction = delta > 0 ? "down" : "up";
+        if (scrollDirectionRef.current !== direction) {
+          scrollDirectionRef.current = direction;
+          scrollDistanceRef.current = 0;
+        }
+        scrollDistanceRef.current += Math.abs(delta);
+        if (direction === "down" && scrollDistanceRef.current >= 20) {
+          setLandscapeNavHidden(true);
+        } else if (direction === "up" && scrollDistanceRef.current >= 12) {
+          setLandscapeNavHidden(false);
+        }
+      }
+      lastScrollTopRef.current = currentTop;
+    };
+    const handleViewportChange = () => {
+      lastScrollTopRef.current = scroller.scrollTop;
+      scrollDirectionRef.current = null;
+      scrollDistanceRef.current = 0;
+      setLandscapeNavHidden(false);
+    };
+
+    scroller.addEventListener("scroll", handleScroll, { passive: true });
+    landscapePhone.addEventListener("change", handleViewportChange);
+    return () => {
+      scroller.removeEventListener("scroll", handleScroll);
+      landscapePhone.removeEventListener("change", handleViewportChange);
+    };
+  }, [inThread]);
 
   // Un mensaje nuevo de otra persona refresca el contador sin recargar la página.
   useEffect(() => {
@@ -96,7 +156,10 @@ export function AppShell({
   return (
     <ToastProvider>
       {/* Móvil: solo hace scroll el contenido, no el body; así la barra de Safari iOS nunca tapa la barra inferior. */}
-      <div className="relative isolate flex h-dvh flex-col overflow-hidden bg-bg text-fg lg:block lg:h-auto lg:min-h-dvh lg:overflow-visible">
+      <div
+        className="app-shell relative isolate flex h-dvh flex-col overflow-hidden bg-bg text-fg lg:block lg:h-auto lg:min-h-dvh lg:overflow-visible"
+        data-landscape-nav-hidden={landscapeNavHidden}
+      >
         <FloodlightBackdrop />
 
         {/* Escritorio: barra lateral fija */}
@@ -176,7 +239,7 @@ export function AppShell({
           </div>
         </aside>
 
-        <div ref={scrollerRef} className={`min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain lg:overflow-visible lg:pl-64 ${inMap ? "flex flex-col lg:block" : ""}`}>
+        <div ref={scrollerRef} className={`app-mobile-content-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain lg:overflow-visible lg:pl-64 ${inMap ? "flex flex-col lg:block" : ""}`}>
           {/* Móvil: barra superior */}
           <header className={`app-mobile-header pl-glass sticky top-0 z-40 items-center justify-between gap-3 rounded-none border-x-0 border-t-0 px-4 pb-2.5 pt-[calc(0.625rem+env(safe-area-inset-top,0px))] ${inThread ? "hidden" : "flex lg:hidden"}`}>
             <Link
@@ -231,6 +294,8 @@ export function AppShell({
         {/* Móvil: barra inferior */}
         <nav
           aria-label="Main"
+          aria-hidden={landscapeNavHidden || undefined}
+          inert={landscapeNavHidden || undefined}
           className={`app-mobile-nav pl-glass relative z-50 shrink-0 rounded-none border-x-0 border-b-0 bg-[color-mix(in_oklab,var(--bg-2)_94%,transparent)] pb-[env(safe-area-inset-bottom,0px)] ${inThread ? "hidden" : "lg:hidden"}`}
         >
           <ul className="app-mobile-nav-list mx-auto grid max-w-md" style={{ gridTemplateColumns: `repeat(${tabs.length + (moreItems.length > 0 ? 1 : 0)}, minmax(0, 1fr))` }}>
