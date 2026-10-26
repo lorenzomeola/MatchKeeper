@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { signedCheckInPhotoUrls } from "@/lib/data/checkin-photos";
 import { createClient } from "@/lib/supabase/server";
 import { completeness, profileChecklist, valuesFromRow, type Role } from "@/lib/profile";
 import { isActiveStrike, keeperStanding } from "@/lib/strikes";
@@ -272,7 +273,7 @@ export async function loadPayments() {
   const { data } = await supabase
     .from("bookings")
     .select(
-      "id, rate, commission_pct, payment_status, status, created_at, match_id, player_id, goalkeeper_id, team_response, team_report_note, keeper_checked_in_at, check_in_distance_m, total_pence, matches(address, starts_at)",
+      "id, rate, commission_pct, payment_status, status, created_at, match_id, player_id, goalkeeper_id, team_response, team_report_note, keeper_checked_in_at, check_in_distance_m, check_in_lat, check_in_lng, check_in_photo_path, total_pence, matches(address, starts_at, ends_at)",
     )
     .neq("status", "pending_payment")
     .order("created_at", { ascending: false })
@@ -291,11 +292,15 @@ export async function loadPayments() {
     team_report_note: string | null;
     keeper_checked_in_at: string | null;
     check_in_distance_m: number | null;
+    check_in_lat: number | null;
+    check_in_lng: number | null;
+    check_in_photo_path: string | null;
     total_pence: number | null;
-    matches: { address: string | null; starts_at: string } | null;
+    matches: { address: string | null; starts_at: string; ends_at: string } | null;
   }[];
   const names = await namesOf(supabase, rows.flatMap((r) => [r.player_id, r.goalkeeper_id]));
-  return { rows, names };
+  const photoUrls = await signedCheckInPhotoUrls(rows.map((r) => r.check_in_photo_path));
+  return { rows, names, photoUrls };
 }
 
 export type StrikeGroup = {

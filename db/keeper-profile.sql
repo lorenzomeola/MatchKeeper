@@ -15,10 +15,12 @@ as $$
        join public.matches m on m.id = b.match_id
       where b.goalkeeper_id = p_keeper
         and b.payment_status <> 'refunded'
+        and not (b.payment_status = 'none' and b.status = 'cancelled')
         and m.ends_at < now()),
     (select round(avg(b.rate), 2)
        from public.bookings b
-      where b.goalkeeper_id = p_keeper and b.payment_status <> 'refunded'),
+      where b.goalkeeper_id = p_keeper and b.payment_status <> 'refunded'
+        and not (b.payment_status = 'none' and b.status = 'cancelled')),
     (select count(*)::int from public.reviews r where r.goalkeeper_id = p_keeper),
     (select round(avg(r.rating), 1) from public.reviews r where r.goalkeeper_id = p_keeper)
   where p_keeper = auth.uid() or public.is_admin() or public.shares_match_with(p_keeper);

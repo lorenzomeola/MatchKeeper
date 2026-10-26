@@ -147,7 +147,7 @@ export function TeamPayments({
       <div className="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard label="Spent" value={moneyPence(summary.spentPence)} hint="Matches played and cancellations" tone="accent" />
         <StatCard label="This month" value={moneyPence(summary.spentThisMonthPence)} hint="Spent so far" />
-        <StatCard label="Held" value={moneyPence(summary.heldPence)} hint="Paid, not released to the keeper yet" />
+        <StatCard label="Transfer pending" value={moneyPence(summary.heldPence)} hint="Charge received; keeper transfer not sent yet" />
         <StatCard label="Refunded" value={moneyPence(summary.refundedPence)} hint="Back to your card" tone="success" />
       </div>
 
@@ -198,13 +198,13 @@ export function TeamPayments({
 function teamNote(e: TeamEntry): string {
   switch (e.state) {
     case "held":
-      return "Your payment is held and only released to the keeper after the match.";
+      return "Your charge is complete. The keeper transfer is pending until the match rules are met.";
     case "awaiting_release":
       return "The match is over. The keeper is paid once you confirm, or automatically three days after the match.";
     case "released":
       return `Paid to the keeper${e.releasedAt ? ` on ${shortDate(e.releasedAt)}` : ""}. Thanks for playing.`;
     case "review":
-      return "The payment is on hold while we look at this match.";
+      return "The keeper transfer is paused while we review this match.";
     case "dispute":
       return "This payment is being disputed with your bank. We will contact you if we need anything.";
     default: {
@@ -256,7 +256,7 @@ export function KeeperPayments({
         />
         <StatCard label="Booked" value={moneyPence(summary.bookedPence)} hint="Upcoming games, already paid by the team" tone="accent" />
         <StatCard label="Waiting" value={moneyPence(summary.pendingPence)} hint="Played, not paid out yet" />
-        <StatCard label="On hold" value={moneyPence(attention)} hint="Under review or in dispute" tone={attention > 0 ? "warning" : "default"} />
+        <StatCard label="Review or dispute" value={moneyPence(attention)} hint="Transfer paused while the case is reviewed" tone={attention > 0 ? "warning" : "default"} />
       </div>
       <p className="mb-4 text-[13px] leading-relaxed text-muted">
         &ldquo;Paid&rdquo; means MatchKeeper sent the money to your Stripe account. When it reaches your bank is set by Stripe, and
@@ -322,7 +322,7 @@ function keeperNote(e: KeeperEntry): string {
     case "released":
       return `Sent to your Stripe account${e.releasedAt ? ` on ${shortDate(e.releasedAt)}` : ""}. Stripe pays it to your bank on its normal schedule.`;
     case "review":
-      return "The payment is on hold while we look at this match. We will contact you both.";
+      return "The keeper transfer is paused while we review this match. We will contact you both.";
     case "dispute":
       return "The team disputed this payment with their bank. We will contact you if we need anything from you.";
     default: {

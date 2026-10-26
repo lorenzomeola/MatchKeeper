@@ -15,6 +15,21 @@ const at = (ms: number) => new Date(NOW.getTime() + ms);
 const MIN = 60_000;
 const DAY = 24 * 60 * MIN;
 
+test("admin booking review distinguishes a free-beta outcome from a held payment", () => {
+  const data = {
+    reason: "no_checkin_no_response", pitch: "QA pitch", when: "Friday",
+    keeperName: "Keeper", teamName: "Team", amount: "£20.00",
+    adminUrl: "https://example.com/admin/payments",
+  };
+  const context = { siteUrl: "https://example.com", contactEmail: "support@example.com" };
+  const free = renderEmail("admin_booking_review", { ...data, free: true }, context);
+  assert.match(free.text, /MatchKeeper does not handle payments/);
+  assert.doesNotMatch(free.text, /No transfer has been made/);
+  const paid = renderEmail("admin_booking_review", { ...data, free: false }, context);
+  assert.match(paid.text, /No transfer has been made/);
+  assert.doesNotMatch(paid.text, /free-beta booking/);
+});
+
 test("plan de envio: ya, programado en Resend o esperar", () => {
   assert.deepEqual(planSend(at(-5 * MIN), NOW), { kind: "now" });
   assert.deepEqual(planSend(at(30_000), NOW), { kind: "now" });
@@ -36,6 +51,7 @@ test("fallos de Resend: red y limites se reintentan, errores de datos no", () =>
   assert.equal(classifyFailure({ statusCode: 500, name: "internal_server_error" }), "retry");
   assert.equal(classifyFailure({ statusCode: null, name: "application_error" }), "retry");
   assert.equal(classifyFailure({ statusCode: 409, name: "concurrent_idempotent_requests" }), "retry");
+  assert.equal(classifyFailure({ statusCode: 409, name: "resource_locked" }), "retry");
   assert.equal(classifyFailure({ statusCode: 422, name: "validation_error" }), "permanent");
   assert.equal(classifyFailure({ statusCode: 403, name: "invalid_access" }), "permanent");
   assert.equal(classifyFailure({ statusCode: 401, name: "invalid_api_key" }), "permanent");
@@ -71,6 +87,12 @@ test("la plantilla trae asunto, boton, pie y version de texto", () => {
   assert.ok(r.html.includes("Open MatchKeeper") && r.html.includes('href="https://app.test"'));
   assert.ok(r.html.includes("help@test.dev"));
   assert.ok(r.text.includes("Open MatchKeeper: https://app.test"));
+});
+
+test("la cabecera lleva el logo de MatchKeeper desde la URL del sitio", () => {
+  const r = renderEmail("test", { message: "x" }, ctx);
+  assert.ok(r.html.includes('src="https://app.test/brand/email-logo.png"'));
+  assert.ok(r.html.includes('alt="MatchKeeper"'));
 });
 
 test("un enlace que no es http(s) no genera boton", () => {

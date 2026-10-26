@@ -9,14 +9,17 @@ import { ThemeToggle } from "@/components/platform/theme";
 
 // Rutas absolutas (no "#ancla") para que la nav funcione igual desde /home
 // que desde las páginas legales, que no tienen esas secciones.
-const LINKS = [
-  { href: "/home#how-it-works", label: "How it works" },
-  { href: "/home#trust", label: "Why MatchKeeper" },
-  { href: "/home#pricing", label: "Pricing" },
-  { href: "/home#faq", label: "FAQ" },
-];
+function navLinks(payments: boolean) {
+  return [
+    { href: "/home#how-it-works", label: "How it works" },
+    { href: "/home#trust", label: "Why MatchKeeper" },
+    payments ? { href: "/home#pricing", label: "Pricing" } : { href: "/home#beta", label: "Free beta" },
+    { href: "/home#faq", label: "FAQ" },
+  ];
+}
 
-export function PlatformNav() {
+export function PlatformNav({ payments = true }: { payments?: boolean }) {
+  const LINKS = navLinks(payments);
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 

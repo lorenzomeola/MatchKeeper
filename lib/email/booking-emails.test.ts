@@ -13,6 +13,7 @@ const SAMPLES: BookingTemplateData = {
   booking_confirmed_keeper: { ...base, teamName: "Sunday FC", rate: "£30.00" },
   keeper_checkin_24h: { ...base, teamName: "Sunday FC" },
   keeper_checkin_30m: { ...base },
+  keeper_photo_team: { ...base, keeperName: "Sam" },
   team_played_prompt: { ...base, keeperName: "Sam" },
   team_played_reminder: { ...base, keeperName: "Sam" },
   team_autorelease_notice: { ...base, keeperName: "Sam", releaseOn: "13 Oct 2026" },
@@ -74,6 +75,30 @@ test("pago liberado: menciona la deuda solo si se descuenta", () => {
   const paid = (debt: string | null) => renderEmail("payment_released_keeper", { ...SAMPLES.payment_released_keeper, debt }, ctx).text;
   assert.ok(!paid(null).includes("disputed payment"));
   assert.match(paid("£12.00"), /£12.00 was taken/);
+});
+
+test("beta sin pagos: ningun email de reserva habla de pago, comision ni reembolso", () => {
+  const free = { free: true };
+  const mails = [
+    renderEmail("booking_confirmed_team", { ...SAMPLES.booking_confirmed_team, ...free }, ctx),
+    renderEmail("booking_confirmed_keeper", { ...SAMPLES.booking_confirmed_keeper, ...free }, ctx),
+    renderEmail("team_played_prompt", { ...SAMPLES.team_played_prompt, ...free }, ctx),
+    renderEmail("team_played_reminder", { ...SAMPLES.team_played_reminder, ...free }, ctx),
+    renderEmail("booking_cancelled_team", { ...SAMPLES.booking_cancelled_team, refund: null, keeperGets: null, ...free }, ctx),
+    renderEmail("booking_cancelled_keeper", { ...SAMPLES.booking_cancelled_keeper, share: null, ...free }, ctx),
+    renderEmail("booking_review_team", { ...SAMPLES.booking_review_team, ...free }, ctx),
+    renderEmail("booking_review_keeper", { ...SAMPLES.booking_review_keeper, ...free }, ctx),
+  ];
+  for (const m of mails) {
+    assert.ok(!/refund|service fee|Stripe|payment is released|stays on hold|You paid|No payment is due/i.test(m.text), m.subject);
+  }
+  assert.match(mails[0].text, /does not handle payments during the beta/);
+});
+
+test("email de booking protegido describe la transferencia, no una custodia de Stripe", () => {
+  const r = renderEmail("booking_confirmed_team", { ...SAMPLES.booking_confirmed_team, free: false }, ctx);
+  assert.match(r.text, /keeper transfer is pending/i);
+  assert.doesNotMatch(r.text, /money is held|held by stripe/i);
 });
 
 const H = 3_600_000;

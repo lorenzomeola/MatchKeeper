@@ -17,7 +17,7 @@ import {
 type Proof = { icon: (props: { className?: string }) => React.ReactNode; text: string };
 
 const PROOFS: Proof[] = [
-  { icon: LockIcon, text: "Payments held by Stripe" },
+  { icon: LockIcon, text: "Keeper paid after the match" },
   { icon: ShieldCheckIcon, text: "Every keeper manually reviewed" },
   { icon: StarIcon, text: "Public rating & match history" },
   { icon: ChatIcon, text: "In-app chat with your keeper" },

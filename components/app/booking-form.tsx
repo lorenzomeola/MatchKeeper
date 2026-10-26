@@ -7,7 +7,18 @@ import { startCheckoutAction, type BookingActionState } from "@/lib/actions/book
 
 const initialState: BookingActionState = { error: null };
 
-export function BookingForm({ applicationId, total }: { applicationId: string; total: string }) {
+export function BookingForm({
+  applicationId,
+  total,
+  free = false,
+  keeperName,
+}: {
+  applicationId: string;
+  total: string;
+  /** Beta sin pagos: confirmar no cobra nada. */
+  free?: boolean;
+  keeperName?: string;
+}) {
   const [state, formAction, pending] = useActionState(startCheckoutAction, initialState);
 
   return (
@@ -22,12 +33,12 @@ export function BookingForm({ applicationId, total }: { applicationId: string; t
           <Link href="/terms" target="_blank" className="font-semibold text-accent-strong underline underline-offset-4">
             Terms of Service
           </Link>{" "}
-          and the cancellation policy above.
+          {free ? "and understand that MatchKeeper does not handle the payment." : "and the cancellation policy above."}
         </span>
       </label>
 
-      <SubmitButton pending={pending} pendingLabel="Opening payment…">
-        {`Pay ${total}`}
+      <SubmitButton pending={pending} pendingLabel={free ? "Confirming…" : "Opening payment…"}>
+        {free ? `Confirm ${keeperName ?? "keeper"}` : `Pay ${total}`}
       </SubmitButton>
     </form>
   );

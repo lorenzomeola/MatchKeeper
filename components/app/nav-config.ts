@@ -31,6 +31,10 @@ export type NavItem = {
   /** Rutas hijas que no deben marcar este elemento como activo. */
   excludes?: string[];
   badge?: "unread" | "pending" | "reports";
+  /** Solo tiene sentido con los pagos encendidos; en la beta sin pagos se oculta. */
+  paymentsOnly?: boolean;
+  /** Nombre que se muestra en la beta sin pagos, si es distinto. */
+  freeLabel?: string;
 };
 
 const PLAYER: NavItem[] = [
@@ -40,7 +44,7 @@ const PLAYER: NavItem[] = [
   { href: "/messages", label: "Messages", icon: ChatIcon, tab: true, badge: "unread" },
   { href: "/map", label: "Map", icon: MapIcon, tab: true },
   { href: "/calendar", label: "Calendar", icon: CalendarIcon },
-  { href: "/payments", label: "Payments", icon: WalletIcon },
+  { href: "/payments", label: "Payments", icon: WalletIcon, paymentsOnly: true },
   { href: "/profile", label: "Profile", icon: UserIcon },
 ];
 
@@ -50,7 +54,7 @@ const GOALKEEPER: NavItem[] = [
   { href: "/matches", label: "My games", icon: ListIcon, tab: true },
   { href: "/messages", label: "Messages", icon: ChatIcon, tab: true, badge: "unread" },
   { href: "/calendar", label: "Calendar", icon: CalendarIcon, tab: true },
-  { href: "/payments", label: "Payments", icon: WalletIcon },
+  { href: "/payments", label: "Payments", icon: WalletIcon, paymentsOnly: true },
   { href: "/profile", label: "Profile", icon: UserIcon },
 ];
 
@@ -60,9 +64,9 @@ const ADMIN: NavItem[] = [
   { href: "/admin/users", label: "Users", icon: UsersIcon, tab: true },
   { href: "/admin/matches", label: "Matches", icon: ListIcon, tab: true },
   { href: "/admin/reports", label: "Reports", icon: FlagIcon, tab: true, badge: "reports" },
-  { href: "/admin/payments", label: "Payments", icon: WalletIcon },
+  { href: "/admin/payments", label: "Payments", freeLabel: "Bookings", icon: WalletIcon },
   { href: "/admin/strikes", label: "Strikes", icon: BlockIcon },
-  { href: "/admin/disputes", label: "Disputes", icon: InfoIcon },
+  { href: "/admin/disputes", label: "Disputes", icon: InfoIcon, paymentsOnly: true },
 ];
 
 export const NAV: Record<NavVariant, NavItem[]> = {

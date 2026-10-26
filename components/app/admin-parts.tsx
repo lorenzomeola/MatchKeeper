@@ -17,7 +17,7 @@ export function KeeperReviewCard({ p, requests = [] }: { p: AdminProfile; reques
   const missing = rating.requiredMissing.map((i) => i.label);
 
   return (
-    <article className="pl-surface rounded-[var(--r-xl)] p-4 sm:p-6">
+    <article className="pl-surface flex flex-col rounded-[var(--r-xl)] p-4 sm:p-6">
       <div className="flex items-start gap-4">
         <Avatar name={p.display_name} src={p.avatar_url} size="xl" />
         <div className="min-w-0 flex-1">
@@ -42,7 +42,7 @@ export function KeeperReviewCard({ p, requests = [] }: { p: AdminProfile; reques
         </div>
       </div>
 
-      <div className="mt-5 rounded-[var(--r-md)] bg-surface px-4 py-3">
+      <div className="mt-5 flex-1 rounded-[var(--r-md)] bg-surface px-4 py-3">
         <p className="text-xs font-medium text-muted">Bio</p>
         <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-fg-2">{p.bio?.trim() || "No bio yet."}</p>
       </div>
@@ -61,20 +61,22 @@ export function KeeperReviewCard({ p, requests = [] }: { p: AdminProfile; reques
         <p className="mt-3 text-[13px] text-warning">Missing required: {missing.join(", ").toLowerCase()}.</p>
       )}
 
-      <div className="mt-5 grid gap-2.5 sm:grid-cols-2">
-        <Link
-          href={`/admin/users/${p.id}`}
-          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--r-md)] border border-line-strong px-5 text-[15px] font-medium text-fg transition-colors duration-200 hover:border-accent"
-        >
-          Open profile
-          <ArrowRightIcon className="h-4 w-4" />
-        </Link>
-        <ApprovalControl profileId={p.id} name={p.display_name} approved={p.approved} missing={missing} />
-        {!p.approved && (
-          <div className="sm:col-span-2">
-            <InfoRequestControl profileId={p.id} name={p.display_name} asked={requests.length > 0} />
-          </div>
-        )}
+      <div className="mt-auto pt-5">
+        <div className="grid gap-2.5 sm:grid-cols-2">
+          <Link
+            href={`/admin/users/${p.id}`}
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--r-md)] border border-line-strong px-5 text-[15px] font-medium text-fg transition-colors duration-200 hover:border-accent"
+          >
+            Open profile
+            <ArrowRightIcon className="h-4 w-4" />
+          </Link>
+          <ApprovalControl profileId={p.id} name={p.display_name} approved={p.approved} missing={missing} />
+          {!p.approved && (
+            <div className="sm:col-span-2">
+              <InfoRequestControl profileId={p.id} name={p.display_name} asked={requests.length > 0} />
+            </div>
+          )}
+        </div>
       </div>
     </article>
   );

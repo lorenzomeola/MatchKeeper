@@ -55,6 +55,7 @@ export async function notifyBookingConfirmed(bookingId: string) {
         rate: moneyPence(c.ratePence),
         fee: moneyPence(c.feePence),
         matchUrl: c.matchUrl,
+        free: c.free,
       },
     });
   }
@@ -64,7 +65,7 @@ export async function notifyBookingConfirmed(bookingId: string) {
       toEmail: c.keeper.email,
       toUserId: c.keeper.id,
       dedupe: key(c.id, "booking_confirmed_keeper"),
-      data: { teamName: c.team.name, pitch: c.pitch, when: c.when, rate: moneyPence(c.ratePence), matchUrl: c.matchUrl },
+      data: { teamName: c.team.name, pitch: c.pitch, when: c.when, rate: moneyPence(c.ratePence), matchUrl: c.matchUrl, free: c.free },
     });
   }
 
@@ -88,9 +89,11 @@ async function queueScheduled(c: BookingCtx, template: ReturnType<typeof booking
     case "team_played_prompt":
     case "team_played_reminder":
       if (c.team.email)
-        await queueEmail({ template, toEmail: c.team.email, toUserId: c.team.id, dedupe, sendAfter, data: { keeperName: c.keeper.name, pitch: c.pitch, matchUrl: c.matchUrl } });
+        await queueEmail({ template, toEmail: c.team.email, toUserId: c.team.id, dedupe, sendAfter, data: { keeperName: c.keeper.name, pitch: c.pitch, matchUrl: c.matchUrl, free: c.free } });
       return;
     case "team_autorelease_notice":
+      // Sin cobro no hay pago que se libere, así que no hay aviso previo.
+      if (c.free) return;
       if (c.team.email && c.autoReleaseAt)
         await queueEmail({
           template,
@@ -102,6 +105,19 @@ async function queueScheduled(c: BookingCtx, template: ReturnType<typeof booking
         });
       return;
   }
+}
+
+/** El portero añadió su foto: el equipo recibe el aviso con enlace a la página del partido, donde la ve. */
+export async function notifyKeeperPhoto(bookingId: string) {
+  const c = await loadBookingContext(bookingId);
+  if (!c || c.status !== "confirmed" || !c.team.email) return;
+  await queueEmail({
+    template: "keeper_photo_team",
+    toEmail: c.team.email,
+    toUserId: c.team.id,
+    dedupe: key(c.id, "keeper_photo_team"),
+    data: { keeperName: c.keeper.name, pitch: c.pitch, when: c.when, matchUrl: c.matchUrl },
+  });
 }
 
 /** El portero ya hizo el check-in: los recordatorios de check-in que quedaban sobran. */
@@ -148,6 +164,7 @@ export async function notifyBookingCancelled(bookingId: string, input: CancelInp
         refund: input.refundPence > 0 ? moneyPence(input.refundPence) : null,
         keeperGets: input.keeperSharePence > 0 ? moneyPence(input.keeperSharePence) : null,
         matchUrl: c.matchUrl,
+        free: c.free,
       },
     });
   }
@@ -164,6 +181,7 @@ export async function notifyBookingCancelled(bookingId: string, input: CancelInp
         when: c.when,
         share: input.keeperSharePence > 0 ? moneyPence(input.keeperSharePence) : null,
         matchUrl: c.matchUrl,
+        free: c.free,
       },
     });
     if (input.strikeKind) {
@@ -209,6 +227,11 @@ export async function notifyReleased(bookingId: string, input: { amountPence: nu
   });
 }
 
+/** Reserva sin cobro cerrada: no hay pago que avisar, solo sobran los avisos al equipo que quedaban. */
+export async function notifyMatchCompleted(bookingId: string) {
+  await cancelPending(key(bookingId, "team_"));
+}
+
 /** La reserva pasa a revisión de un admin. */
 export async function notifyBookingInReview(bookingId: string, reason: string) {
   await cancelPending(key(bookingId, "team_"));
@@ -220,7 +243,7 @@ export async function notifyBookingInReview(bookingId: string, reason: string) {
       toEmail: c.team.email,
       toUserId: c.team.id,
       dedupe: key(c.id, "review_team"),
-      data: { keeperName: c.keeper.name, pitch: c.pitch, when: c.when, matchUrl: c.matchUrl },
+      data: { keeperName: c.keeper.name, pitch: c.pitch, when: c.when, matchUrl: c.matchUrl, free: c.free },
     });
   }
   if (c.keeper.email) {
@@ -229,7 +252,7 @@ export async function notifyBookingInReview(bookingId: string, reason: string) {
       toEmail: c.keeper.email,
       toUserId: c.keeper.id,
       dedupe: key(c.id, "review_keeper"),
-      data: { teamName: c.team.name, pitch: c.pitch, when: c.when, matchUrl: c.matchUrl },
+      data: { teamName: c.team.name, pitch: c.pitch, when: c.when, matchUrl: c.matchUrl, free: c.free },
     });
   }
   await notifyAdminBookingReview(c, reason);

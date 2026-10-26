@@ -4,8 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isAvailableCity } from "@/lib/profile";
-import { notifyAdminNewKeeper } from "@/lib/email/admin-emails";
-import { defer } from "@/lib/email/booking-emails";
+import { ensureProfile, profileInfoFromUser } from "@/lib/profile-ensure";
 
 export type AuthActionState = {
   error: string | null;
@@ -20,34 +19,6 @@ async function getOrigin() {
   return h.get("origin") ?? `https://${h.get("host")}`;
 }
 
-type ProfileInfo = {
-  displayName: string;
-  role: "player" | "goalkeeper";
-  city: string | null;
-};
-
-async function ensureProfile(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  userId: string,
-  info: ProfileInfo,
-) {
-  const { data: existing } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("id", userId)
-    .maybeSingle();
-
-  if (existing) return;
-
-  const { error } = await supabase.from("profiles").insert({
-    id: userId,
-    role: info.role,
-    display_name: info.displayName,
-    city: info.city,
-  });
-  if (!error && info.role === "goalkeeper") defer(() => notifyAdminNewKeeper(userId));
-}
-
 export async function signUpAction(
   _prevState: AuthActionState,
   formData: FormData,
@@ -57,11 +28,15 @@ export async function signUpAction(
   const displayName = String(formData.get("displayName") ?? "").trim();
   const role = formData.get("role") === "goalkeeper" ? "goalkeeper" : "player";
   const city = String(formData.get("city") ?? "").trim();
+  const over18 = formData.get("over18") === "on";
 
   const values = { displayName, city, email };
 
   if (!email || !password || !displayName) {
     return { error: "Please fill in your name, email and password.", values };
+  }
+  if (!over18) {
+    return { error: "MatchKeeper is for adults. Confirm that you are 18 or over to continue.", values };
   }
   if (!isAvailableCity(city)) {
     return { error: "Choose one of the available cities.", values };
@@ -77,7 +52,7 @@ export async function signUpAction(
     email,
     password,
     options: {
-      data: { display_name: displayName, role, city },
+      data: { display_name: displayName, role, city, age_confirmed_at: new Date().toISOString() },
       emailRedirectTo: `${origin}/auth/callback`,
     },
   });
@@ -111,13 +86,16 @@ export async function loginAction(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
     return { error: "Incorrect email or password.", values: { email } };
   }
 
-  redirect("/dashboard");
+  // Sin perfil, las páginas de la app mandan a /signup en bucle (el enlace de confirmación puede no haberlo creado).
+  const created = await ensureProfile(supabase, data.user.id, profileInfoFromUser(data.user));
+
+  redirect(created ? "/onboarding" : "/dashboard");
 }
 
 export async function requestPasswordResetAction(

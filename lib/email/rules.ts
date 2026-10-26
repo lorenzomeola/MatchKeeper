@@ -29,7 +29,7 @@ export type FailureKind = "retry" | "permanent";
 /** Un fallo de red, de límite o del servidor se reintenta; un error de datos o de cuenta no tiene arreglo reintentando. */
 export function classifyFailure(err: { statusCode: number | null; name?: string }): FailureKind {
   const { statusCode, name } = err;
-  if (name === "rate_limit_exceeded" || name === "concurrent_idempotent_requests") return "retry";
+  if (name === "rate_limit_exceeded" || name === "concurrent_idempotent_requests" || name === "resource_locked") return "retry";
   if (name === "daily_quota_exceeded") return "retry";
   if (statusCode == null || statusCode >= 500 || statusCode === 429) return "retry";
   return "permanent";

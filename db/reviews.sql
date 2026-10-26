@@ -24,7 +24,10 @@ with check (
     where b.id = reviews.booking_id
       and b.player_id = auth.uid()
       and b.goalkeeper_id = reviews.goalkeeper_id
-      and b.payment_status in ('held', 'released')
+      and (
+        b.payment_status in ('held', 'released')
+        or (b.payment_status = 'none' and b.status in ('confirmed', 'under_review', 'completed'))
+      )
       and m.ends_at < now()
   )
 );

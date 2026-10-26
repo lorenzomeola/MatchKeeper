@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Logo } from "@/components/logo";
 import { Button } from "@/components/platform/button";
 import { FloodlightBackdrop } from "@/components/platform/floodlight-backdrop";
 import { Faq } from "@/components/platform/faq";
@@ -7,14 +8,17 @@ import { HeroMatchCard } from "@/components/platform/hero-match-card";
 import {
   ChatIcon,
   CheckIcon,
+  GloveIcon,
   LockIcon,
   NoFeeIcon,
+  PinIcon,
   ShieldCheckIcon,
   StarIcon,
   StripeWordmark,
 } from "@/components/platform/icons";
 import { MATCH_EXAMPLES } from "@/components/platform/match-examples";
 import { PlatformNav } from "@/components/platform/nav";
+import { PaymentModeNotice } from "@/components/platform/payment-mode-notice";
 import { Reveal } from "@/components/platform/reveal";
 import { SiteFooter } from "@/components/platform/site-footer";
 import { StatBand } from "@/components/platform/stat-band";
@@ -36,7 +40,7 @@ const TEAM_STEPS = [
   },
   {
     title: "Pick and play",
-    body: "Stripe holds the payment and releases it after you confirm the match was played.",
+    body: "Stripe processes the charge when you book. MatchKeeper transfers the keeper's share after the match rules are met.",
   },
 ];
 
@@ -51,7 +55,7 @@ const KEEPER_STEPS = [
   },
   {
     title: "Play and get paid",
-    body: "Once the match is confirmed, Stripe releases your payment. You never have to ask anyone for the money.",
+    body: "After the match rules are met, MatchKeeper transfers your share to your connected Stripe account.",
   },
 ];
 
@@ -66,8 +70,8 @@ const TRUST_CARDS = [
   },
   {
     icon: LockIcon,
-    title: "Money held until it's played",
-    body: "Stripe holds the payment and releases it once both sides confirm the match happened.",
+    title: "Keeper paid after the match",
+    body: "Stripe processes the charge when you book. MatchKeeper transfers the keeper's share after the match rules are met.",
     span: "",
     stripe: true,
     checks: undefined,
@@ -96,26 +100,98 @@ const PRICING_POINTS = [
   "If nobody applies before your match, you are not charged.",
 ];
 
+// Beta gratuita: sin dinero por la plataforma.
+const TEAM_STEPS_BETA = [
+  TEAM_STEPS[0],
+  {
+    title: "Compare applicants",
+    body: "Goalkeepers near you apply with the rate they would ask for. You see their profile, rating and how many matches they have played.",
+  },
+  {
+    title: "Pick and play",
+    body: "Choose a keeper and use the chat to sort out the details. During the beta you agree the payment with the keeper directly.",
+  },
+];
+
+const KEEPER_STEPS_BETA = [
+  KEEPER_STEPS[0],
+  {
+    title: "Apply to matches",
+    body: "Browse open matches near you and say what you would ask for each one.",
+  },
+  {
+    title: "Play and get paid",
+    body: "Check in when you reach the pitch and play. During the beta the team pays you directly, as you agreed in the chat.",
+  },
+];
+
+const TRUST_CARDS_BETA = [
+  { ...TRUST_CARDS[0], checks: ["Profile reviewed", "Experience checked", "Approved by an admin", "Removed after no-shows"] },
+  {
+    icon: NoFeeIcon,
+    title: "Free while we learn",
+    body: "No fees and no payments through MatchKeeper during the beta. We want to see how teams and keepers use it before we decide anything about pricing.",
+    span: "",
+    stripe: false,
+    checks: undefined,
+  },
+  TRUST_CARDS[2],
+  TRUST_CARDS[3],
+];
+
+const BETA_POINTS = [
+  "The keeper says what they would ask for, so you know the price before you choose.",
+  "MatchKeeper does not take payments during the beta. You agree how and when to pay with the keeper, in the chat.",
+  "If nobody applies to your match, there is nothing to cancel and nothing to pay.",
+  "The beta is open to adults (18+) playing football in London.",
+];
+
+const BETA_PROOFS = [
+  { icon: NoFeeIcon, text: "Free during the beta" },
+  { icon: ShieldCheckIcon, text: "Every keeper manually reviewed" },
+  { icon: StarIcon, text: "Public rating & match history" },
+  { icon: ChatIcon, text: "In-app chat with your keeper" },
+  { icon: GloveIcon, text: "Free for goalkeepers to join" },
+  { icon: PinIcon, text: "London beta" },
+];
+
 /* ─────────────────────────────────────────────────────────────────────────── */
 
-export function ProductHome() {
+export function ProductHome({ payments = true, modeUnavailable = false }: { payments?: boolean; modeUnavailable?: boolean }) {
+  if (modeUnavailable) {
+    return (
+      <div className="relative min-h-dvh bg-bg text-fg">
+        <FloodlightBackdrop />
+        <main className="mx-auto flex min-h-dvh max-w-[36rem] flex-col justify-center px-5 py-12 sm:px-8">
+          <Link href="/home" aria-label="MatchKeeper home" className="mb-8 inline-flex self-start">
+            <Logo iconClassName="h-8 w-9" wordmarkClassName="text-lg" />
+          </Link>
+          <PaymentModeNotice />
+          <Link href="/login" className="mt-5 inline-flex min-h-11 items-center text-sm font-semibold text-accent-strong underline underline-offset-4">
+            Log in
+          </Link>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="relative min-h-dvh bg-bg text-fg">
       <FloodlightBackdrop />
-      <PlatformNav />
+      <PlatformNav payments={payments} />
 
       <main>
-        <Hero />
-        <TrustMarquee />
-        <Numbers />
-        <HowItWorks />
-        <WhyMatchKeeper />
-        <Pricing />
-        <Questions />
+        <Hero payments={payments} />
+        <TrustMarquee items={payments ? undefined : BETA_PROOFS} />
+        <Numbers payments={payments} />
+        <HowItWorks payments={payments} />
+        <WhyMatchKeeper payments={payments} />
+        {payments ? <Pricing /> : <BetaNotice />}
+        <Questions payments={payments} />
         <FinalCTA />
       </main>
 
-      <SiteFooter />
+      <SiteFooter payments={payments} />
     </div>
   );
 }
@@ -129,11 +205,18 @@ export function ProductHome() {
    ─────────────────────────────────────────────────────────────────────────── */
 const HERO_TRUST = [
   { icon: ShieldCheckIcon, label: "Verified keepers" },
-  { icon: LockIcon, label: "Payment held until played" },
+  { icon: LockIcon, label: "Keeper paid after the match" },
   { icon: NoFeeIcon, label: "Free to post" },
 ];
 
-function Hero() {
+const HERO_TRUST_BETA = [
+  { icon: ShieldCheckIcon, label: "Verified keepers" },
+  { icon: NoFeeIcon, label: "Free during the beta" },
+  { icon: ChatIcon, label: "In-app chat" },
+];
+
+function Hero({ payments }: { payments: boolean }) {
+  const badge = payments ? "Now in pilot across London" : "Free beta in London";
   return (
     <section className="mx-auto max-w-[1240px] px-5 pb-16 sm:px-8 sm:pb-24 lg:pt-20">
       <div className="grid items-center lg:grid-cols-2 lg:gap-16">
@@ -142,7 +225,7 @@ function Hero() {
             <HeroPhoto />
             <span className="absolute left-1/2 top-4 inline-flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-white/15 bg-black/45 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-md lg:hidden">
               <span className="pl-pulse block h-1.5 w-1.5 rounded-full" style={{ background: "var(--accent)" }} />
-              Now in pilot across London
+              {badge}
             </span>
           </div>
         </Reveal>
@@ -150,7 +233,7 @@ function Hero() {
         <Reveal className="relative z-10 mx-auto -mt-16 max-w-[34rem] text-center sm:-mt-24 lg:mx-0 lg:mt-0 lg:text-left">
           <span className="hidden items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium text-fg-2 lg:inline-flex">
             <span className="block h-1.5 w-1.5 rounded-full" style={{ background: "var(--accent)" }} />
-            Now in pilot across London
+            {badge}
           </span>
 
           <h1 className="pl-display text-fg [font-size:var(--t-6xl)] lg:mt-6">
@@ -170,8 +253,9 @@ function Hero() {
           </h1>
 
           <p className="pl-prose mx-auto mt-6 max-w-[30rem] [font-size:var(--t-lg)] lg:mx-0">
-            Post your match and nearby goalkeepers apply. Compare them by rating, matches played
-            and price, then book one. Your payment is held until the match is played.
+            {payments
+              ? "Post your match and nearby goalkeepers apply. Compare them by rating, matches played and price, then book one. The keeper is paid after the match rules are met."
+              : "Post your match and nearby goalkeepers apply. Look at their profiles and the rate they ask for, then pick one. The beta is free and has no payments: you agree the money with the keeper directly."}
           </p>
 
           {/* Una sola llamada, dirigida a quien tiene el problema (el equipo). La nav ya
@@ -193,7 +277,10 @@ function Hero() {
           </div>
 
           <ul className="mt-3 hidden flex-wrap items-center gap-x-5 gap-y-2 text-[13px] text-muted lg:flex">
-            {["Free to post", "Verified keepers only", "Payment held until it's played"].map((t) => (
+            {(payments
+              ? ["Free to post", "Verified keepers only", "Keeper paid after the match"]
+              : ["Free during the beta", "Verified keepers only", "Chat before the match"]
+            ).map((t) => (
               <li key={t} className="flex items-center gap-1.5">
                 <CheckIcon className="h-3.5 w-3.5 text-accent" />
                 {t}
@@ -202,7 +289,7 @@ function Hero() {
           </ul>
 
           <ul className="mt-8 grid grid-cols-3 divide-x divide-line overflow-hidden rounded-[var(--r-lg)] border border-line bg-surface lg:hidden">
-            {HERO_TRUST.map(({ icon: Icon, label }) => (
+            {(payments ? HERO_TRUST : HERO_TRUST_BETA).map(({ icon: Icon, label }) => (
               <li key={label} className="flex flex-col items-center gap-2 px-2 py-4">
                 <Icon className="h-5 w-5 text-accent" />
                 <span className="text-[12px] font-semibold leading-tight text-fg-2">{label}</span>
@@ -210,9 +297,15 @@ function Hero() {
             ))}
           </ul>
           <p className="mt-4 flex items-center justify-center gap-2 text-xs text-muted lg:hidden">
-            Payments handled by
-            <StripeWordmark className="h-[13px] text-fg-2" />
-            <span className="sr-only">Stripe</span>
+            {payments ? (
+              <>
+                Payments handled by
+                <StripeWordmark className="h-[13px] text-fg-2" />
+                <span className="sr-only">Stripe</span>
+              </>
+            ) : (
+              "No payments through the app during the beta"
+            )}
           </p>
         </Reveal>
       </div>
@@ -281,11 +374,11 @@ function HeroPhoto() {
 }
 
 /* ── Cifras ──────────────────────────────────────────────────────────────── */
-function Numbers() {
+function Numbers({ payments }: { payments: boolean }) {
   return (
     <section className="mx-auto max-w-[1240px] px-5 py-16 sm:px-8 sm:py-20">
       <Reveal variant="soft">
-        <StatBand />
+        <StatBand payments={payments} />
       </Reveal>
     </section>
   );
@@ -295,7 +388,7 @@ function Numbers() {
    Dos columnas simétricas diferenciadas por superficie (neutra vs. acento) y
    no por jerarquía: ninguna de las dos audiencias queda por debajo.
    ─────────────────────────────────────────────────────────────────────────── */
-function HowItWorks() {
+function HowItWorks({ payments }: { payments: boolean }) {
   return (
     <Reveal
       as="section"
@@ -311,12 +404,12 @@ function HowItWorks() {
       <div className="mt-14 grid gap-5 lg:grid-cols-2 lg:gap-6">
         <TrackCard
           audience="For players & teams"
-          steps={TEAM_STEPS}
+          steps={payments ? TEAM_STEPS : TEAM_STEPS_BETA}
           cta={{ href: "/signup?role=player", label: "Post a match" }}
         />
         <TrackCard
           audience="For goalkeepers"
-          steps={KEEPER_STEPS}
+          steps={payments ? KEEPER_STEPS : KEEPER_STEPS_BETA}
           cta={{ href: "/signup?role=goalkeeper", label: "Join as a goalkeeper" }}
           accent
           delay={140}
@@ -394,7 +487,7 @@ function TrackCard({
 }
 
 /* ── Por qué MatchKeeper (bento) ──────────────────────────────────────────── */
-function WhyMatchKeeper() {
+function WhyMatchKeeper({ payments }: { payments: boolean }) {
   return (
     <Reveal
       as="section"
@@ -404,11 +497,15 @@ function WhyMatchKeeper() {
       <SectionHeading
         eyebrow="Why MatchKeeper"
         title="Putting a stranger in your goal should not feel like a gamble."
-        lead="We have no reviews or user numbers to show off yet. What we do have are the mechanics that make this safe for both sides."
+        lead={
+          payments
+            ? "We have no reviews or user numbers to show off yet. What we do have are the mechanics that make this safe for both sides."
+            : "We have no reviews or user numbers to show off yet. This is what the beta already does for both sides."
+        }
       />
 
       <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {TRUST_CARDS.map((card, i) => {
+        {(payments ? TRUST_CARDS : TRUST_CARDS_BETA).map((card, i) => {
           const Icon = card.icon;
           return (
             <Reveal
@@ -503,11 +600,51 @@ function Pricing() {
   );
 }
 
+/* La beta no cobra nada: esta sección ocupa el lugar de "Precio" y dice claro qué hay. */
+function BetaNotice() {
+  return (
+    <Reveal
+      as="section"
+      id="beta"
+      className="mx-auto max-w-[1240px] scroll-mt-24 px-5 py-16 sm:px-8 sm:py-24"
+    >
+      <div className="pl-surface overflow-hidden p-7 sm:p-12">
+        <div className="grid gap-10 lg:grid-cols-[auto_1fr] lg:items-center lg:gap-16">
+          <div className="shrink-0">
+            <p className="pl-eyebrow">Free beta</p>
+            <p className="pl-display pl-tnum mt-4 text-accent-strong [font-size:var(--t-6xl)]">£0</p>
+            <p className="mt-2 max-w-[14rem] text-sm text-muted">
+              During the beta. No fees, no subscription, no payments through the app.
+            </p>
+          </div>
+
+          <ul className="space-y-4 lg:border-l lg:border-line lg:pl-16">
+            {BETA_POINTS.map((p, i) => (
+              <Reveal
+                key={p}
+                as="li"
+                variant="soft"
+                delay={i * 90}
+                className="flex gap-3 text-[15px] leading-relaxed text-fg-2"
+              >
+                <span className="mt-1 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-accent-soft text-accent">
+                  <CheckIcon className="h-3 w-3" />
+                </span>
+                {p}
+              </Reveal>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </Reveal>
+  );
+}
+
 /* ── Preguntas ─────────────────────────────────────────────────────────────
    Va después de precio: para cuando alguien llega aquí, ya sabe qué es y qué
    cuesta, y lo que le queda son las objeciones concretas.
    ─────────────────────────────────────────────────────────────────────────── */
-function Questions() {
+function Questions({ payments }: { payments: boolean }) {
   return (
     <Reveal
       as="section"
@@ -519,7 +656,7 @@ function Questions() {
         title="The things people ask before signing up."
         lead="If yours is not here, email us and we will answer it properly."
       />
-      <Faq />
+      <Faq payments={payments} />
     </Reveal>
   );
 }

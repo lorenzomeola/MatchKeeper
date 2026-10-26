@@ -68,11 +68,11 @@ const TEAM_FAQ: QA[] = [
     q: "When do I pay, and when is the money released?",
     a: (
       <>
-        Stripe holds your payment after you book. Goalkeepers tap &quot;I have arrived&quot; when they
-        get to the pitch. For three days after the match ends you can confirm that everything went
-        fine or report a problem. If you do nothing and the goalkeeper checked in, the payment is
-        released to them automatically when the three days are up. If they never checked in, we do
-        not release it. We hold it and contact you both.
+        Stripe processes your payment when you book. Goalkeepers tap &quot;I have arrived&quot; when
+        they get to the pitch. For three days after the match ends you can confirm that everything
+        went fine or report a problem. If you do nothing and the goalkeeper checked in, MatchKeeper
+        transfers their share automatically when the three days are up. If they never checked in,
+        no transfer is made and we contact you both.
       </>
     ),
   },
@@ -144,11 +144,12 @@ const KEEPER_FAQ: QA[] = [
     q: "When and how do I get paid?",
     a: (
       <>
-        Tap &quot;I have arrived&quot; in the app when you get to the pitch. Stripe holds the
-        team&apos;s payment from the moment they book, and releases it to you once the team confirms
+        Tap &quot;I have arrived&quot; in the app when you get to the pitch. Stripe processes the
+        team&apos;s payment when they book, and MatchKeeper transfers your share once the team confirms
         the match, or automatically three days after the match ends if they say nothing. If you
-        forgot to check in and the team stays silent, we hold the payment and contact you both
-        instead. Stripe then pays it out to your bank account on its normal payout schedule. If
+        forgot to check in and the team stays silent, no transfer is made and we contact you both
+        instead. Once transferred to your connected Stripe account, Stripe pays it out to your
+        bank on its normal payout schedule. If
         the team does not show up, you still get paid in full.
       </>
     ),
@@ -159,8 +160,8 @@ const KEEPER_FAQ: QA[] = [
       <>
         Tap &quot;I have arrived&quot; when you reach the pitch. We record the time and where you
         were, and that record shows you turned up. The team is charged in full and you are paid in
-        full. If the team says you were not there, we hold the payment and check your check-in and
-        the chat before deciding. Check-in only works near the pitch and around kick-off, so tap it
+        full. If the team says you were not there, we pause the transfer and review your check-in
+        and the chat before deciding. Check-in only works near the pitch and around kick-off, so tap it
         when you arrive. We keep the exact coordinates for 120 days, then delete them.
       </>
     ),
@@ -180,6 +181,145 @@ const KEEPER_FAQ: QA[] = [
 ];
 
 type Row = { when: string; outcome: string; tone: "free" | "part" | "full" | "keeper"; note: string };
+
+/* ── Beta gratuita: sin dinero por la plataforma ── */
+const TEAM_FAQ_BETA: QA[] = [
+  {
+    q: "What does it cost to post a match?",
+    a: (
+      <>
+        Nothing. The beta is free for teams and keepers, and MatchKeeper takes no fee and no
+        payment. The keeper tells you what they would ask for, and you agree the payment with them
+        directly.
+      </>
+    ),
+  },
+  TEAM_FAQ[1],
+  {
+    q: "Can I choose the goalkeeper?",
+    a: (
+      <>
+        Yes. Goalkeepers apply to your match and you pick the one you want. You can compare them
+        by rating, matches played, distance and the rate they ask for, and message them before you
+        accept.
+      </>
+    ),
+  },
+  {
+    q: "What if no goalkeeper applies?",
+    a: <>Then nothing happens. Keepers nearby can see your match for as long as it is open.</>,
+  },
+  TEAM_FAQ[4],
+  {
+    q: "How do I pay the goalkeeper?",
+    a: (
+      <>
+        MatchKeeper does not handle money during the beta. When you pick a keeper, agree in the
+        chat how and when you will pay. Goalkeepers tap &quot;I have arrived&quot; when they get to
+        the pitch. After the match you have three days to confirm it went fine or report a
+        problem. If you do nothing and the goalkeeper checked in, we close the booking
+        automatically. If they never checked in, we look at it and contact you both.
+      </>
+    ),
+  },
+  {
+    q: "What if the goalkeeper does not turn up?",
+    a: (
+      <>
+        Report it within three days of the match. The goalkeeper gets a strike. A no-show suspends
+        them from new matches, and a second one within 12 months can get them removed from the
+        platform. Because the payment is agreed directly, MatchKeeper cannot refund anything
+        during the beta. See the <Link href="/safety">Safety page</Link> for the details.
+      </>
+    ),
+  },
+  {
+    q: "What if it rains or the pitch is closed?",
+    a: (
+      <>
+        Talk to the goalkeeper in the chat and cancel the booking from the match page, so they find
+        out straight away. No fee applies during the beta. If the venue closes the pitch on the
+        day, email <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> and we will look at it.
+      </>
+    ),
+  },
+];
+
+const KEEPER_FAQ_BETA: QA[] = [
+  KEEPER_FAQ[0],
+  KEEPER_FAQ[1],
+  {
+    q: "Do I set my own price?",
+    a: (
+      <>
+        You tell the team what you would ask for each match. It is up to you, and up to the team to
+        accept it.
+      </>
+    ),
+  },
+  {
+    q: "Is it free for goalkeepers?",
+    a: <>Yes. Creating a profile and applying to matches costs nothing, and MatchKeeper takes no fee during the beta.</>,
+  },
+  {
+    q: "When and how do I get paid?",
+    a: (
+      <>
+        During the beta the team pays you directly, as you agreed in the chat. MatchKeeper does not
+        handle or guarantee the payment, so agree the amount and how it will be paid before the
+        match. Tap &quot;I have arrived&quot; in the app when you get to the pitch, so there is a
+        record that you were there.
+      </>
+    ),
+  },
+  {
+    q: "What if I get there and the team does not show up?",
+    a: (
+      <>
+        Tap &quot;I have arrived&quot; when you reach the pitch. We record the time and where you
+        were, and that record shows you turned up. If the team says you were not there, we check
+        your check-in and the chat. Check-in only works near the pitch and around kick-off. We keep
+        the exact coordinates for 120 days, then delete them. Because the payment is between you
+        and the team during the beta, we cannot collect money on your behalf.
+      </>
+    ),
+  },
+  {
+    q: "What if I need to cancel?",
+    a: (
+      <>
+        Cancel more than 24 hours before kick-off and nothing happens to your profile. Cancel later
+        than that, or miss the match without telling anyone, and you get a strike. A no-show
+        suspends you from new matches straight away. Three late cancellations within 90 days do
+        the same. If something comes up, cancel as early as you can.
+      </>
+    ),
+  },
+];
+
+const TEAM_CANCELS_BETA: Row[] = [
+  {
+    when: "Any time before the match",
+    outcome: "No penalty",
+    tone: "free",
+    note: "Cancel from the match page and tell the keeper in the chat.",
+  },
+];
+
+const KEEPER_CANCELS_BETA: Row[] = [
+  {
+    when: "Cancels more than 24 hours before",
+    outcome: "No penalty",
+    tone: "free",
+    note: "The match opens again for other keepers.",
+  },
+  {
+    when: "Cancels later, or does not show",
+    outcome: "Strike",
+    tone: "keeper",
+    note: "A no-show suspends the keeper.",
+  },
+];
 
 const TEAM_CANCELS: Row[] = [
   {
@@ -224,14 +364,14 @@ const TONE: Record<Row["tone"], string> = {
   keeper: "text-danger",
 };
 
-export function Faq() {
+export function Faq({ payments = true }: { payments?: boolean }) {
   return (
     <div className="mt-14 space-y-14">
-      <CancellationTable />
+      <CancellationTable payments={payments} />
 
       <div className="grid gap-10 lg:grid-cols-2 lg:gap-12">
-        <FaqGroup title="For players and teams" items={TEAM_FAQ} />
-        <FaqGroup title="For goalkeepers" items={KEEPER_FAQ} />
+        <FaqGroup title="For players and teams" items={payments ? TEAM_FAQ : TEAM_FAQ_BETA} />
+        <FaqGroup title="For goalkeepers" items={payments ? KEEPER_FAQ : KEEPER_FAQ_BETA} />
       </div>
     </div>
   );
@@ -241,7 +381,7 @@ export function Faq() {
    Las dos tablas son <table> reales (cabeceras, scope) y el resultado nunca
    depende solo del color: lleva texto ("Free", "50% charged", "Strike").
    ─────────────────────────────────────────────────────────────────────────── */
-function CancellationTable() {
+function CancellationTable({ payments }: { payments: boolean }) {
   return (
     <div id="cancellations" className="pl-surface scroll-mt-24 p-6 sm:p-10">
       <p className="pl-eyebrow">Cancellations</p>
@@ -249,19 +389,20 @@ function CancellationTable() {
         What happens if plans change.
       </h3>
       <p className="pl-prose mt-3 max-w-[40rem] text-sm">
-        These are the rules for a confirmed booking. Until you have accepted a goalkeeper and
-        paid, you can withdraw for free.
+        {payments
+          ? "These are the rules for a confirmed booking. Until you have accepted a goalkeeper and paid, you can withdraw for free."
+          : "These are the rules for a confirmed booking. No money moves through MatchKeeper during the beta, so they are about strikes and reopening the match, not refunds."}
       </p>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-2 lg:gap-10">
-        <RuleTable caption="If the team cancels" rows={TEAM_CANCELS} />
-        <RuleTable caption="If the goalkeeper cancels" rows={KEEPER_CANCELS} />
+        <RuleTable caption="If the team cancels" rows={payments ? TEAM_CANCELS : TEAM_CANCELS_BETA} />
+        <RuleTable caption="If the goalkeeper cancels" rows={payments ? KEEPER_CANCELS : KEEPER_CANCELS_BETA} />
       </div>
 
       <p className="mt-8 border-t border-line pt-5 text-xs leading-relaxed text-muted">
-        After the match you have three days to confirm it went fine or report a problem. If
-        nobody says anything and the goalkeeper checked in at the pitch, the payment is released
-        to them automatically. If they did not check in, we hold it and contact you both.
+        {payments
+          ? "After the match you have three days to confirm it went fine or report a problem. If nobody says anything and the goalkeeper checked in at the pitch, the payment is released to them automatically. If they did not check in, we hold it and contact you both."
+          : "After the match you have three days to confirm it went fine or report a problem. If nobody says anything and the goalkeeper checked in at the pitch, the booking closes automatically. If they did not check in, we look at it and contact you both."}
       </p>
     </div>
   );

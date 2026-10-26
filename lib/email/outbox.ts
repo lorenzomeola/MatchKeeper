@@ -12,6 +12,7 @@ import {
   retryDelayMs,
 } from "./rules";
 import { renderEmail, type TemplateData, type TemplateName } from "./templates";
+import { finishCancelledSend, requestEmailCancellations, retryEmailCancellations } from "./cancellation";
 
 type Row = {
   id: string;
@@ -72,20 +73,24 @@ export async function dispatchEmail(id: string): Promise<"sent" | "scheduled" | 
   const admin = createAdminClient();
   const now = new Date();
 
-  const { data: row } = await admin
+  const { data: row, error: claimError } = await admin
     .from("email_outbox")
     .update({ status: "sending", claimed_at: now.toISOString() })
     .eq("id", id)
     .eq("status", "pending")
     .select(COLUMNS)
     .maybeSingle();
+  if (claimError) throw claimError;
   // Otro proceso ya lo reclamó o ya no está pendiente.
   if (!row) return "skipped";
   const r = row as Row;
 
   const plan = planSend(new Date(r.send_after), now);
   if (plan.kind === "later") {
-    await admin.from("email_outbox").update({ status: "pending", claimed_at: null }).eq("id", id);
+    const { data, error } = await admin.from("email_outbox").update({ status: "pending", claimed_at: null })
+      .eq("id", id).eq("status", "sending").select("id").maybeSingle();
+    if (error) throw error;
+    if (!data) await finishCancelledSend(admin, () => getResend().emails, id);
     return "skipped";
   }
 
@@ -111,26 +116,37 @@ export async function dispatchEmail(id: string): Promise<"sent" | "scheduled" | 
 
     // 409 con otro contenido: Resend ya aceptó este aviso en un intento anterior.
     if (error && error.name === "invalid_idempotent_request") {
-      await admin
+      const { data: updated, error: updateError } = await admin
         .from("email_outbox")
         .update({ status: "sent", attempts, claimed_at: null, sent_at: now.toISOString(), last_error: null })
-        .eq("id", id);
+        .eq("id", id).eq("status", "sending").select("id").maybeSingle();
+      if (updateError) throw updateError;
+      if (!updated) {
+        await finishCancelledSend(admin, () => getResend().emails, id, null, "Provider accepted an earlier request but its id is unknown; manual reconciliation required");
+        return "failed";
+      }
       return "sent";
     }
     if (error) return await recordFailure(id, attempts, error.message, classifyFailure(error), now);
+    if (!data?.id) throw new Error("Resend accepted email without returning its provider id");
 
     const scheduled = plan.kind === "schedule";
-    await admin
+    const { data: updated, error: updateError } = await admin
       .from("email_outbox")
       .update({
         status: scheduled ? "scheduled" : "sent",
         attempts,
-        provider_id: data?.id ?? null,
+        provider_id: data.id,
         claimed_at: null,
         sent_at: scheduled ? null : now.toISOString(),
         last_error: null,
       })
-      .eq("id", id);
+      .eq("id", id).eq("status", "sending").select("id").maybeSingle();
+    if (updateError) throw updateError;
+    if (!updated) {
+      await finishCancelledSend(admin, () => getResend().emails, id, data.id);
+      return "skipped";
+    }
     return scheduled ? "scheduled" : "sent";
   } catch (e) {
     // Plantilla desconocida, datos mal formados o fallo de red: los de datos no se arreglan reintentando.
@@ -148,7 +164,8 @@ async function recordFailure(
   now: Date,
 ): Promise<"retry" | "failed"> {
   const giveUp = kind === "permanent" || attempts >= MAX_ATTEMPTS;
-  await createAdminClient()
+  const admin = createAdminClient();
+  const { data: updated, error } = await admin
     .from("email_outbox")
     .update(
       giveUp
@@ -161,7 +178,12 @@ async function recordFailure(
             last_error: message.slice(0, 500),
           },
     )
-    .eq("id", id);
+    .eq("id", id).eq("status", "sending").select("id").maybeSingle();
+  if (error) throw error;
+  if (!updated) {
+    await finishCancelledSend(admin, () => getResend().emails, id, null, `Send failed while cancellation was requested: ${message}; manual reconciliation may be required`);
+    return "failed";
+  }
   if (giveUp) console.error(`email ${id} failed for good: ${message}`);
   return giveUp ? "failed" : "retry";
 }
@@ -172,11 +194,14 @@ export async function drainOutbox(limit = 50) {
   const now = new Date();
 
   // Un envío reclamado hace rato y nunca terminado (el proceso murió) vuelve a la cola.
-  await admin
+  const { error: reclaimError } = await admin
     .from("email_outbox")
     .update({ status: "pending", claimed_at: null })
     .eq("status", "sending")
     .lt("claimed_at", new Date(now.getTime() - STALE_CLAIM_MS).toISOString());
+  if (reclaimError) throw reclaimError;
+
+  const cancellations = await retryEmailCancellations(admin, () => getResend().emails, limit);
 
   const horizon = new Date(now.getTime() + MAX_SCHEDULE_DAYS * 24 * 3_600_000).toISOString();
   const { data: due, error } = await admin
@@ -188,7 +213,7 @@ export async function drainOutbox(limit = 50) {
     .limit(limit);
   if (error) throw error;
 
-  const summary = { sent: 0, scheduled: 0, retry: 0, failed: 0, skipped: 0 };
+  const summary = { ...cancellations, scheduled: 0, retry: 0, failed: 0 };
   for (const { id } of due ?? []) summary[await dispatchEmail(id)]++;
   return summary;
 }
@@ -198,26 +223,5 @@ export async function drainOutbox(limit = 50) {
  * que se cancela). Los que Resend ya envió se dejan como están.
  */
 export async function cancelEmails(keyPrefix: string): Promise<number> {
-  const admin = createAdminClient();
-  const { data: rows, error } = await admin
-    .from("email_outbox")
-    .select("id, status, provider_id")
-    .like("dedupe_key", `${keyPrefix}%`)
-    .in("status", ["pending", "scheduled"]);
-  if (error) throw error;
-
-  let cancelled = 0;
-  for (const r of rows ?? []) {
-    if (r.status === "scheduled" && r.provider_id) {
-      const { error: cancelError } = await getResend().emails.cancel(r.provider_id);
-      // Si Resend ya lo envió no se puede cancelar: se deja como enviado.
-      if (cancelError) {
-        await admin.from("email_outbox").update({ status: "sent" }).eq("id", r.id).eq("status", "scheduled");
-        continue;
-      }
-    }
-    await admin.from("email_outbox").update({ status: "cancelled" }).eq("id", r.id).in("status", ["pending", "scheduled"]);
-    cancelled++;
-  }
-  return cancelled;
+  return requestEmailCancellations(createAdminClient(), () => getResend().emails, keyPrefix);
 }

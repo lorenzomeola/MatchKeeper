@@ -10,6 +10,7 @@ import { ListIcon } from "@/components/platform/icons";
 import { loadPlayerHome } from "@/lib/data/dashboard";
 import { loadUnreadCount } from "@/lib/data/messages";
 import { firstName } from "@/lib/format";
+import { getPaymentMode } from "@/lib/payments/mode";
 import { keeperNames } from "@/lib/slots";
 import type { completeness, PlayerKind } from "@/lib/profile";
 
@@ -22,7 +23,8 @@ type Props = {
 };
 
 export async function PlayerHome({ userId, profile, teamName, kind, rating }: Props) {
-  const [d, unread] = await Promise.all([loadPlayerHome(userId), loadUnreadCount()]);
+  const [d, unread, mode] = await Promise.all([loadPlayerHome(userId), loadUnreadCount(), getPaymentMode()]);
+  const payments = mode === "paid";
   const isTeam = kind === "team";
   const rest = d.upcoming.filter((m) => m.id !== d.next?.id).slice(0, 4);
   const needsReply = d.needsAttention.filter(({ match }) => match.id !== d.next?.id);
@@ -119,12 +121,12 @@ export async function PlayerHome({ userId, profile, teamName, kind, rating }: Pr
           <StatCard label="Keepers booked" value={d.bookedCount} hint="Across upcoming matches" href="/calendar" tone="accent" />
           <StatCard label="Matches played" value={d.playedCount} hint={`${d.totalPosted} posted in total`} />
         </div>
-        <PaymentsLink role="team" />
+        {payments && <PaymentsLink role="team" />}
       </div>
 
       {needsReply.length > 0 && (
         <Section title="Needs your reply">
-          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <ul className="pl-cards grid grid-cols-1 gap-3 sm:grid-cols-2">
             {needsReply.slice(0, 4).map(({ match, pending }) => (
               <li key={match.id}>
                 <MatchCard
@@ -147,7 +149,7 @@ export async function PlayerHome({ userId, profile, teamName, kind, rating }: Pr
 
       {rest.length > 0 && (
         <Section title="Coming up" action={<SectionLink href="/matches">All matches</SectionLink>}>
-          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <ul className="pl-cards grid grid-cols-1 gap-3 sm:grid-cols-2">
             {rest.map((m) => {
               const booked = m.applications.filter((a) => a.status === "accepted").length;
               const full = m.status === "assigned";

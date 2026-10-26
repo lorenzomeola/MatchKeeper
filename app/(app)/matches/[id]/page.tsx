@@ -11,13 +11,16 @@ import { DateTile, MatchChips } from "@/components/app/match-card";
 import { Section } from "@/components/app/page-header";
 import { PaymentSetupCard } from "@/components/app/payment-setup-card";
 import { StandingCard } from "@/components/app/standing-card";
+import { PaymentModeNotice } from "@/components/platform/payment-mode-notice";
 import { loadMyStanding } from "@/lib/data/standing";
+import { signedCheckInPhotoUrls } from "@/lib/data/checkin-photos";
 import { PostedToast } from "@/components/app/posted-toast";
 import { ReviewCard } from "@/components/app/review-card";
 import { MATCH_STATUS, StatusBadge } from "@/components/app/status-badge";
 import { ArrowLeftIcon, ChatIcon, PinIcon, StarIcon, UsersIcon } from "@/components/platform/icons";
 import { daysAway, isPast, longDate, money, splitAddress, timeRange } from "@/lib/format";
 import { matchMinutes } from "@/lib/pricing";
+import { getPaymentMode } from "@/lib/payments/mode";
 import { slotsLabel } from "@/lib/slots";
 import { createClient } from "@/lib/supabase/server";
 
@@ -61,15 +64,22 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
   let paymentsReady = false;
   let hasPayAccount = false;
   let suspended = false;
+  const paymentMode = await getPaymentMode();
+  const payments = paymentMode === "paid";
+  const modeUnavailable = paymentMode === "unavailable";
   if (isKeeper && !isOwner) {
     suspended = (await loadMyStanding(supabase, user.id)).level === "suspended";
-    const { data: payAccount } = await supabase
-      .from("keeper_stripe_accounts")
-      .select("payouts_enabled")
-      .eq("profile_id", user.id)
-      .maybeSingle();
-    hasPayAccount = Boolean(payAccount);
-    paymentsReady = payAccount?.payouts_enabled === true;
+    if (payments) {
+      const { data: payAccount } = await supabase
+        .from("keeper_stripe_accounts")
+        .select("payouts_enabled")
+        .eq("profile_id", user.id)
+        .maybeSingle();
+      hasPayAccount = Boolean(payAccount);
+      paymentsReady = payAccount?.payouts_enabled === true;
+    } else if (paymentMode === "free") {
+      paymentsReady = true;
+    }
   }
 
   let applications: ApplicationRow[] = [];
@@ -131,7 +141,7 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
     ageRange: a.profiles?.age_range ?? null,
   }));
 
-  const canApply = !isOwner && isKeeper && me?.approved && match.status === "open" && !expired && !mine;
+  const canApply = !modeUnavailable && !isOwner && isKeeper && me?.approved && match.status === "open" && !expired && !mine;
 
   // Reservas del partido (el equipo ve todas; el portero, solo la suya). Las pendientes de pago no se muestran.
   let bookings: (BookingForCard & { application_id: string })[] = [];
@@ -139,12 +149,15 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
     const { data: bk } = await supabase
       .from("bookings")
       .select(
-        "id, application_id, status, keeper_checked_in_at, team_response, auto_release_at, cancelled_by, cancellation_charge_pct, rate_pence, commission_pct",
+        "id, application_id, status, payment_status, keeper_checked_in_at, check_in_photo_path, team_response, auto_release_at, cancelled_by, cancellation_charge_pct, rate_pence, commission_pct",
       )
       .eq("match_id", id)
       .order("created_at", { ascending: true });
     bookings = (bk ?? []).filter((b) => b.status !== "pending_payment");
   }
+  // Las rutas salen de una consulta con RLS: solo el equipo de la reserva y el portero llegan a tener una foto que firmar.
+  const photoUrls = await signedCheckInPhotoUrls(bookings.map((b) => b.check_in_photo_path));
+  const photoOf = (b: { check_in_photo_path?: string | null }) => (b.check_in_photo_path ? (photoUrls.get(b.check_in_photo_path) ?? null) : null);
   const latestFor = (applicationId: string) => [...bookings].reverse().find((b) => b.application_id === applicationId) ?? null;
   const myBooking = mine ? latestFor(mine.id) : null;
   // Reserva cancelada cuyo portero ya no figura como aceptado (p. ej. el partido se reabrió): se muestra aparte.
@@ -180,6 +193,8 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
         <ArrowLeftIcon className="h-4 w-4" />
         {isKeeper ? "My games" : "My matches"}
       </Link>
+
+      {modeUnavailable && <PaymentModeNotice className="mb-6" />}
 
       <section className="pl-surface relative overflow-hidden rounded-[var(--r-xl)] p-5 sm:p-7">
         <div
@@ -231,7 +246,7 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
       </section>
 
       {!isOwner && myBooking && (
-        <BookingCard role="keeper" booking={myBooking} startsAt={match.starts_at} endsAt={match.ends_at} />
+        <BookingCard role="keeper" booking={myBooking} startsAt={match.starts_at} endsAt={match.ends_at} photoUrl={photoOf(myBooking)} />
       )}
       {orphanCancelled && (
         <BookingCard role="owner" booking={orphanCancelled} startsAt={match.starts_at} endsAt={match.ends_at} />
@@ -254,7 +269,9 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
                           <Link href={`/keepers/${booked.goalkeeper_id}`} className="-my-2.5 block truncate py-2.5 text-base font-semibold text-fg hover:text-accent-strong">
                             {booked.profiles?.display_name ?? "Goalkeeper"}
                           </Link>
-                          <p className="text-sm text-muted">{money(booked.rate)} for this match</p>
+                          <p className="text-sm text-muted">
+                            {money(booked.rate)} {payments ? "for this match" : "asked for this match"}
+                          </p>
                           {!bookingEnded && (
                             <div className="mt-1.5">
                               <ApplicantStatus status="accepted" />
@@ -269,7 +286,7 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
                           Message
                         </Link>
                       </div>
-                      {bk && <BookingCard role="owner" booking={bk} startsAt={match.starts_at} endsAt={match.ends_at} compact />}
+                      {bk && <BookingCard role="owner" booking={bk} startsAt={match.starts_at} endsAt={match.ends_at} photoUrl={photoOf(bk)} compact />}
                     </li>
                   );
                 })}
@@ -282,7 +299,7 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
               {freeSlot && acceptedApps.length > 0 && (
                 <p className="pl-prose mb-4 text-[15px]">
                   You still need {needed - acceptedApps.length} more {needed - acceptedApps.length === 1 ? "keeper" : "keepers"}.
-                  Each one is booked and paid separately.
+                  {payments ? " Each one is booked and paid separately." : " Each one is booked separately."}
                 </p>
               )}
               {applicants.length === 0 ? (
@@ -296,7 +313,7 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
                   }
                 />
               ) : (
-                <ApplicantList matchId={match.id} applicants={applicants} minutes={matchMinutes(match.starts_at, match.ends_at)} />
+                <ApplicantList matchId={match.id} applicants={applicants} minutes={matchMinutes(match.starts_at, match.ends_at)} free={!payments} />
               )}
             </Section>
           )}
@@ -345,6 +362,7 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
               budget={match.budget_suggested}
               format={match.format}
               minutes={matchMinutes(match.starts_at, match.ends_at)}
+              free={!payments}
             />
           )}
           {canApply && !suspended && !paymentsReady && <PaymentSetupCard resume={hasPayAccount} />}

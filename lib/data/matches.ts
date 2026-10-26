@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import type { KeeperApplication, MatchRow, OwnMatch } from "@/lib/data/dashboard";
+import { keeperMatchTab } from "@/lib/match-list-status";
 
 export type MatchTab = "open" | "booked" | "past";
 export const TABS: MatchTab[] = ["open", "booked", "past"];
@@ -9,9 +10,10 @@ export type PlayerItem = {
   pending: number;
   /** Porteros ya reservados (con 2 plazas puede haber 0, 1 o 2). */
   keepers: { name: string; avatarUrl: string | null }[];
+  bookingStatuses: string[];
 };
 
-export type KeeperItem = { application: KeeperApplication; match: MatchRow; poster: string };
+export type KeeperItem = { application: KeeperApplication; match: MatchRow; poster: string; bookingStatus: string | null };
 
 const ended = (m: MatchRow, nowMs: number) => Date.parse(m.ends_at) < nowMs;
 
@@ -25,6 +27,9 @@ export async function loadPlayerMatches(userId: string) {
     .eq("created_by", userId)
     .order("starts_at", { ascending: true });
   const matches = (data ?? []) as OwnMatch[];
+  const { data: bookings, error: bookingError } = await supabase.from("bookings")
+    .select("match_id, status").eq("player_id", userId);
+  if (bookingError) throw bookingError;
 
   const acceptedOf = (m: OwnMatch) => m.applications.filter((a) => a.status === "accepted");
   const acceptedIds = matches.flatMap((m) => acceptedOf(m).map((a) => a.goalkeeper_id));
@@ -37,6 +42,7 @@ export async function loadPlayerMatches(userId: string) {
   const item = (m: OwnMatch): PlayerItem => ({
     match: m,
     pending: m.applications.filter((a) => a.status === "pending").length,
+    bookingStatuses: (bookings ?? []).filter((b) => b.match_id === m.id).map((b) => b.status),
     keepers: acceptedOf(m)
       .map((a) => keepers.get(a.goalkeeper_id))
       .filter((k): k is { name: string; avatarUrl: string | null } => !!k),
@@ -60,6 +66,10 @@ export async function loadKeeperGames(userId: string) {
     .eq("goalkeeper_id", userId)
     .order("created_at", { ascending: false });
   const apps = ((data ?? []) as unknown as KeeperApplication[]).filter((a) => a.matches);
+  const { data: bookings, error: bookingError } = await supabase.from("bookings")
+    .select("application_id, status").eq("goalkeeper_id", userId).order("created_at", { ascending: false });
+  if (bookingError) throw bookingError;
+  const bookingStatus = (a: KeeperApplication): string | null => bookings?.find((b) => b.application_id === a.id)?.status ?? null;
 
   const posterIds = [...new Set(apps.map((a) => a.matches!.created_by))];
   const names = new Map<string, string>();
@@ -82,17 +92,21 @@ export async function loadKeeperGames(userId: string) {
     application: a,
     match: a.matches!,
     poster: names.get(a.matches!.created_by) ?? "A player",
+    bookingStatus: bookingStatus(a),
   });
-  const live = (a: KeeperApplication) => !ended(a.matches!, nowMs);
+  const tabOf = (a: KeeperApplication) => keeperMatchTab({
+    applicationStatus: a.status, matchStatus: a.matches!.status,
+    bookingStatus: bookingStatus(a), ended: ended(a.matches!, nowMs),
+  });
 
   const tabs: Record<MatchTab, KeeperItem[]> = {
-    open: apps.filter((a) => a.status === "pending" && a.matches!.status === "open" && live(a)).map(item),
+    open: apps.filter((a) => tabOf(a) === "open").map(item),
     booked: apps
-      .filter((a) => a.status === "accepted" && a.matches!.status !== "cancelled" && live(a))
+      .filter((a) => tabOf(a) === "booked")
       .sort((a, b) => Date.parse(a.matches!.starts_at) - Date.parse(b.matches!.starts_at))
       .map(item),
     past: apps
-      .filter((a) => !live(a) || a.matches!.status === "cancelled" || a.status === "rejected" || a.status === "withdrawn" || (a.status === "pending" && a.matches!.status !== "open"))
+      .filter((a) => tabOf(a) === "past")
       .map(item),
   };
   return tabs;

@@ -1,9 +1,22 @@
-# MatchKeeper — Goalkeeper-on-demand for amateur football (UK pilot)
+# MatchKeeper — Goalkeeper marketplace for amateur football
 
-> Status: **validation phase**. The landing page is live, but no matching
-> happens automatically yet — every connection between a team and a
-> goalkeeper still has to be made by hand. This repo tracks the market
-> research, the landing page, and the pivot history.
+> **Current release: Free Beta.** Public 18+ signup, London only, goalkeeper profiles approved manually. No money moves through MatchKeeper. Keepers and teams agree payment directly.
+
+## Release versions
+
+| Version | Status | What it includes |
+|---|---|---|
+| Free Beta | Current | Matches, applications, team choice, chat, calendar, map, check-in, reviews and strikes. MatchKeeper does not collect or guarantee payment. |
+| Protected booking | Built, inactive | Stripe Connect, 15% team fee, checkout, post-match transfers, refunds, cancellations, payouts and disputes. Requires an explicit database switch and separate legal/operational launch approval. |
+| Subscriptions | Future possibility | Not designed, priced, built or offered. Requires a separate product decision after beta evidence. |
+
+The beta is open to adults; 20–50 users is a recruitment target, not an invite gate. The code flag defaults to free when its row is missing. If the flag cannot be read or is invalid, bookings are temporarily blocked rather than guessed.
+
+## Current status
+
+The logged-in product is deployed to the `staging` branch at `staging.matchkeeperuk.com`. `main` is production and must not be updated until staging passes its release checklist. See [design-system/matchkeeper/MASTER.md](design-system/matchkeeper/MASTER.md) for verified gates and manual actions.
+
+The public site is the product homepage at `/home`; `/` redirects there. The old Google Forms validation landing is retained as historical material in `components/landing.tsx` and [README.landing.md](README.landing.md).
 
 ## The problem
 
@@ -12,101 +25,28 @@ tournaments) regularly get disrupted when the goalkeeper cancels last-minute
 or none was arranged. Teams currently cope by asking friends, posting in
 WhatsApp/Facebook groups, playing without a keeper, or cancelling the match.
 
-## The idea
+## Current product
 
-A team posts a match. Available goalkeepers nearby apply. The team picks who
-plays, based on reviews and ratings once those exist. Fully manual for now
-(no app, no accounts) — this phase is still market validation, not a working
-product.
+Players post matches and nearby goalkeepers apply. The player chooses a keeper, then both sides coordinate in chat. Profiles, match history, check-in, reviews, calendar, map and admin approval are part of the web app. The public release is currently a free beta; see the version table above for what is and is not active.
 
-## Market
+## Market validation history
 
-- Country: **UK**. Launch city: **London** — chosen for the size of its
-  informal/5-a-side football scene. Future: Manchester, Birmingham, Leeds,
-  Bristol.
-- Demand side: groups of friends, amateur teams, corporate/5-a-side leagues,
-  tournament organisers.
-- Supply side: amateur/semi-competitive goalkeepers, students, casual
-  players.
+Validation in Ghent and responses to the UK Google Forms informed the pivot to London and the decision to build the web product. The forms, survey drafts and Belgium version are historical research, not the current onboarding flow. The current market is amateur football in London; expansion is not part of the Beta.
 
-### Why UK and not Belgium
+## Release readiness
 
-The pilot originally launched in **Ghent, Belgium**. After validating both
-the federated-league segment and the informal/5-a-side segment there,
-engagement stayed too low, and most organised leagues in Belgium don't allow
-bringing in an outside keeper anyway — a structural ceiling, not just a
-marketing problem. The Belgium version is fully archived in
-[archive/belgium-ghent/](archive/belgium-ghent/) (trilingual EN/NL/FR
-content, forms, everything) in case it's ever worth revisiting.
+The free-beta and paid-booking flows are implemented. Paid bookings were tested in the Stripe sandbox, not with real money. The payment-mode safety changes, documentation and legal-copy review are being prepared locally on `staging`; they are not yet deployed or applied to Supabase Preview. The latest test count and release gates are recorded in [design-system/matchkeeper/MASTER.md](design-system/matchkeeper/MASTER.md).
 
-## Long-term vision
+The Beta is publicly registerable for adults 18+; 20–50 users is a recruitment target. The production project must be separate from Preview, use `payments_enabled=false`, and keep Stripe live disabled. The operator must verify these dashboard settings before opening signup.
 
-Could expand beyond goalkeepers to replacement players and referees. First
-version stays scoped to goalkeepers only — the problem is clear and easy to
-communicate.
-
-## Core value proposition
-
-Never cancel a match because your goalkeeper is unavailable. Goalkeepers get
-more game time and get paid for it.
-
-## Positioning rules
-
-- Honest, community-driven, simple, football-focused, friendly, local, practical.
-- Do **not** present the service as fully operational or claim an existing
-  large goalkeeper network yet. No fake testimonials, no invented reviews.
-- No startup buzzwords, no AI talk, no "Uber of football" framing.
-
-## Current stage / next steps
-
-- [x] Validated Ghent, Belgium via 3 Google Forms (federated + informal
-  segments) — not enough engagement, plus a structural ceiling on bringing
-  in outside keepers. Decided to pivot market.
-- [x] Researched the UK competitive landscape — `rentagoalkeeper.com` claims
-  to be live in the UK, but no app could be verified on the App Store or
-  Google Play; most likely another pre-launch landing, not a proven
-  competitor.
-- [x] Pivoted the pilot to **London, UK**. Belgium fully archived.
-- [x] Rebuilt the landing: new "Daylight Pitch" theme (white + orange), 5
-  sections (hero, benefits for teams/keepers, an honest "where we're at"
-  section instead of fake social proof, how-it-works with a
-  keeper-applies/team-chooses flow, final CTA).
-- [x] Created and connected the 3 real UK Google Forms in `lib/site.ts`
-  (draft used: `research/surveys-uk-draft.md`).
-- [x] New orange brand assets for the UK social accounts
-  (`public/brand/social-uk/`). Belgium's IG/FB accounts suspended (not
-  deleted).
-- [ ] Create new Instagram/Facebook accounts for the UK pilot.
-- [ ] Start driving traffic to the 3 forms (WhatsApp/Facebook groups,
-  personal network in London).
-- [ ] Review responses → go/no-go before building any real product
-  (matching, accounts, payments).
-
-## Product build status (2026-10-06)
-
-The validation landing above is only `/`. The real product is built behind login:
-accounts, matches, applications, chat, map, calendar, reviews, keeper approval and
-admin pages. **Payments are built and tested in the Stripe sandbox**: keeper payout
-setup, checkout with 3D Secure, check-in, release, cancellations and refunds, keeper
-strikes with suspension, and disputes with prepared evidence and recovery.
-
-**Not done yet:** emails and reminders (Resend), a few Stripe webhooks, the Vercel and
-live-mode Stripe setup, the solicitor review of the Terms and the company
-registration. Nothing has been tried with real money.
-
-Where to read more: [PAYMENTS_SPEC.md](PAYMENTS_SPEC.md) (rules, what was built and
-tested, what was not), the status board in
-[design-system/matchkeeper/MASTER.md](design-system/matchkeeper/MASTER.md),
-[PRODUCT_PLAN.md](PRODUCT_PLAN.md) and [TECH_STACK.md](TECH_STACK.md). To test
-payments locally, copy `.env.local.example` to `.env.local`, run `npm run dev`, and
-forward webhooks with the Stripe CLI (the event list is in MASTER.md, A3 and D).
+`/terms`, `/privacy` and `/safety` are operational drafts, not legal approval. Their data-retention schedule, provider locations/transfers, jurisdictional scope and business/tax obligations need owner and qualified-adviser confirmation before inviting beta users.
 
 ## Repo structure
 
-- `app/`, `components/`, `lib/` — the Next.js landing page (see
-  [README.landing.md](README.landing.md) for the technical README) and the logged-in
-  product. Payment logic is in `lib/payments/` and `lib/actions/`, the Stripe webhook
-  and the cron job are under `app/api/`.
+- `app/`, `components/`, `lib/` — the Next.js public product pages and logged-in
+  application. [README.landing.md](README.landing.md) is historical validation-landing
+  documentation. Payment logic is in `lib/payments/` and `lib/actions/`; webhook and
+  cron routes are under `app/api/`.
 - `db/` — Drizzle schema, migrations and the SQL files that are pasted by hand into
   the Supabase SQL Editor (order in PAYMENTS_SPEC.md section 0).
 - `archive/belgium-ghent/` — full frozen copy of the Belgium/Ghent version

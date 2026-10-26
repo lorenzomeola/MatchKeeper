@@ -40,6 +40,7 @@ export const paymentStatus = pgEnum("payment_status", [
   "pending",
   "partially_refunded",
   "disputed",
+  "none",
 ]);
 export const bookingStatus = pgEnum("booking_status", [
   "pending_payment",
@@ -215,6 +216,9 @@ export const bookings = pgTable(
   checkInLat: doublePrecision("check_in_lat"),
   checkInLng: doublePrecision("check_in_lng"),
   checkInDistanceM: integer("check_in_distance_m"),
+  // Foto opcional del portero al llegar; el archivo vive en el bucket privado checkin-photos.
+  checkInPhotoPath: text("check_in_photo_path"),
+  checkInPhotoAt: timestamp("check_in_photo_at", { withTimezone: true }),
   teamResponse: teamResponse("team_response"),
   teamRespondedAt: timestamp("team_responded_at", { withTimezone: true }),
   teamReportNote: text("team_report_note"),
@@ -482,6 +486,7 @@ export const emailOutbox = pgTable(
     payload: jsonb("payload").notNull().default({}),
     sendAfter: timestamp("send_after", { withTimezone: true }).notNull().defaultNow(),
     // pending | sending | scheduled | sent | failed | cancelled | skipped
+    // cancel_after_send | cancel_pending | cancelling | cancel_failed (send_after = next cancellation attempt)
     status: text("status").notNull().default("pending"),
     attempts: integer("attempts").notNull().default(0),
     lastError: text("last_error"),

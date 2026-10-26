@@ -1,6 +1,31 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { cancellationPlan, cancellationWork, fullRefundPlan, noShowPlan } from "./money.ts";
+import { cancellationPlan, cancellationWork, fullRefundPlan, noShowPlan, withoutMoney } from "./money.ts";
+
+test("sin cobro (beta): se quitan los importes pero se conservan el strike y el estado del partido", () => {
+  const keeperLate = withoutMoney(cancellationPlan(3000, 15, "keeper", 12));
+  assert.equal(keeperLate.refundPence, 0);
+  assert.equal(keeperLate.keeperSharePence, 0);
+  assert.equal(keeperLate.chargedPence, 0);
+  assert.equal(keeperLate.chargePct, 0);
+  assert.equal(keeperLate.strikeKind, "late_cancel");
+  assert.equal(keeperLate.matchAfter, "open");
+
+  const noShow = withoutMoney(noShowPlan(3000, 15));
+  assert.equal(noShow.refundPence, 0);
+  assert.equal(noShow.strikeKind, "no_show");
+
+  // Con importes a cero no queda ningun trabajo de dinero pendiente.
+  const work = cancellationWork({
+    ratePence: 3000,
+    commissionPct: 0,
+    chargePct: withoutMoney(cancellationPlan(3000, 15, "team", 1)).chargePct,
+    paymentStatus: "none",
+    transferId: null,
+  });
+  assert.equal(work.refundPending, false);
+  assert.equal(work.payoutPending, false);
+});
 
 test("reembolso total de admin: todo al equipo, sin strike", () => {
   const p = fullRefundPlan(3000, 15);

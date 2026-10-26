@@ -153,8 +153,8 @@ export type Tone = "neutral" | "accent" | "success" | "warning" | "danger";
 
 // Mismo estado, palabras distintas según quién lo lee.
 export const TEAM_STATE: Record<HistoryState, { label: string; tone: Tone }> = {
-  held: { label: "Held until the match", tone: "accent" },
-  awaiting_release: { label: "Played, not released yet", tone: "accent" },
+  held: { label: "Transfer pending", tone: "accent" },
+  awaiting_release: { label: "Played, transfer pending", tone: "accent" },
   released: { label: "Paid to the keeper", tone: "success" },
   review: { label: "Under review", tone: "warning" },
   dispute: { label: "In dispute", tone: "danger" },

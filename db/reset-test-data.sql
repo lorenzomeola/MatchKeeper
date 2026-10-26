@@ -20,8 +20,8 @@ declare
   v_dry_run boolean := true;
   v_keep_emails text[] := array[
     'matchkeeperuk@gmail.com',
-    'prueba2@email.com',
-    'prueba6@email.com'
+    'lorenzomeolav32@email.com',
+    'lorenzomeolav@email.com'
   ];
 
   v_keep uuid[];

@@ -10,9 +10,8 @@ export const SITE_URL = "https://matchkeeperuk.com";
 
 export const CITY = "London";
 
-// Punto de contacto publicado en el footer y las paginas legales. Cambiar en
-// cuanto se de de alta el dominio/buzon definitivo.
-export const CONTACT_EMAIL = "matchkeeperuk@gmail.com";
+// Buzón público (footer, páginas legales, emails). Cloudflare Email Routing lo reenvía a Gmail.
+export const CONTACT_EMAIL = "hello@matchkeeperuk.com";
 
 // The three Google Forms used in the UK (London) validation phase.
 export const FORMS = {

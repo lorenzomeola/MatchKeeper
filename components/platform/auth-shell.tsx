@@ -4,7 +4,9 @@ import type { ReactNode } from "react";
 import { Logo } from "@/components/logo";
 import { FloodlightBackdrop } from "@/components/platform/floodlight-backdrop";
 import { CheckIcon } from "@/components/platform/icons";
+import { PaymentModeNotice } from "@/components/platform/payment-mode-notice";
 import { ThemeToggle } from "@/components/platform/theme";
+import { getPaymentMode } from "@/lib/payments/mode";
 
 export type AuthAside = "login" | "join" | "player" | "goalkeeper";
 
@@ -14,23 +16,34 @@ const ASIDE: Record<AuthAside, { eyebrow: string; title: string; points: string[
   login: {
     eyebrow: "Welcome back",
     title: "Your matches, in one place.",
-    points: ["Verified keepers only", "Payment held until it's played", "Free to post"],
+    points: ["Verified keepers only", "Keeper paid after the match", "Free to post"],
   },
   join: {
     eyebrow: "Join MatchKeeper",
     title: "Keepers and teams, matched.",
-    points: ["Verified keepers only", "Payment held until it's played", "Free to post"],
+    points: ["Verified keepers only", "Keeper paid after the match", "Free to post"],
   },
   player: {
     eyebrow: "For players and teams",
     title: "Never cancel a match for lack of a keeper.",
-    points: ["Free to post a match", "Keepers apply at their own rate", "Payment held until it's played"],
+    points: ["Free to post a match", "Keepers apply at their own rate", "Keeper paid after the match"],
   },
   goalkeeper: {
     eyebrow: "For goalkeepers",
     title: "Get booked for the matches you want.",
     points: ["Free to join", "Set your own rate for each match", "Reviewed by a person before you apply"],
   },
+};
+
+// Beta sin pagos: nada de pago retenido ni de Stripe.
+const ASIDE_BETA: Record<AuthAside, { eyebrow: string; title: string; points: string[] }> = {
+  login: { ...ASIDE.login, points: ["Verified keepers only", "Free during the beta", "Chat with your keeper"] },
+  join: { ...ASIDE.join, points: ["Verified keepers only", "Free during the beta", "Adults only (18+)"] },
+  player: {
+    ...ASIDE.player,
+    points: ["Free to post a match", "Keepers apply with the rate they ask for", "You agree the payment with the keeper"],
+  },
+  goalkeeper: { ...ASIDE.goalkeeper, points: ["Free to join", "Say what you would ask for each match", "Reviewed by a person before you apply"] },
 };
 
 const KEEPER_PHOTO = { src: "/hero-keeper.jpg", position: "object-[52%_42%]", filter: "saturate(0.72) contrast(1.06)" };
@@ -49,14 +62,15 @@ const PHOTO: Record<AuthAside, typeof KEEPER_PHOTO> = {
  * foto a la derecha (solo escritorio), igual que el hero de /home. En móvil la
  * foto se omite: la pantalla es para completar el formulario, no para mirar.
  */
-export function AuthShell({
+export async function AuthShell({
   aside,
   children,
 }: {
   aside: AuthAside;
   children: ReactNode;
 }) {
-  const copy = ASIDE[aside];
+  const mode = await getPaymentMode();
+  const copy = mode === "unavailable" ? null : (mode === "paid" ? ASIDE : ASIDE_BETA)[aside];
   const photo = PHOTO[aside];
 
   return (
@@ -74,16 +88,19 @@ export function AuthShell({
         <div className="grid flex-1 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.92fr)] lg:gap-16">
           <div className="flex flex-col">
             <main className="flex flex-1 flex-col justify-center pb-10 sm:pb-14">
+              {mode === "unavailable" && <PaymentModeNotice className="mb-6" />}
               <div className="mx-auto w-full max-w-[28rem] lg:mx-0">{children}</div>
 
-              <ul className="mx-auto mt-10 grid w-full max-w-[28rem] gap-2.5 text-[13px] text-muted lg:hidden">
-                {copy.points.map((p) => (
-                  <li key={p} className="flex items-center gap-2">
-                    <CheckIcon className="h-3.5 w-3.5 shrink-0 text-accent" />
-                    {p}
-                  </li>
-                ))}
-              </ul>
+              {copy && (
+                <ul className="mx-auto mt-10 grid w-full max-w-[28rem] gap-2.5 text-[13px] text-muted lg:hidden">
+                  {copy.points.map((p) => (
+                    <li key={p} className="flex items-center gap-2">
+                      <CheckIcon className="h-3.5 w-3.5 shrink-0 text-accent" />
+                      {p}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </main>
 
             <footer className="flex flex-wrap items-center gap-x-3 pb-3 text-xs text-muted sm:pb-5">
@@ -99,7 +116,7 @@ export function AuthShell({
             </footer>
           </div>
 
-          <aside aria-hidden className="relative hidden pb-8 lg:block">
+          {copy && <aside aria-hidden className="relative hidden pb-8 lg:block">
             <div className="sticky top-8 h-[calc(100dvh-7.5rem)] max-h-[52rem]">
               <div className="relative h-full overflow-hidden rounded-[var(--r-2xl)] border border-line shadow-[var(--shadow-4)]">
                 <Image
@@ -131,7 +148,7 @@ export function AuthShell({
                 </div>
               </div>
             </div>
-          </aside>
+          </aside>}
         </div>
       </div>
     </div>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { completeness, profileChecklist, valuesFromRow } from "@/lib/profile";
+import { getOrCreateProfile } from "@/lib/profile-ensure";
 import { KeeperHome } from "./keeper-home";
 import { PlayerHome } from "./player-home";
 
@@ -14,7 +15,7 @@ export default async function DashboardPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
+  const profile = await getOrCreateProfile(supabase, user);
   if (!profile) redirect("/signup");
 
   const isKeeper = profile.role === "goalkeeper";

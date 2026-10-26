@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { loadMyStanding } from "@/lib/data/standing";
 import { defer } from "@/lib/email/booking-emails";
 import { notifyNewApplication } from "@/lib/email/marketplace-emails";
+import { getPaymentMode } from "@/lib/payments/mode";
 import { createClient } from "@/lib/supabase/server";
 
 export type ApplicationActionState = { error: string | null; done?: boolean };
@@ -30,12 +31,20 @@ export async function applyToMatchAction(
   if (rate > RATE_MAX) return { error: `The rate can't be more than £${RATE_MAX}.` };
   if (message.length > MESSAGE_MAX) return { error: `Keep your message under ${MESSAGE_MAX} characters.` };
 
-  const { data: payAccount } = await supabase
-    .from("keeper_stripe_accounts")
-    .select("payouts_enabled")
-    .eq("profile_id", user.id)
-    .maybeSingle();
-  if (!payAccount?.payouts_enabled) return { error: "Set up payments from your dashboard before applying." };
+  const paymentMode = await getPaymentMode();
+  if (paymentMode === "unavailable") {
+    return { error: "Bookings are temporarily unavailable. Please try again shortly." };
+  }
+
+  // Sin pagos (beta) el portero no necesita cuenta de cobro. La política RLS aplica la misma regla.
+  if (paymentMode === "paid") {
+    const { data: payAccount } = await supabase
+      .from("keeper_stripe_accounts")
+      .select("payouts_enabled")
+      .eq("profile_id", user.id)
+      .maybeSingle();
+    if (!payAccount?.payouts_enabled) return { error: "Set up payments from your dashboard before applying." };
+  }
 
   if ((await loadMyStanding(supabase, user.id)).level === "suspended") {
     return { error: "Your account is suspended from applying to new matches." };

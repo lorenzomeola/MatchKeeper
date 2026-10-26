@@ -6,7 +6,7 @@ export type MarketplaceTemplateData = {
   application_not_selected_keeper: { pitch: string; when: string; browseUrl: string };
   application_closed_keeper: { pitch: string; when: string; browseUrl: string };
   match_reopened_keeper: { pitch: string; when: string; matchUrl: string };
-  keeper_approved: { dashboardUrl: string };
+  keeper_approved: { dashboardUrl: string; payments?: boolean | null };
   review_received_keeper: { teamName: string; rating: number; comment: string | null; pitch: string; profileUrl: string };
   chat_unread: { senderName: string; pitch: string; chatUrl: string };
   keeper_info_request: { question: string; replyTo: string; profileUrl: string };
@@ -63,7 +63,11 @@ export const MARKETPLACE_BUILDERS: { [K in keyof MarketplaceTemplateData]: Build
     subject: "Your MatchKeeper profile is approved",
     paragraphs: [
       "Your keeper profile has been approved.",
-      "Set up payments to receive your fees, then apply to matches near you.",
+      d.payments === false
+        ? "You can now apply to matches near you."
+        : d.payments === true
+          ? "Set up payments to receive your fees, then apply to matches near you."
+          : "We could not confirm the current booking settings. Please try again shortly before applying to a match.",
     ],
     cta: { label: "Go to your dashboard", url: d.dashboardUrl },
   }),
@@ -91,10 +95,13 @@ export const MARKETPLACE_BUILDERS: { [K in keyof MarketplaceTemplateData]: Build
     subject: "A quick question about your MatchKeeper profile",
     paragraphs: [
       "Before we approve your keeper profile, our team has a question:",
-      ...d.question
-        .split(/\n+/)
-        .map((p) => p.trim())
-        .filter(Boolean),
+      {
+        label: "Message from the MatchKeeper team",
+        quote: d.question
+          .split(/\n+/)
+          .map((p) => p.trim())
+          .filter(Boolean),
+      },
       "Just reply to this email with your answer.",
     ],
     cta: { label: "Open your profile", url: d.profileUrl },

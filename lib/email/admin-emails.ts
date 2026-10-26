@@ -44,6 +44,7 @@ export async function notifyAdminBookingReview(c: BookingCtx, reason: string) {
     teamName: c.team.name,
     amount: moneyPence(c.totalPence),
     adminUrl: adminUrl("payments"),
+    free: c.free,
   });
 }
 

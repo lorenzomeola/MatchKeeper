@@ -1,4 +1,6 @@
-# MatchKeeper — Landing (validation phase, UK pilot)
+# MatchKeeper — Archived validation landing notes (UK pilot)
+
+> Historical notes for the Google Forms validation landing. They do not describe the current product homepage or release status; see [README.md](README.md) and [PRODUCT_PLAN.md](PRODUCT_PLAN.md).
 
 Landing page para validar la idea de "portero a demanda" para fútbol amateur.
 Objetivo: explicar la propuesta, captar waitlist y llevar a los 3 Google Forms.

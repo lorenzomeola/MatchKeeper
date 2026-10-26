@@ -58,7 +58,7 @@ export function CheckInButton({ bookingId }: { bookingId: string }) {
 }
 
 /** Confirmar que el portero jugó o reportar un problema. */
-export function TeamResponseActions({ bookingId }: { bookingId: string }) {
+export function TeamResponseActions({ bookingId, free = false }: { bookingId: string; free?: boolean }) {
   const { toast } = useToast();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -85,7 +85,9 @@ export function TeamResponseActions({ bookingId }: { bookingId: string }) {
         <button
           type="button"
           disabled={pending}
-          onClick={() => run(() => confirmMatchPlayedAction(bookingId), "Thanks. The keeper has been paid.")}
+          onClick={() =>
+            run(() => confirmMatchPlayedAction(bookingId), free ? "Thanks. The match is marked as played." : "Thanks. The keeper has been paid.")
+          }
           className={primary}
         >
           {pending ? "Saving…" : "Yes, they played"}
@@ -115,8 +117,9 @@ export function TeamResponseActions({ bookingId }: { bookingId: string }) {
             className="pl-input"
           />
           <p className="text-xs leading-relaxed text-muted">
-            If the keeper never checked in, a no show report refunds you in full straight away. In any other case we hold the
-            payment and review it, and nobody is paid until it is resolved.
+            {free
+              ? "If the keeper never checked in, a no show report is recorded straight away and the keeper gets a strike. In any other case we review it."
+              : "If the keeper never checked in, a no-show report triggers a full refund. In any other case we pause the keeper transfer while we review the match."}
           </p>
           <button
             type="button"

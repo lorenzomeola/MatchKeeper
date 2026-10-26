@@ -1,6 +1,6 @@
 // Comisión de MatchKeeper (% sobre la tarifa del portero) y versión de los Términos que acepta el equipo al reservar.
 export const COMMISSION_PCT = 15;
-export const TERMS_VERSION = "2026-10-06";
+export const TERMS_VERSION = "2026-10-13";
 
 // Stripe exige entre 30 minutos y 24 horas; el margen evita rechazos por latencia.
 export const CHECKOUT_TTL_MINUTES = 31;

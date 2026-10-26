@@ -36,7 +36,7 @@ export default async function AdminKeepersPage({ searchParams }: { searchParams:
           body={q ? "Try a shorter name." : tab === "pending" ? "Every keeper who signed up has been reviewed." : "Keepers show up here once they sign up."}
         />
       ) : (
-        <ul className="grid gap-4 lg:grid-cols-2">
+        <ul className="pl-cards grid gap-4 lg:grid-cols-2">
           {list.map((p) => (
             <li key={p.id}>
               <KeeperReviewCard p={p} requests={requests.get(p.id)} />

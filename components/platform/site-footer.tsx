@@ -6,7 +6,7 @@ import { CONTACT_EMAIL, SITE_TAGLINE, SOCIALS } from "@/lib/site";
  * Footer compartido por toda la plataforma (home + páginas legales), para que
  * los enlaces de Legal/Contacto vivan en un único sitio.
  */
-export function SiteFooter() {
+export function SiteFooter({ payments = true }: { payments?: boolean }) {
   return (
     <footer className="border-t border-line bg-surface/40">
       <div className="mx-auto max-w-[1240px] px-5 py-12 sm:px-8">
@@ -21,7 +21,11 @@ export function SiteFooter() {
               <FooterLink href="/signup?role=player">Find a keeper</FooterLink>
               <FooterLink href="/signup?role=goalkeeper">Become a keeper</FooterLink>
               <FooterLink href="/home#how-it-works">How it works</FooterLink>
-              <FooterLink href="/home#pricing">Pricing</FooterLink>
+              {payments ? (
+                <FooterLink href="/home#pricing">Pricing</FooterLink>
+              ) : (
+                <FooterLink href="/home#beta">Free beta</FooterLink>
+              )}
               <FooterLink href="/home#faq">FAQ</FooterLink>
               <FooterLink href="/login">Log in</FooterLink>
             </FooterColumn>

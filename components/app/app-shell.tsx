@@ -2,15 +2,17 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { signOutAction } from "@/lib/actions/auth";
 import { Logo, LogoMark } from "@/components/logo";
 import { Avatar } from "@/components/app/avatar";
 import { NAV, isActive, type NavItem, type NavVariant } from "@/components/app/nav-config";
+import { Sheet } from "@/components/app/sheet";
 import { ToastProvider } from "@/components/app/toast";
 import { FloodlightBackdrop } from "@/components/platform/floodlight-backdrop";
-import { LogOutIcon, PlusIcon, ShieldCheckIcon } from "@/components/platform/icons";
+import { LogOutIcon, MoreIcon, PlusIcon, ShieldCheckIcon } from "@/components/platform/icons";
+import { PaymentModeNotice } from "@/components/platform/payment-mode-notice";
 import { ThemeToggle } from "@/components/platform/theme";
 
 export type ShellBadges = { unread: number; pending: number; reports: number };
@@ -39,6 +41,8 @@ export function AppShell({
   userId,
   user,
   badges,
+  paymentsEnabled,
+  paymentModeUnavailable,
   children,
 }: {
   variant: NavVariant;
@@ -46,6 +50,8 @@ export function AppShell({
   userId: string;
   user: ShellUser;
   badges: ShellBadges;
+  paymentsEnabled: boolean;
+  paymentModeUnavailable: boolean;
   children: ReactNode;
 }) {
   const pathname = usePathname();
@@ -57,16 +63,82 @@ export function AppShell({
   const inMessages = pathname.startsWith("/messages");
   // El mapa ocupa el espacio entre las barras, sin márgenes en móvil.
   const inMap = pathname === "/map";
-  const items = NAV[inAdmin ? "admin" : variant];
+  const items = NAV[inAdmin ? "admin" : variant]
+    .filter((i) => paymentsEnabled || !i.paymentsOnly)
+    .map((i) => (!paymentsEnabled && i.freeLabel ? { ...i, label: i.freeLabel } : i));
   const tabs = items.filter((i) => i.tab);
   const primary = items.find((i) => i.primary);
   const sidebarItems = items.filter((i) => !i.primary);
+  // En el panel de admin caben cinco pestañas; el resto se abre desde "More" en la barra inferior del móvil.
+  const moreItems = inAdmin ? items.filter((i) => !i.tab && !i.primary) : [];
+  const moreActive = moreItems.some((i) => isActive(pathname, i));
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [landscapeNavHidden, setLandscapeNavHidden] = useState(false);
   const scrollerRef = useRef<HTMLDivElement>(null);
+  const lastScrollTopRef = useRef(0);
+  const scrollDirectionRef = useRef<"up" | "down" | null>(null);
+  const scrollDistanceRef = useRef(0);
 
   // Next solo restaura el scroll de la ventana; el contenedor interno de móvil hay que subirlo a mano.
   useEffect(() => {
-    scrollerRef.current?.scrollTo(0, 0);
+    const scroller = scrollerRef.current;
+    scroller?.scrollTo(0, 0);
+    lastScrollTopRef.current = 0;
+    scrollDirectionRef.current = null;
+    scrollDistanceRef.current = 0;
   }, [pathname]);
+
+  useEffect(() => {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+
+    const landscapePhone = window.matchMedia(
+      "(orientation: landscape) and (max-height: 500px) and (max-width: 950px)",
+    );
+    const handleScroll = () => {
+      const currentTop = scroller.scrollTop;
+      if (!landscapePhone.matches || inThread) {
+        lastScrollTopRef.current = currentTop;
+        scrollDirectionRef.current = null;
+        scrollDistanceRef.current = 0;
+        setLandscapeNavHidden(false);
+        return;
+      }
+
+      const delta = currentTop - lastScrollTopRef.current;
+      if (currentTop <= 16) {
+        scrollDirectionRef.current = null;
+        scrollDistanceRef.current = 0;
+        setLandscapeNavHidden(false);
+      } else if (delta !== 0) {
+        const direction = delta > 0 ? "down" : "up";
+        if (scrollDirectionRef.current !== direction) {
+          scrollDirectionRef.current = direction;
+          scrollDistanceRef.current = 0;
+        }
+        scrollDistanceRef.current += Math.abs(delta);
+        if (direction === "down" && scrollDistanceRef.current >= 20) {
+          setLandscapeNavHidden(true);
+        } else if (direction === "up" && scrollDistanceRef.current >= 12) {
+          setLandscapeNavHidden(false);
+        }
+      }
+      lastScrollTopRef.current = currentTop;
+    };
+    const handleViewportChange = () => {
+      lastScrollTopRef.current = scroller.scrollTop;
+      scrollDirectionRef.current = null;
+      scrollDistanceRef.current = 0;
+      setLandscapeNavHidden(false);
+    };
+
+    scroller.addEventListener("scroll", handleScroll, { passive: true });
+    landscapePhone.addEventListener("change", handleViewportChange);
+    return () => {
+      scroller.removeEventListener("scroll", handleScroll);
+      landscapePhone.removeEventListener("change", handleViewportChange);
+    };
+  }, [inThread]);
 
   // Un mensaje nuevo de otra persona refresca el contador sin recargar la página.
   useEffect(() => {
@@ -84,7 +156,10 @@ export function AppShell({
   return (
     <ToastProvider>
       {/* Móvil: solo hace scroll el contenido, no el body; así la barra de Safari iOS nunca tapa la barra inferior. */}
-      <div className="relative isolate flex h-dvh flex-col overflow-hidden bg-bg text-fg lg:block lg:h-auto lg:min-h-dvh lg:overflow-visible">
+      <div
+        className="app-shell relative isolate flex h-dvh flex-col overflow-hidden bg-bg text-fg lg:block lg:h-auto lg:min-h-dvh lg:overflow-visible"
+        data-landscape-nav-hidden={landscapeNavHidden}
+      >
         <FloodlightBackdrop />
 
         {/* Escritorio: barra lateral fija */}
@@ -164,9 +239,9 @@ export function AppShell({
           </div>
         </aside>
 
-        <div ref={scrollerRef} className={`min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain lg:overflow-visible lg:pl-64 ${inMap ? "flex flex-col lg:block" : ""}`}>
+        <div ref={scrollerRef} className={`app-mobile-content-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain lg:overflow-visible lg:pl-64 ${inMap ? "flex flex-col lg:block" : ""}`}>
           {/* Móvil: barra superior */}
-          <header className={`pl-glass sticky top-0 z-40 items-center justify-between gap-3 rounded-none border-x-0 border-t-0 px-4 pb-2.5 pt-[calc(0.625rem+env(safe-area-inset-top,0px))] ${inThread ? "hidden" : "flex lg:hidden"}`}>
+          <header className={`app-mobile-header pl-glass sticky top-0 z-40 items-center justify-between gap-3 rounded-none border-x-0 border-t-0 px-4 pb-2.5 pt-[calc(0.625rem+env(safe-area-inset-top,0px))] ${inThread ? "hidden" : "flex lg:hidden"}`}>
             <Link
               href={inAdmin ? "/admin" : "/dashboard"}
               aria-label="MatchKeeper home"
@@ -201,7 +276,7 @@ export function AppShell({
           </header>
 
           <main
-            className={`mx-auto w-full ${inMap ? "max-w-[1500px]" : "max-w-[1100px]"} ${
+            className={`${inThread ? "" : "app-mobile-main"} ${inMap ? "app-mobile-map-main" : ""} mx-auto w-full ${inMap ? "max-w-[1500px]" : "max-w-[1100px]"} ${
               inThread
                 ? "p-0 lg:px-8 lg:pb-6 lg:pt-6"
                 : inMap
@@ -211,6 +286,7 @@ export function AppShell({
                   }`
             }`}
           >
+            {paymentModeUnavailable && <PaymentModeNotice className="mb-5" />}
             {children}
           </main>
         </div>
@@ -218,9 +294,11 @@ export function AppShell({
         {/* Móvil: barra inferior */}
         <nav
           aria-label="Main"
-          className={`pl-glass relative z-50 shrink-0 rounded-none border-x-0 border-b-0 bg-[color-mix(in_oklab,var(--bg-2)_94%,transparent)] pb-[env(safe-area-inset-bottom,0px)] ${inThread ? "hidden" : "lg:hidden"}`}
+          aria-hidden={landscapeNavHidden || undefined}
+          inert={landscapeNavHidden || undefined}
+          className={`app-mobile-nav pl-glass relative z-50 shrink-0 rounded-none border-x-0 border-b-0 bg-[color-mix(in_oklab,var(--bg-2)_94%,transparent)] pb-[env(safe-area-inset-bottom,0px)] ${inThread ? "hidden" : "lg:hidden"}`}
         >
-          <ul className="mx-auto grid max-w-md" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}>
+          <ul className="app-mobile-nav-list mx-auto grid max-w-md" style={{ gridTemplateColumns: `repeat(${tabs.length + (moreItems.length > 0 ? 1 : 0)}, minmax(0, 1fr))` }}>
             {tabs.map((item) => {
               const active = isActive(pathname, item);
               const count = countFor(item, badges);
@@ -230,12 +308,12 @@ export function AppShell({
                     <Link
                       href={item.href}
                       aria-current={active ? "page" : undefined}
-                      className="-mt-5 flex flex-col items-center gap-1 pb-2 text-[11px] font-medium text-fg-2"
+                      className="app-mobile-nav-link app-mobile-nav-link--primary -mt-5 flex flex-col items-center gap-1 pb-2 text-[11px] font-medium text-fg-2"
                     >
-                      <span className="grid h-14 w-14 place-items-center rounded-[var(--r-lg)] bg-accent text-accent-ink shadow-[var(--shadow-glow)] transition-transform duration-150 active:scale-95">
+                      <span className="app-mobile-nav-icon app-mobile-nav-icon--primary grid h-14 w-14 place-items-center rounded-[var(--r-lg)] bg-accent text-accent-ink shadow-[var(--shadow-glow)] transition-transform duration-150 active:scale-95">
                         <item.icon className="h-6 w-6" />
                       </span>
-                      {item.short ?? item.label}
+                      <span className="app-mobile-nav-label">{item.short ?? item.label}</span>
                     </Link>
                   </li>
                 );
@@ -245,10 +323,10 @@ export function AppShell({
                   <Link
                     href={item.href}
                     aria-current={active ? "page" : undefined}
-                    className="flex min-h-[3.75rem] flex-col items-center justify-center gap-0.5 text-[11px] font-medium text-muted transition-colors duration-150 aria-[current=page]:text-accent-strong"
+                    className="app-mobile-nav-link flex min-h-[3.75rem] flex-col items-center justify-center gap-0.5 text-[11px] font-medium text-muted transition-colors duration-150 aria-[current=page]:text-accent-strong"
                   >
                     <span
-                      className={`relative grid h-8 w-14 place-items-center rounded-full transition-colors duration-200 ${
+                      className={`app-mobile-nav-icon relative grid h-8 w-14 place-items-center rounded-full transition-colors duration-200 ${
                         active ? "bg-accent-soft" : ""
                       }`}
                     >
@@ -259,13 +337,55 @@ export function AppShell({
                         </span>
                       )}
                     </span>
-                    {item.short ?? item.label}
+                    <span className="app-mobile-nav-label">{item.short ?? item.label}</span>
+                  </Link>
+                </li>
+              );
+            })}
+            {moreItems.length > 0 && (
+              <li>
+                <button
+                  type="button"
+                  onClick={() => setMoreOpen(true)}
+                  aria-haspopup="dialog"
+                  aria-current={moreActive ? "page" : undefined}
+                  className="app-mobile-nav-link flex min-h-[3.75rem] w-full flex-col items-center justify-center gap-0.5 text-[11px] font-medium text-muted transition-colors duration-150 aria-[current=page]:text-accent-strong"
+                >
+                  <span
+                    className={`app-mobile-nav-icon grid h-8 w-14 place-items-center rounded-full transition-colors duration-200 ${
+                      moreActive ? "bg-accent-soft" : ""
+                    }`}
+                  >
+                    <MoreIcon className="h-[22px] w-[22px]" />
+                  </span>
+                  <span className="app-mobile-nav-label">More</span>
+                </button>
+              </li>
+            )}
+          </ul>
+        </nav>
+
+        {/* Fuera de la barra: su desenfoque crearía un bloque contenedor y el panel quedaría recortado. */}
+        <Sheet open={moreOpen} title="More" onClose={() => setMoreOpen(false)}>
+          <ul className="grid gap-1">
+            {moreItems.map((item) => {
+              const active = isActive(pathname, item);
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    onClick={() => setMoreOpen(false)}
+                    aria-current={active ? "page" : undefined}
+                    className="flex min-h-12 items-center gap-3 rounded-[var(--r-md)] px-3 text-[15px] font-medium text-fg-2 transition-colors duration-200 hover:bg-surface hover:text-fg aria-[current=page]:bg-accent-soft aria-[current=page]:text-accent-strong"
+                  >
+                    <item.icon className="h-5 w-5 shrink-0" />
+                    {item.label}
                   </Link>
                 </li>
               );
             })}
           </ul>
-        </nav>
+        </Sheet>
       </div>
     </ToastProvider>
   );

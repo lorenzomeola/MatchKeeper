@@ -21,6 +21,18 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
   const isKeeper = p.role === "goalkeeper";
   const rating = profileRating(p);
   const role = p.is_admin ? "Admin" : isKeeper ? "Goalkeeper" : p.player_kind === "team" ? "Team" : "Player";
+  const profileValue = `${rating.tier} · ${rating.percent}%`;
+  const facts: [string, string][] = isKeeper
+    ? [
+        ["Experience", p.experience_years != null ? `${p.experience_years} ${p.experience_years === 1 ? "year" : "years"}` : "Not given"],
+        ["Level", p.level ?? "Not given"],
+        ["Profile", profileValue],
+      ]
+    : [
+        ["Level", p.level ?? "Not given"],
+        ["Team", teamName ?? "No team"],
+        ["Profile", profileValue],
+      ];
 
   return (
     <>
@@ -30,46 +42,45 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
       </Link>
 
       <section className="pl-surface rounded-[var(--r-xl)] p-5 sm:p-7">
-        <div className="flex items-start gap-4 sm:gap-5">
-          <Avatar name={p.display_name} src={p.avatar_url} size="xl" />
-          <div className="min-w-0 flex-1">
-            <h1 className="pl-display truncate text-fg [font-size:var(--t-3xl)]">{p.display_name}</h1>
-            <p className="mt-1.5 text-sm text-muted">
-              {role}
-              {teamName ? ` · ${teamName}` : ""} · {p.city ?? "No city"} · joined {joined(p.created_at)}
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {isKeeper && <StatusBadge tone={p.approved ? "success" : "warning"}>{p.approved ? "Approved" : "In review"}</StatusBadge>}
-              <StatusBadge tone="neutral">
-                Profile {rating.tier} · {rating.percent}%
-              </StatusBadge>
+        {/* Identidad a la izquierda y la decisión a la derecha, centradas entre sí. */}
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between sm:gap-8">
+          <div className="flex min-w-0 items-center gap-4 sm:gap-5">
+            <Avatar name={p.display_name} src={p.avatar_url} size="xl" />
+            <div className="min-w-0">
+              <h1 className="pl-display truncate text-fg [font-size:var(--t-3xl)]">{p.display_name}</h1>
+              <p className="mt-1.5 text-sm text-muted">
+                {role}
+                {teamName ? ` · ${teamName}` : ""} · {p.city ?? "No city"} · joined {joined(p.created_at)}
+              </p>
+              {isKeeper && (
+                <div className="mt-3">
+                  <StatusBadge tone={p.approved ? "success" : "warning"}>{p.approved ? "Approved" : "In review"}</StatusBadge>
+                </div>
+              )}
             </div>
           </div>
-        </div>
 
-        <dl className="mt-6 grid gap-4 sm:grid-cols-3">
           {isKeeper && (
-            <div>
-              <dt className="text-xs font-medium text-muted">Experience</dt>
-              <dd className="mt-1 text-[15px] text-fg">{p.experience_years != null ? `${p.experience_years} years` : "Not given"}</dd>
+            <div className="sm:w-56 sm:shrink-0">
+              <ApprovalControl profileId={p.id} name={p.display_name} approved={p.approved} missing={rating.requiredMissing.map((i) => i.label)} />
             </div>
           )}
-          <div>
-            <dt className="text-xs font-medium text-muted">Level</dt>
-            <dd className="mt-1 text-[15px] text-fg">{p.level ?? "Not given"}</dd>
-          </div>
+        </div>
+
+        {/* Siempre tres datos del mismo tamaño, sea portero o jugador. */}
+        <dl className="mt-6 grid grid-cols-1 gap-3 border-t border-line pt-6 sm:grid-cols-3">
+          {facts.map(([label, value]) => (
+            <div key={label} className="rounded-[var(--r-md)] bg-surface px-4 py-3">
+              <dt className="text-xs font-medium text-muted">{label}</dt>
+              <dd className="mt-1 truncate text-[15px] font-medium text-fg">{value}</dd>
+            </div>
+          ))}
         </dl>
 
-        <div className="mt-5 rounded-[var(--r-md)] bg-surface px-4 py-3">
+        <div className="mt-3 rounded-[var(--r-md)] bg-surface px-4 py-3">
           <p className="text-xs font-medium text-muted">{isKeeper ? "Bio" : "About"}</p>
           <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-fg-2">{p.bio?.trim() || "Nothing written yet."}</p>
         </div>
-
-        {isKeeper && (
-          <div className="mt-5 sm:max-w-xs">
-            <ApprovalControl profileId={p.id} name={p.display_name} approved={p.approved} missing={rating.requiredMissing.map((i) => i.label)} />
-          </div>
-        )}
       </section>
 
       <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">

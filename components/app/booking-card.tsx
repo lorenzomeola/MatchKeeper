@@ -1,14 +1,18 @@
 import { CancelBookingButton, CheckInButton, TeamResponseActions } from "@/components/app/booking-actions";
+import { CheckInPhotoUpload, RemoveCheckInPhotoButton } from "@/components/app/checkin-photo";
 import { StatusBadge } from "@/components/app/status-badge";
 import { moneyPence } from "@/lib/format";
 import { CHECKIN_WINDOW_MIN } from "@/lib/payments/config";
+import { canAddCheckInPhoto } from "@/lib/payments/checkin-photo";
 import { teamCanRespond } from "@/lib/payments/checkin";
 import { cancellationPlan, hoursBeforeStart, partialCharge } from "@/lib/payments/money";
 
 export type BookingForCard = {
   id: string;
   status: string;
+  payment_status: string;
   keeper_checked_in_at: string | null;
+  check_in_photo_path?: string | null;
   team_response: string | null;
   auto_release_at: string | null;
   cancelled_by: string | null;
@@ -20,11 +24,28 @@ export type BookingForCard = {
 const londonTime = (d: Date) =>
   new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", hour: "2-digit", minute: "2-digit", hour12: false }).format(d);
 
+/** Enlace temporal firmado: se muestra tal cual, sin pasar por el optimizador de imágenes. */
+function CheckInPhoto({ url, alt }: { url: string; alt: string }) {
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer" className="block w-fit">
+      {/* eslint-disable-next-line @next/next/no-img-element -- URL firmada y temporal de Supabase Storage */}
+      <img src={url} alt={alt} className="max-h-64 w-auto max-w-full rounded-[var(--r-md)] border border-line object-cover" loading="lazy" />
+    </a>
+  );
+}
+
 /** Qué pasaría ahora si esta parte cancelara. El servidor lo vuelve a calcular al confirmar. */
 function cancelConsequence(role: "owner" | "keeper", booking: BookingForCard, start: Date, now: Date) {
   const rate = booking.rate_pence ?? 0;
   const commission = Number(booking.commission_pct);
   const plan = cancellationPlan(rate, commission, role === "owner" ? "team" : "keeper", hoursBeforeStart(start, now));
+  if (booking.payment_status === "none") {
+    if (role === "owner") return "The keeper is told straight away. Let them know in the chat too.";
+    return [
+      plan.strike ? "A strike is added to your profile, because it is less than 24 hours to kick-off." : "There is no penalty.",
+      plan.matchAfter === "open" ? "The match opens again for other keepers." : "The booking is cancelled.",
+    ].join(" ");
+  }
   if (role === "owner") {
     if (plan.chargePct === 0) return `You get ${moneyPence(plan.refundPence)} back, everything you paid.`;
     if (plan.chargePct === 50) {
@@ -46,6 +67,7 @@ export function BookingCard({
   startsAt,
   endsAt,
   compact,
+  photoUrl,
 }: {
   role: "owner" | "keeper";
   booking: BookingForCard;
@@ -53,9 +75,12 @@ export function BookingCard({
   endsAt: string;
   /** Dentro de la tarjeta de un portero, con menos separación. */
   compact?: boolean;
+  /** Enlace temporal a la foto del check-in, si la hay. */
+  photoUrl?: string | null;
 }) {
   const now = new Date();
   const start = new Date(startsAt);
+  const free = booking.payment_status === "none";
   const checkedIn = Boolean(booking.keeper_checked_in_at);
   const shell = `pl-surface ${compact ? "mt-3" : "mt-8"} grid gap-4 rounded-[var(--r-xl)] p-5 sm:p-6`;
   // El equipo puede cancelar hasta el final del partido; el portero, hasta el inicio.
@@ -71,7 +96,20 @@ export function BookingCard({
     const byTeam = booking.cancelled_by === "team";
     const byKeeper = booking.cancelled_by === "keeper";
     let text: string;
-    if (role === "owner") {
+    if (free) {
+      text =
+        role === "owner"
+          ? byTeam
+            ? "You cancelled this booking."
+            : byKeeper
+              ? "The keeper cancelled. If the match is still open, other keepers can apply again."
+              : "This booking was cancelled."
+          : byTeam
+            ? "The team cancelled this booking."
+            : byKeeper
+              ? "You cancelled this booking."
+              : "This booking was cancelled by MatchKeeper after a report.";
+    } else if (role === "owner") {
       if (byTeam) {
         text =
           split.refundPence > 0
@@ -103,11 +141,13 @@ export function BookingCard({
   if (booking.status === "completed") {
     return (
       <section className={shell}>
-        <StatusBadge tone="success">{role === "keeper" ? "Paid" : "Payment released"}</StatusBadge>
+        <StatusBadge tone="success">{free ? "Played" : role === "keeper" ? "Paid" : "Payment released"}</StatusBadge>
         <p className="pl-prose text-[15px]">
-          {role === "keeper"
-            ? "Your rate was sent to your Stripe account. Stripe pays it to your bank on its normal schedule."
-            : "The keeper has been paid. Thanks for playing."}
+          {free
+            ? "This match is done. Thanks for playing."
+            : role === "keeper"
+              ? "Your rate was sent to your Stripe account. Stripe pays it to your bank on its normal schedule."
+              : "The keeper has been paid. Thanks for playing."}
         </p>
       </section>
     );
@@ -118,7 +158,9 @@ export function BookingCard({
       <section className={shell}>
         <StatusBadge tone="warning">Under review</StatusBadge>
         <p className="pl-prose text-[15px]">
-          The payment is on hold while we look at this match. We will contact you both.
+          {free
+            ? "We are looking at this match. We will contact you both."
+            : "The keeper transfer is paused while we review this match. We will contact you both."}
         </p>
       </section>
     );
@@ -133,13 +175,29 @@ export function BookingCard({
       <section className={shell}>
         <StatusBadge tone={checkedIn ? "success" : "accent"}>{checkedIn ? "Checked in" : "Booked"}</StatusBadge>
         {checkedIn ? (
-          <p className="pl-prose text-[15px]">
-            You checked in at {londonTime(new Date(booking.keeper_checked_in_at!))}. You are paid after the team confirms
-            or within three days.
-          </p>
+          <>
+            <p className="pl-prose text-[15px]">
+              You checked in at {londonTime(new Date(booking.keeper_checked_in_at!))}.{" "}
+              {free
+                ? "The match is marked as played after the team confirms or within three days."
+                : "You are paid after the team confirms or within three days."}
+            </p>
+            {photoUrl ? (
+              <>
+                <CheckInPhoto url={photoUrl} alt="The photo you sent to your team" />
+                <div>
+                  <RemoveCheckInPhotoButton bookingId={booking.id} />
+                </div>
+              </>
+            ) : (
+              canAddCheckInPhoto({ status: booking.status, checkedIn, hasPhoto: Boolean(booking.check_in_photo_path), now, endsAt: new Date(endsAt) }) && (
+                <CheckInPhotoUpload bookingId={booking.id} />
+              )
+            )}
+          </>
         ) : now < opensAt ? (
           <p className="pl-prose text-[15px]">
-            The payment is held. Check-in opens at {londonTime(opensAt)}, when you are at the pitch.
+            {free ? "" : "Keeper transfer is pending. "}Check-in opens at {londonTime(opensAt)}, when you are at the pitch.
           </p>
         ) : now <= closesAt ? (
           <>
@@ -150,7 +208,9 @@ export function BookingCard({
           </>
         ) : (
           <p className="pl-prose text-[15px]">
-            The check-in window is closed. If you played, the team can still confirm it and you get paid.
+            {free
+              ? "The check-in window is closed. If you played, the team can still confirm it."
+              : "The check-in window is closed. If you played, the team can still confirm it and you get paid."}
           </p>
         )}
         {cancelButton}
@@ -163,20 +223,33 @@ export function BookingCard({
   return (
     <section className={shell}>
       <StatusBadge tone="accent">Booked</StatusBadge>
+      {checkedIn && (
+        <>
+          <p className="pl-prose text-[15px]">Your keeper checked in at the pitch at {londonTime(new Date(booking.keeper_checked_in_at!))}.</p>
+          {photoUrl && (
+            <>
+              <CheckInPhoto url={photoUrl} alt="Photo from your keeper showing where they are" />
+              <p className="text-sm text-muted">Your keeper added this photo so you can find them.</p>
+            </>
+          )}
+        </>
+      )}
       {booking.team_response ? (
         <p className="pl-prose text-[15px]">Thanks, we have your answer.</p>
       ) : canRespond ? (
         <>
           <p className="pl-prose text-[15px]">
-            {checkedIn ? "The keeper checked in at the pitch. " : "The keeper has not checked in. "}
-            Did they play? If you do nothing, the payment is released automatically three days after the match
-            {checkedIn ? "" : " only if the keeper checked in; otherwise we review it"}.
+            {checkedIn ? "" : "The keeper has not checked in. "}
+            {free
+              ? `Did they play? If you do nothing, we close the booking automatically three days after the match${checkedIn ? "" : " only if the keeper checked in; otherwise we review it"}.`
+              : `Did they play? If you do nothing, the payment is released automatically three days after the match${checkedIn ? "" : " only if the keeper checked in; otherwise we review it"}.`}
           </p>
-          <TeamResponseActions bookingId={booking.id} />
+          <TeamResponseActions bookingId={booking.id} free={free} />
         </>
       ) : (
         <p className="pl-prose text-[15px]">
-          Your payment is held until the match is played. After kick-off you can confirm it or report a problem here.
+          {free ? "" : "The keeper transfer is pending until the match rules are met. "}After kick-off you can confirm it or report a problem
+          here.
         </p>
       )}
       {cancelButton}

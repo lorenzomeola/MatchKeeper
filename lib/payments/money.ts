@@ -105,6 +105,11 @@ export function fullRefundPlan(ratePence: number, commissionPct: number): Cancel
   };
 }
 
+/** El mismo plan sin importes: para reservas sin cobro (beta), donde solo cuentan el strike y el estado del partido. */
+export function withoutMoney(plan: CancellationPlan): CancellationPlan {
+  return { ...plan, chargePct: 0, keeperSharePence: 0, feeSharePence: 0, chargedPence: 0, refundPence: 0 };
+}
+
 /**
  * Trabajo de dinero que queda por hacer en una reserva cancelada. Permite reanudar tras un fallo a medias:
  * el estado se guarda antes de llamar a Stripe y esto deduce qué falta.
