@@ -12,7 +12,7 @@ export const revalidate = 60;
 
 export default function TermsPage() {
   return (
-    <LegalShell eyebrow="Legal" title="Terms of Service" updated="2026-10-14">
+    <LegalShell eyebrow="Legal" title="Terms of Service" updated="2026-10-26">
       {(payments) => (
         <>
       <p>
@@ -20,9 +20,8 @@ export default function TermsPage() {
           {payments
             ? "MatchKeeper is currently in a pilot phase in London."
             : "MatchKeeper is currently in a free beta in London, with no payments through the platform."}{" "}
-          These draft terms describe the current release. A qualified solicitor must review them
-          before beta users are invited; payment terms apply only when protected bookings are
-          explicitly enabled.
+          These terms describe the current release. Payment terms apply only when protected
+          bookings are explicitly enabled.
         </em>
       </p>
 
@@ -31,7 +30,8 @@ export default function TermsPage() {
         goalkeeper on MatchKeeper (&quot;the platform&quot;).
       </p>
       <p>
-        MatchKeeper is operated by Lorenzo Meola. You can contact us at{" "}
+        MatchKeeper is operated by Lorenzo Meola, acting as an individual based in Belgium.
+        You can contact us at{" "}
         <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
       </p>
 
@@ -57,6 +57,13 @@ export default function TermsPage() {
           no-show or a serious complaint.
         </li>
         <li>You are responsible for anything that happens under your account.</li>
+        <li>
+          To request account closure or deletion of personal data, email{" "}
+          <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>. Requests are handled manually;
+          see the <a href="/privacy">Privacy Policy</a> for verification, retention and your rights.
+          Closing an account does not by itself cancel an upcoming booking: tell us about any
+          outstanding match so that it can be handled explicitly.
+        </li>
       </ul>
 
       <h2>3. Booking a match</h2>
@@ -266,7 +273,7 @@ export default function TermsPage() {
 
       <h2>7. Changes</h2>
       <p>
-        We may update these terms as the platform evolves out of pilot. We&apos;ll post the date
+        We may update these terms as the platform evolves. We&apos;ll post the date
         of the latest change at the top of this page.
       </p>
 
@@ -274,6 +281,11 @@ export default function TermsPage() {
       <p>
         Questions about these terms:{" "}
         <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
+      </p>
+      <p>
+        Support is handled personally and is not a live or round-the-clock service. We do not
+        guarantee a response time for ordinary beta support. This does not change statutory
+        rights or legal deadlines for data-protection requests.
       </p>
         </>
       )}

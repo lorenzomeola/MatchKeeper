@@ -12,7 +12,7 @@ export const revalidate = 60;
 
 export default function PrivacyPage() {
   return (
-    <LegalShell eyebrow="Legal" title="Privacy Policy" updated="2026-10-14">
+    <LegalShell eyebrow="Legal" title="Privacy Policy" updated="2026-10-26">
       {(payments) => (
         <>
       <p>
@@ -20,18 +20,16 @@ export default function PrivacyPage() {
           {payments
             ? "MatchKeeper is currently in a pilot phase in London."
             : "MatchKeeper is currently in a free beta in London, with no payments through the platform."}{" "}
-          This draft describes the current release. The operator must confirm its data-protection
-          details with a qualified privacy adviser before beta users are invited.
+          This policy explains how personal data is used in the current release.
         </em>
       </p>
 
       <p>
         MatchKeeper is operated by Lorenzo Meola, who decides how your data is used (the
-        &quot;controller&quot; in data protection law). The operator lives in Belgium and the service is
-        for people in the UK. The EU GDPR applies to processing by the operator in Belgium; the
-        UK GDPR may also apply to services offered to people in the UK. The precise territorial
-        scope and any UK representative requirement need professional confirmation. MatchKeeper
-        is for people aged 18 or over, so we do not knowingly collect data from anyone younger.
+        &quot;controller&quot; in data protection law), acting as an individual based in Belgium.
+        The service is for adults in the UK. You can contact the controller at{" "}
+        <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>. MatchKeeper is for people aged
+        18 or over, so we do not knowingly collect data from anyone younger.
       </p>
 
       <h2>1. What we collect</h2>
@@ -63,6 +61,14 @@ export default function PrivacyPage() {
           are waiting so the team can find them. We remove the camera metadata, including any
           location it holds, before saving the photo. It is stored privately and is never public.
         </li>
+        <li>
+          Reports, reviews, strikes and support correspondence, including the information you send
+          when asking for help or exercising your data rights.
+        </li>
+        <li>
+          Technical information processed by our hosting, authentication and map providers, such as
+          IP addresses, browser information, request logs and page-view statistics.
+        </li>
         {payments && (
           <li>
             Protected-booking records such as the amount, payment/refund status and Stripe reference
@@ -76,23 +82,32 @@ export default function PrivacyPage() {
       <p>
         To operate the marketplace: match organisers with keepers,{" "}
         {payments ? "process payments, " : ""}review goalkeeper profiles, and let you contact the
-        other side of a confirmed booking. The intended legal bases are listed below and must be
-        confirmed by the operator with a qualified privacy adviser before launch:
+        other side of a confirmed booking. We use different legal bases for different purposes:
       </p>
       <ul>
         <li>
           Running your account, matches, applications, chat and bookings, and sending the emails
-          that go with them: we need this to provide the service you asked for. We send emails
+          that go with them: performance of our agreement to provide the service you asked for. We send emails
           about your account, your matches and your bookings. We do not send marketing emails.
         </li>
         <li>
-          Check-in location: you share it when you tap the button, and we also have a legitimate
-          interest in being able to settle a disagreement about whether a goalkeeper turned up.
+          Check-in location: our legitimate interest in recording attendance and resolving
+          disagreements. Your browser also asks for location permission; permission to use a device
+          feature is separate from the legal basis for processing the resulting record.
+        </li>
+        <li>
+          Optional check-in photos and map searches: providing the feature you choose to use.
+          A check-in photo is not required to check in or complete a booking.
         </li>
         <li>
           Reviewing goalkeeper profiles, handling reports, applying strikes and keeping the
           platform safe: our legitimate interest in keeping both sides safe and the service
           honest. We read messages only when a report or a dispute makes it necessary.
+        </li>
+        <li>
+          Technical security logs and aggregate usage statistics: our legitimate interest in
+          protecting accounts, keeping the service reliable and understanding how it is used.
+          Handling data-rights requests and legally required records: compliance with legal obligations.
         </li>
       </ul>
       <p>
@@ -107,33 +122,58 @@ export default function PrivacyPage() {
 
       <h2>3. Who it&apos;s shared with</h2>
       <ul>
-        <li>The other party to a match you&apos;re booking or applying to (name, rating, price).</li>
+        <li>
+          Other users can see the match and profile information made available by the service,
+          including names, profile photos, playing information, reviews and requested rates.
+          Profile photos are stored in a public bucket: anyone with the image URL can view them.
+          Chat and check-in photos are not public.
+        </li>
         {payments && <li>Stripe, to process payments.</li>}
         <li>
           Supabase, our database and authentication provider, which stores your account data
           and sends authentication emails through the configured SMTP provider.
         </li>
         <li>Vercel, which hosts the site and provides page-view analytics.</li>
-        <li>Resend, which sends our emails.</li>
-        <li>Mapbox, which provides the maps and receives your IP address when a map loads.</li>
+        <li>Resend, which receives recipients and email content to send account and service emails.</li>
+        <li>
+          Mapbox, which provides maps and place search. Your browser sends map requests and the
+          pitch or address search terms you enter directly to Mapbox, together with technical
+          information such as your IP address. When you select a place and publish a match, we
+          store its address and coordinates with the match. Do not enter private information in
+          place searches.
+        </li>
+        <li>
+          Cloudflare Email Routing and Google Gmail, which route and receive messages sent to our
+          public support email address.
+        </li>
       </ul>
       <p>
         Goalkeeper profiles are also reviewed by an admin before the goalkeeper can apply to
-        matches. We do not sell your data.
+        matches. Standing restrictions use strike points: reaching the threshold automatically
+        prevents new applications. You can ask for human review of a report, strike or restriction
+        by emailing us; an admin can waive a strike made in error. We do not sell your data.
       </p>
 
       <h2>4. Cookies and similar storage</h2>
       <p>
         We use a cookie to keep you logged in, and your browser&apos;s local storage to remember
-        whether you prefer the light or the dark theme. Both are needed for the site to work.
-        Vercel&apos;s analytics counts page views without using cookies.
+        whether you prefer the light or the dark theme. Login cookies support authentication;
+        theme storage remembers your display preference. Vercel&apos;s analytics counts page views
+        without using cookies. Cookie-free analytics still involves processing technical data.
       </p>
 
       <h2>5. Transfers outside the UK and the EU</h2>
       <p>
-        Some providers may process data outside the UK or the European Economic Area. Before
-        launch, the operator must confirm each provider&apos;s processing locations and document the
-        required transfer safeguards. Contact us for the current provider information.
+        The Production Supabase database is hosted in London. This does not mean that all data
+        stays in the UK: hosting, maps, email, analytics and provider support may involve processing
+        outside the UK or the European Economic Area. Provider information is available in the{" "}
+        <a href="https://supabase.com/privacy">Supabase privacy policy</a>,{" "}
+        <a href="https://vercel.com/legal/privacy-policy">Vercel privacy policy</a>,{" "}
+        <a href="https://resend.com/legal/privacy-policy">Resend privacy policy</a>,{" "}
+        <a href="https://www.mapbox.com/legal/privacy">Mapbox privacy policy</a>,{" "}
+        <a href="https://www.cloudflare.com/privacypolicy/">Cloudflare privacy policy</a> and{" "}
+        <a href="https://policies.google.com/privacy">Google privacy policy</a>.
+        Contact us to request details of the applicable transfer arrangements and safeguards.
       </p>
 
       <h2>6. Your rights</h2>
@@ -141,9 +181,19 @@ export default function PrivacyPage() {
         You can ask to access, correct or delete your personal data, restrict or object to
         processing, or receive a copy. Email{" "}
         <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>. Requests are handled manually by
-        the operator under applicable data-protection law. Some records may need to be retained
+        the operator under applicable data-protection law. Write from your account email where
+        possible and tell us what you are requesting. We may ask for proportionate information to
+        verify your identity; do not send passwords or identity documents unless we explain why
+        they are necessary and provide a suitable way to send them. Some records may need to be retained
         where required for legal claims, security or dispute handling. There is no self-service
         account deletion in the app; a request is not an immediate deletion command.
+      </p>
+      <p>
+        We respond to data-rights requests without undue delay and within the applicable legal
+        time limit, normally one month. If a lawful extension applies, we explain it and the
+        reason within the initial response period. If we cannot grant all or part of a request,
+        we explain why and how to challenge the decision. The absence of a guaranteed response
+        time for ordinary support does not change these obligations.
       </p>
       <p>
         If you are not happy with how we handle your data, you can complain to the Information
@@ -153,26 +203,50 @@ export default function PrivacyPage() {
 
       <h2>7. Retention</h2>
       <p>
-        Account, booking and chat retention periods are not yet fully automated. The operator
-        reviews requests manually and retains records only while needed for the service, safety,
-        disputes or legal obligations. A documented schedule and deletion workflow must be
-        confirmed before the Beta opens.
+        Retention during the beta is reviewed manually by purpose, including a monthly review
+        of continued necessity; there is no automatic
+        account-expiry or general history-deletion job. Account and profile data is kept while
+        your account is active and needed to provide the service. When you request account closure
+        or erasure, we review which records can be deleted or anonymised and which must temporarily
+        remain for an outstanding booking, a specific safety issue, a dispute or a legal obligation.
       </p>
+      <ul>
+        <li>
+          Matches, applications, bookings, reviews and chat: kept while needed for coordination,
+          account history or an identified unresolved issue. We review their continued need when
+          handling an account-closure or erasure request, rather than treating history as permanently
+          exempt from deletion.
+        </li>
+        <li>
+          Reports, strikes and support records: kept while needed to investigate, handle an appeal,
+          prevent repeated abuse or meet an identified legal requirement. A strike ceasing to count
+          does not automatically delete its record.
+        </li>
+        <li>
+          Check-in time and distance: kept with the booking for attendance history and issue handling;
+          these fields are not covered by the exact-coordinate purge. They are reviewed with the
+          booking when an erasure or account-closure request is handled.
+        </li>
+      </ul>
       <p>
         Exact check-in coordinates are scheduled for deletion after 120 days from the match end;
-        the purge runs daily, so deletion may happen shortly after that point. If a dispute is
-        open, coordinates are retained until it is resolved.{" "}
-        {payments
-          ? "This supports review of a protected booking."
-          : "which leaves time to resolve a disagreement about whether the goalkeeper turned up."}{" "}
+        the purge is scheduled daily, so deletion may happen shortly after that point.
+        An open payment dispute can delay this deletion until it is resolved.{" "}
         After the purge we retain the check-in time and the measured distance from the pitch; the
-        distance is visible to admins reviewing a booking. If a dispute is still open, we keep
-        the exact coordinates until it is resolved.
+        distance is visible to admins reviewing a booking.
       </p>
       <p>
         A check-in photo follows the same schedule: it is deleted 120 days after the match end, or
-        later if a dispute is open. A goalkeeper can remove their photo earlier from the booking
+        later if a payment dispute is open. A goalkeeper can remove their photo earlier from the booking
         page.
+      </p>
+      <p>
+        Our daily Supabase database backups have a seven-day retention window. A deletion from the
+        live database may therefore remain in an older backup until it expires. If a backup is
+        restored, erasure decisions must be reapplied before the restored service is reopened.
+        Storage image files are not included in these database backups; we do not maintain a
+        separate image backup during the beta. Provider logs and email copies follow the relevant
+        provider&apos;s retention settings as well as any deletion requests we can make.
       </p>
 
       <h2>8. Contact</h2>

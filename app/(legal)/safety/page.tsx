@@ -12,7 +12,7 @@ export const revalidate = 60;
 
 export default function SafetyPage() {
   return (
-    <LegalShell eyebrow="Legal" title="Safety" updated="2026-10-14">
+    <LegalShell eyebrow="Legal" title="Safety" updated="2026-10-26">
       {(payments) => (
         <>
       <p>
@@ -32,6 +32,12 @@ export default function SafetyPage() {
         <li>Experience and playing level.</li>
         <li>That the profile hasn&apos;t previously been removed for a no-show or a complaint.</li>
       </ul>
+      <p>
+        Profile approval is a manual review, not a criminal-record check or a guarantee of identity,
+        qualifications, insurance or conduct. You can ask us to review a report or strike you
+        believe is incorrect by emailing{" "}
+        <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
+      </p>
 
       <h2>{payments ? "2. Payment and check-in" : "2. Check-in and payments"}</h2>
       {payments ? (
@@ -78,8 +84,11 @@ export default function SafetyPage() {
       <p>
         Whether it&apos;s a safety concern, {payments ? "a payment issue" : "a problem with the payment you agreed"}, or behaviour that made you
         uncomfortable, tell us at{" "}
-        <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>. During the pilot we review
-        every report personally.
+        <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>. Include the match date, the
+        booking or match link if available, and a brief explanation. Do not send passwords,
+        payment-card details or unnecessary information about other people.
+        We review reports personally. Support is not monitored continuously and we do not
+        guarantee a response time during the beta; do not rely on an email reply for immediate safety.
       </p>
 
       <h2>6. Emergencies</h2>
