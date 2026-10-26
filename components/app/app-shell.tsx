@@ -178,7 +178,7 @@ export function AppShell({
 
         <div ref={scrollerRef} className={`min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain lg:overflow-visible lg:pl-64 ${inMap ? "flex flex-col lg:block" : ""}`}>
           {/* Móvil: barra superior */}
-          <header className={`pl-glass sticky top-0 z-40 items-center justify-between gap-3 rounded-none border-x-0 border-t-0 px-4 pb-2.5 pt-[calc(0.625rem+env(safe-area-inset-top,0px))] ${inThread ? "hidden" : "flex lg:hidden"}`}>
+          <header className={`app-mobile-header pl-glass sticky top-0 z-40 items-center justify-between gap-3 rounded-none border-x-0 border-t-0 px-4 pb-2.5 pt-[calc(0.625rem+env(safe-area-inset-top,0px))] ${inThread ? "hidden" : "flex lg:hidden"}`}>
             <Link
               href={inAdmin ? "/admin" : "/dashboard"}
               aria-label="MatchKeeper home"
@@ -213,7 +213,7 @@ export function AppShell({
           </header>
 
           <main
-            className={`mx-auto w-full ${inMap ? "max-w-[1500px]" : "max-w-[1100px]"} ${
+            className={`${inThread ? "" : "app-mobile-main"} ${inMap ? "app-mobile-map-main" : ""} mx-auto w-full ${inMap ? "max-w-[1500px]" : "max-w-[1100px]"} ${
               inThread
                 ? "p-0 lg:px-8 lg:pb-6 lg:pt-6"
                 : inMap
@@ -231,9 +231,9 @@ export function AppShell({
         {/* Móvil: barra inferior */}
         <nav
           aria-label="Main"
-          className={`pl-glass relative z-50 shrink-0 rounded-none border-x-0 border-b-0 bg-[color-mix(in_oklab,var(--bg-2)_94%,transparent)] pb-[env(safe-area-inset-bottom,0px)] ${inThread ? "hidden" : "lg:hidden"}`}
+          className={`app-mobile-nav pl-glass relative z-50 shrink-0 rounded-none border-x-0 border-b-0 bg-[color-mix(in_oklab,var(--bg-2)_94%,transparent)] pb-[env(safe-area-inset-bottom,0px)] ${inThread ? "hidden" : "lg:hidden"}`}
         >
-          <ul className="mx-auto grid max-w-md" style={{ gridTemplateColumns: `repeat(${tabs.length + (moreItems.length > 0 ? 1 : 0)}, minmax(0, 1fr))` }}>
+          <ul className="app-mobile-nav-list mx-auto grid max-w-md" style={{ gridTemplateColumns: `repeat(${tabs.length + (moreItems.length > 0 ? 1 : 0)}, minmax(0, 1fr))` }}>
             {tabs.map((item) => {
               const active = isActive(pathname, item);
               const count = countFor(item, badges);
@@ -243,12 +243,12 @@ export function AppShell({
                     <Link
                       href={item.href}
                       aria-current={active ? "page" : undefined}
-                      className="-mt-5 flex flex-col items-center gap-1 pb-2 text-[11px] font-medium text-fg-2"
+                      className="app-mobile-nav-link app-mobile-nav-link--primary -mt-5 flex flex-col items-center gap-1 pb-2 text-[11px] font-medium text-fg-2"
                     >
-                      <span className="grid h-14 w-14 place-items-center rounded-[var(--r-lg)] bg-accent text-accent-ink shadow-[var(--shadow-glow)] transition-transform duration-150 active:scale-95">
+                      <span className="app-mobile-nav-icon app-mobile-nav-icon--primary grid h-14 w-14 place-items-center rounded-[var(--r-lg)] bg-accent text-accent-ink shadow-[var(--shadow-glow)] transition-transform duration-150 active:scale-95">
                         <item.icon className="h-6 w-6" />
                       </span>
-                      {item.short ?? item.label}
+                      <span className="app-mobile-nav-label">{item.short ?? item.label}</span>
                     </Link>
                   </li>
                 );
@@ -258,10 +258,10 @@ export function AppShell({
                   <Link
                     href={item.href}
                     aria-current={active ? "page" : undefined}
-                    className="flex min-h-[3.75rem] flex-col items-center justify-center gap-0.5 text-[11px] font-medium text-muted transition-colors duration-150 aria-[current=page]:text-accent-strong"
+                    className="app-mobile-nav-link flex min-h-[3.75rem] flex-col items-center justify-center gap-0.5 text-[11px] font-medium text-muted transition-colors duration-150 aria-[current=page]:text-accent-strong"
                   >
                     <span
-                      className={`relative grid h-8 w-14 place-items-center rounded-full transition-colors duration-200 ${
+                      className={`app-mobile-nav-icon relative grid h-8 w-14 place-items-center rounded-full transition-colors duration-200 ${
                         active ? "bg-accent-soft" : ""
                       }`}
                     >
@@ -272,7 +272,7 @@ export function AppShell({
                         </span>
                       )}
                     </span>
-                    {item.short ?? item.label}
+                    <span className="app-mobile-nav-label">{item.short ?? item.label}</span>
                   </Link>
                 </li>
               );
@@ -284,16 +284,16 @@ export function AppShell({
                   onClick={() => setMoreOpen(true)}
                   aria-haspopup="dialog"
                   aria-current={moreActive ? "page" : undefined}
-                  className="flex min-h-[3.75rem] w-full flex-col items-center justify-center gap-0.5 text-[11px] font-medium text-muted transition-colors duration-150 aria-[current=page]:text-accent-strong"
+                  className="app-mobile-nav-link flex min-h-[3.75rem] w-full flex-col items-center justify-center gap-0.5 text-[11px] font-medium text-muted transition-colors duration-150 aria-[current=page]:text-accent-strong"
                 >
                   <span
-                    className={`grid h-8 w-14 place-items-center rounded-full transition-colors duration-200 ${
+                    className={`app-mobile-nav-icon grid h-8 w-14 place-items-center rounded-full transition-colors duration-200 ${
                       moreActive ? "bg-accent-soft" : ""
                     }`}
                   >
                     <MoreIcon className="h-[22px] w-[22px]" />
                   </span>
-                  More
+                  <span className="app-mobile-nav-label">More</span>
                 </button>
               </li>
             )}

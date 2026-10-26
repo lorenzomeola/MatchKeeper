@@ -1118,6 +1118,59 @@ input:focus-visible + .pl-chip {
 .pl-faq summary:hover .pl-faq__chevron {
   color: var(--fg);
 }
+
+/* Compact navigation on short landscape phones; leave touch targets at 44px. */
+@media (orientation: landscape) and (max-height: 500px) and (max-width: 950px) {
+  .app-mobile-header {
+    padding: max(2px, env(safe-area-inset-top, 0px)) calc(0.75rem + env(safe-area-inset-right, 0px)) 2px
+      calc(0.75rem + env(safe-area-inset-left, 0px));
+  }
+
+  .app-mobile-main:not(.app-mobile-map-main) {
+    padding-top: 0.5rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .app-mobile-nav {
+    padding-right: env(safe-area-inset-right, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-left: env(safe-area-inset-left, 0px);
+  }
+
+  .app-mobile-nav-list {
+    max-width: none;
+  }
+
+  .app-mobile-nav-link {
+    min-height: 44px;
+    gap: 0;
+    padding-top: 2px;
+    padding-bottom: 2px;
+    font-size: 10px;
+    line-height: 12px;
+    touch-action: manipulation;
+  }
+
+  .app-mobile-nav-link--primary {
+    margin-top: 0;
+  }
+
+  .app-mobile-nav-icon {
+    width: 40px;
+    height: 24px;
+  }
+
+  .app-mobile-nav-icon--primary {
+    width: 36px;
+    height: 32px;
+    border-radius: var(--r-md);
+  }
+
+  .app-mobile-nav-label {
+    line-height: 12px;
+    white-space: nowrap;
+  }
+}
 .pl-faq__chevron {
   transition:
     transform var(--d-3) var(--e-out),
