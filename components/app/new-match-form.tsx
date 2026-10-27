@@ -100,7 +100,6 @@ export function NewMatchForm({ initialDate = "" }: { initialDate?: string }) {
     if (!e.address && !placed) e.address = NOT_LOCATED;
     setErrors(e);
     if (Object.keys(e).length === 0) setStep(2);
-    else if (e.address === NOT_LOCATED && !finding && !searched) void findOnMap();
   }
 
   function onAddressChange(value: string) {
@@ -116,6 +115,7 @@ export function NewMatchForm({ initialDate = "" }: { initialDate?: string }) {
   }
 
   async function findOnMap() {
+    if (finding) return;
     const q = v.address.trim();
     if (!q) {
       setErrors((p) => ({ ...p, address: "Type the pitch name or address first." }));
@@ -257,7 +257,7 @@ export function NewMatchForm({ initialDate = "" }: { initialDate?: string }) {
               label="Pitch name or address"
               htmlFor={addressId}
               error={err("address")}
-              hint="Search it, then pick the right place from the list."
+                      hint="Search a street address or postcode, then choose a result. For a pitch name, place the pin yourself."
             >
               <div className="flex gap-2">
                 <input
@@ -265,7 +265,7 @@ export function NewMatchForm({ initialDate = "" }: { initialDate?: string }) {
                   name="address"
                   type="text"
                   autoComplete="off"
-                  placeholder="Hackney Marshes, London"
+                  placeholder="Street address or postcode, London"
                   className="pl-input min-w-0 flex-1"
                   value={v.address}
                   onChange={(e) => onAddressChange(e.target.value)}
@@ -307,10 +307,10 @@ export function NewMatchForm({ initialDate = "" }: { initialDate?: string }) {
             {searched && (
               <div className="rounded-[var(--r-md)] border border-line bg-surface px-4 py-3 text-[13px] leading-relaxed text-muted">
                 <p className="font-semibold text-fg">
-                  {places.length === 0 ? "We couldn't find that pitch." : "Not the pitch you meant?"}
+                  {places.length === 0 ? "We couldn't find that address." : "Not the location you meant?"}
                 </p>
                 <ol className="mt-1.5 list-decimal space-y-1 pl-5">
-                  <li>Search the street or the postcode instead of the pitch name.</li>
+                  <li>Search a street address or postcode. This search does not look up pitch or business names.</li>
                   <li>Or tap the map where the pitch is, or drag the pin onto it.</li>
                   <li>Keep the pitch name in the field above, so keepers know which pitch it is.</li>
                 </ol>
