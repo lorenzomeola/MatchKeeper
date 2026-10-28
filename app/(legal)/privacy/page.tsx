@@ -12,7 +12,7 @@ export const revalidate = 60;
 
 export default function PrivacyPage() {
   return (
-    <LegalShell eyebrow="Legal" title="Privacy Policy" updated="2026-10-27">
+    <LegalShell eyebrow="Legal" title="Privacy Policy" updated="2026-10-26">
       {(payments) => (
         <>
       <p>
@@ -136,12 +136,11 @@ export default function PrivacyPage() {
         <li>Vercel, which hosts the site and provides page-view analytics.</li>
         <li>Resend, which receives recipients and email content to send account and service emails.</li>
         <li>
-          Mapbox, which provides maps and address search using Permanent Geocoding. Your browser sends map requests and the
+          Mapbox, which provides maps and place search. Your browser sends map requests and the
           pitch or address search terms you enter directly to Mapbox, together with technical
           information such as your IP address. When you select a place and publish a match, we
           store its address and coordinates with the match. Do not enter private information in
-          place searches. Check-in coordinates come from your device with your permission;
-          we do not send them to Mapbox for address lookup.
+          place searches.
         </li>
         <li>
           Cloudflare Email Routing and Google Gmail, which route and receive messages sent to our
