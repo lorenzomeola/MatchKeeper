@@ -237,9 +237,9 @@ function Hero({ payments }: { payments: boolean }) {
           </span>
 
           <h1 className="pl-display text-fg [font-size:var(--t-6xl)] lg:mt-6">
-            Never cancel a match for lack of a{" "}
+            Missing a{" "}
             <span className="relative inline-block text-accent-strong">
-              keeper
+              keeper?
               <svg
                 aria-hidden
                 viewBox="0 0 200 16"
@@ -249,13 +249,10 @@ function Hero({ payments }: { payments: boolean }) {
                 <path d="M4 12 C 60 3, 130 2, 196 8" pathLength={1} />
               </svg>
             </span>
-            .
           </h1>
 
           <p className="pl-prose mx-auto mt-6 max-w-[30rem] [font-size:var(--t-lg)] lg:mx-0">
-            {payments
-              ? "Post your match and nearby goalkeepers apply. Compare them by rating, matches played and price, then book one. The keeper is paid after the match rules are met."
-              : "Post your match and nearby goalkeepers apply. Look at their profiles and the rate they ask for, then pick one. The beta is free and has no payments: you agree the money with the keeper directly."}
+            MatchKeeper connects teams with real, verified goalkeepers. Teams get a proper keeper for match day; keepers find more games and earn extra cash.
           </p>
 
           {/* Una sola llamada, dirigida a quien tiene el problema (el equipo). La nav ya
