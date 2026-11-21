@@ -8,6 +8,9 @@ export const SITE_DESCRIPTION =
 // Dominio de producción. Preview usa APP_URL (https://staging.matchkeeperuk.com) para los enlaces de pagos y emails.
 export const SITE_URL = "https://matchkeeperuk.com";
 
+// Solo el deploy de producción se indexa; staging y previews quedan en noindex.
+export const IS_PRODUCTION = process.env.VERCEL_ENV === "production";
+
 export const CITY = "London";
 
 // Buzón público (footer, páginas legales, emails). Cloudflare Email Routing lo reenvía a Gmail.

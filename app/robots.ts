@@ -1,12 +1,15 @@
 import type { MetadataRoute } from "next";
-import { SITE_URL } from "@/lib/site";
+import { IS_PRODUCTION, SITE_URL } from "@/lib/site";
 
 export default function robots(): MetadataRoute.Robots {
+  if (!IS_PRODUCTION) {
+    return { rules: { userAgent: "*", disallow: "/" } };
+  }
   return {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/api/", "/auth/", "/admin", "/dashboard", "/matches", "/messages", "/payments", "/profile", "/calendar", "/map", "/keepers", "/home", "/onboarding"],
+      disallow: ["/api/", "/auth/", "/admin", "/dashboard", "/matches", "/messages", "/payments", "/profile", "/calendar", "/map", "/keepers", "/onboarding"],
     },
     sitemap: `${SITE_URL}/sitemap.xml`,
   };
