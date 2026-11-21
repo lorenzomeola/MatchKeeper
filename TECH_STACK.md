@@ -26,7 +26,7 @@
 | Estilos/UI | Tailwind CSS + sistema propio Floodlight | Tokens y componentes en `app/globals.css` y `components/platform`; shadcn/ui no está instalado. |
 | Acceso a datos (runtime) | **`supabase-js`** (PostgREST) sobre HTTPS, no conexión directa a Postgres | Ver §1.1 — necesario por la VPN corporativa del founder |
 | Esquema/migraciones | Drizzle Kit (`db/schema.ts` → SQL) | Solo para generar y versionar el SQL del esquema, no para queries en runtime |
-| Jobs programados | Vercel Cron llama rutas protegidas | `/api/cron/release` completa reservas y retención; `/api/cron/emails` reintenta la cola. `vercel.json` programa ambas diariamente; límites/cadencia dependen del plan contratado. |
+| Jobs programados | Vercel Cron llama rutas protegidas | `/api/cron/release` completa reservas y retención, diariamente a las 06:00 UTC; `/api/cron/emails` procesa la cola y reintenta cancelaciones cada 5 minutos. Solo Production ejecuta el cron automático; en Preview se verificó mediante llamadas manuales autenticadas. |
 | Email transaccional | Resend + `email_outbox` | Integrado para Auth, marketplace, administración y reservas. En Preview se usa `EMAIL_REDIRECT_TO`; nunca configurar ese redirect en Production. |
 | Analytics/errores | Vercel Analytics; Sentry no configurado | Analytics de páginas está instalado; no hay captura de errores Sentry activa. |
 
@@ -67,14 +67,74 @@ La Beta no cobra a los usuarios. Los costes de Vercel, Supabase, Mapbox y Resend
 |---|---|---|
 | Vercel | Pro (Hobby no permite uso comercial) | ~$20 |
 | Supabase | Pro (Free se pausa tras inactividad) | ~$25 |
-| Mapbox | Free tier (50k cargas/mes) | $0 |
+| Mapbox | Mapas sujetos a franquicia; Permanent Geocoding por uso | Sin cuota fija adicional; geocoding desde US$5/1.000 peticiones, sin tramo gratis |
 | Stripe | Sin cuota fija | 1.5% + 20p (tarjeta británica estándar) a 3.15% + 20p (internacional) por cobro, más £2/mes por portero activo y 0.25% + 10p por cada pago a un portero. Detalle en `PAYMENTS_SPEC.md` |
 | Resend | Free tier | $0 |
 | Dominio | Anual, amortizado | ~$1-2 |
 | **Total fijo** | | **~$45-50/mes** + % de Stripe sobre el volumen transaccionado |
 
-Se puede arrancar en $0/mes con los planes Free (Vercel Hobby + Supabase Free)
-durante pruebas internas, y subir a Pro justo antes de lanzar con pagos reales.
+**Estado al 2026-10-26:** el propietario confirmó Vercel Pro para permitir el cron
+de correos cada 5 minutos; no se debe volver a Hobby manteniendo esa configuración.
+Supabase Pro está activo y la protección contra contraseñas filtradas está habilitada
+en Production. Hay backups diarios de la base de datos, pero no cubren objetos de
+Storage. Para la beta de bajo tráfico se acepta este riesgo y no se añadirá ahora una
+copia externa de pago; revisar de nuevo si crece el uso o las fotos pasan a ser
+críticas para la operación.
+Resend Free puede servir inicialmente, sujeto a sus límites y al volumen real; Stripe
+live no se necesita para esta Beta gratuita. Mapbox tiene tarjeta, alertas y token de
+Production separado/restringido. Respuesta de Mapbox compartida el 27 de octubre:
+Search Box no permite guardar sus resultados en Supabase; Geocoding v6 con `permanent=true`
+si permite conservar direcciones/coordenadas en la cuenta con tarjeta, sin contrato Enterprise
+ni gasto minimo. Tarifa publica consultada: US$5/1.000 peticiones en el primer tramo,
+sin franquicia gratis para Permanent; impuestos/cambio y mapas se contabilizan aparte.
+La prueba Permanent en staging (`c285c6d`) se revirtio el 28 de octubre a peticion del
+propietario (`114cd04`): Search Box restaurado para evitar mas consultas Permanent de prueba,
+sin tocar Production ni perder el arreglo movil. Recargar las pestanas con el cliente antiguo.
+No hay cuota Permanent nueva desde el cliente restaurado, pero Search Box tambien puede
+tener costes; el consumo anterior no se anula. Geocoding v6 no incluye POI, motivo por el que
+se espera respuesta sobre una alternativa con busqueda por nombre y almacenamiento permitido.
+GPS del check-in no llama a Geocoding.
+Los resultados antiguos no adquieren permiso retroactivo: revisar procedencia/tratamiento
+con Mapbox por separado. Las alertas de gasto no son un tope de gasto.
+
+### 2.1 Estado operativo tras la promoción (2026-10-26)
+
+- Beta publicada desde `main`: promoción `db46d98`, seguida de documentación `1f04ad6`,
+  despliegue READY `dpl_6UebekXvrU49YB98noYePSfzb5JH`. Production/Preview separados,
+  `payment_mode() = 'free'`, 20 tablas públicas con RLS. Stripe live sigue apagado.
+- Candidata verificada con 174 tests, lint, build/TypeScript y auditoría de dependencias de
+  producción sin vulnerabilidades. Plantillas Auth compatibles guardadas tras el despliegue;
+  solo dos redirects HTTPS de Production. Registro/recuperación reales y limpieza QA verificados.
+- `/api/cron/emails`: cada 5 minutos; ejecución automática observada con HTTP 200 el 26 de
+  octubre a las 13:55:46.095 UTC. Reintenta cancelaciones y procesa la cola; revisar estados
+  fallidos/atascados, no solo HTTP 200.
+- `/api/cron/release`: diario a las 06:00 UTC; cierra reservas vencidas (normalmente tres días
+  tras el partido): con check-in completa, sin check-in/sin respuesta pasa a revisión sin
+  strike automático. También procesa confirmaciones pendientes, purga fotos/coordenadas
+  de check-in a los 120 días y reintenta operaciones financieras pendientes si existen.
+  En reservas gratis solo cierra estados, sin transferencia. No es un backup.
+  Run manual 200 verificado con inventario vacío; **pendiente observar su ejecución automática
+  del 27 de octubre a las 06:00 UTC**. No hay un watcher esperando esa hora.
+- Regla Vercel `MatchKeeper function 5xx errors` guardada; entrega desactivada sin
+  Observability Plus, rechazado por coste variable. Sentry no instalado. Mantener revisión manual
+  de logs, outbox, soporte y uso de proveedores. No se añadieron suscripciones.
+- Backups diarios DB aceptados para beta; no restore probado, PITR ni backup externo de
+  Storage. Rotación general de credenciales no verificada en esta promoción.
+- Reset de Preview autorizado y verificado el 26 de octubre: exactamente tres usuarios/perfiles
+  confirmados (un admin, un jugador y un portero aprobado), con perfiles y contraseñas intactos.
+  Eliminadas 16 cuentas extra; las 15 tablas de uso/historial quedaron vacías, sin sesiones
+  huérfanas. Storage conserva tres avatares de jugador/portero y cero fotos de check-in.
+  Nueve emails etiquetados como programados ya estaban entregados en Resend; reconciliados
+  antes de vaciar outbox. Production y los objetos externos Stripe sandbox no se tocaron.
+  [SQL de mantenimiento](db/maintenance/reset-test-data.sql) validado en simulacro y ejecución
+  transaccional; el archivo queda por defecto en `v_dry_run := true`.
+- Pendiente separado: la credencial service-role local de Preview devolvió HTTP 401 en
+  mantenimiento; se usó el dashboard autenticado. Revisar configuración antes de depender
+  de scripts locales; no se rotaron secretos ni se detectó por ello un fallo de Production.
+
+Seguimiento completo y pendientes no técnicos en el
+[handoff diario](design-system/matchkeeper/MASTER.md#daily-handoff-and-remaining-order-2026-10-26);
+aceptación y límites de rollback en el [runbook](docs/privacy-support-operations.md#9-controlled-production-promotion-2026-10-26).
 
 ## 3. Comisión y ejemplo de márgenes (Booking protegido, no Beta)
 

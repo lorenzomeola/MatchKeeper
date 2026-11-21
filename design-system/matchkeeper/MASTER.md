@@ -7,32 +7,198 @@ and [components/platform/](../../components/platform/).
 
 ## Status board (current)
 
-Last verification and release-status reconciliation: **2026-10-23**. Work paused by owner after post-match staging acceptance. This board supersedes the dated historical snapshot below.
+Last verification and release-status reconciliation: **2026-10-28**. The free beta is live in Production. The Permanent Geocoding staging trial was reverted at the owner's request; Search Box is restored pending Mapbox's venue-search licensing answer. This board and the daily handoff below supersede dated staging-only snapshots; do not replay historical unchecked work.
 
 | Version | State | Release rule |
 |---|---|---|
-| Free Beta | Current target: public signup for adults 18+, London; keepers approved manually; no MatchKeeper payments | `payments_enabled=false`; a missing row defaults to free. A query error/invalid value blocks booking. |
+| Free Beta | Live at `https://matchkeeperuk.com`: public signup for adults 18+, London; keepers approved manually; no MatchKeeper payments | Production verified `payments_enabled=false`; a missing row defaults to free. A query error/invalid value blocks booking. |
 | Protected booking | Built and sandbox-tested; inactive | Requires explicit `payments_enabled=true` plus the paid-release gates in `PAYMENTS_SPEC.md`. Not part of the Beta release. |
 | Subscriptions | Not designed or built | No pricing or user-facing claims. Requires separate product approval after Beta evidence. |
 
 The 20–50 beta figure is an acquisition target, not an invitation gate. The team chooses among keepers who apply. Direct payment between the team and keeper is outside MatchKeeper and is not collected or guaranteed by the platform.
 
+### Permanent Geocoding follow-up (2026-10-27)
+
+**Superseding decision, 28 October:** owner requested restoring Search Box on staging to avoid
+further Permanent Geocoding charges during tests. Scoped revert `114cd04` pushed only to staging:
+search/form/privacy and related tests match the pre-trial baseline; the accepted mobile layout
+fix remains. Production was not changed. Build/TypeScript, six legal-page tests, focused ESLint
+and diff checks passed. No provider search or match creation was needed for rollback validation.
+Existing tabs must reload to stop using the old Permanent Geocoding client bundle; past usage
+charges are not reversed. Search Box can also incur usage charges and this rollback does not
+grant storage rights. Mapbox's written venue-name/storage response and historical-data treatment
+remain pending. The 27 October keep-Permanent-on-staging decision below is historical.
+Vercel's GitHub status for exact commit `114cd049a7b9d1cda36051dc579a329c40851a02`
+reports success ("Deployment has completed"). Hosted staging `/privacy` returns 200 with
+the restored place-search disclosure and without Permanent Geocoding copy. No authenticated
+browser search was performed during rollback acceptance; source/tree equality with `8b3c399`
+and the deployment status were verified. Production/main remains `72cd893`.
+
+The owner shared Mapbox's written clarification and authorised the migration. Search Box
+responses/venue POI data may not be stored in Supabase; v6 Geocoding with `permanent=true`
+supports retained addresses/coordinates on the existing card-backed account, without an
+Enterprise contract/minimum spend. Published initial Permanent rate: US$5/1,000 requests,
+no free allowance; map loads are separate. DPA/transfer and historical-record treatment
+are not settled by that product permission.
+
+- Staging commit `c285c6d`: v6 forward lookup with `permanent=true`, `autocomplete=false`,
+  existing GB/London bounds and no POI type or temporary/Search Box fallback.
+  Button/Enter only; Continue no longer triggers a paid lookup.
+- Address/postcode helper/empty-state copy updated; a user-entered pitch name with a manually
+  placed pin remains supported. The former Search Box keyword filter was removed so postcode
+  spacing/normalised addresses do not incorrectly discard valid Geocoding results.
+- Privacy updated 27 October to identify Permanent Geocoding and distinguish device check-in
+  GPS, which does not call geocoding. The GPS check-in flow was not changed.
+- Six new API subtests plus their parent and six rendered privacy/legal tests passed (13 test
+  results total); focused ESLint and build/TypeScript passed. Initial build found an implicit
+  test-mock parameter type, corrected before commit. No dependency/schema change.
+- Only five code/test/privacy files were committed/pushed to staging; existing local tracking,
+  maintenance and screenshots remain uncommitted. Production/main is not changed by this work.
+- Hosted acceptance passed on `staging.matchkeeperuk.com`: one real `E9 5PF` request returned
+  HTTP 200 on `/search/geocode/v6/forward`, `permanent=true`, `autocomplete=false`, no POI.
+  Result selected, hidden lat/lng populated correctly and step 2 reached. Changing the address
+  invalidates the search placement; Continue blocks without a pin and does not issue another
+  request. Manual pitch-name/pin flow also reached step 2 with the same one real lookup total.
+  Synthetic intercepted empty/403 responses showed the correct user feedback, including Enter
+  submission and Search re-enabling, without extra billable provider queries.
+- Field/helper bounds fit at 375px portrait, 812px landscape and 1440px desktop.
+  Step-2 fieldsets remained 320px inside the 320px phone column. Hosted privacy returned 200
+  with Permanent Geocoding/check-in disclosures. No match was posted; form discarded and
+  intercepts removed. Device-specific Safari/keyboard behavior was not retested on hardware.
+- Production/main remains `72cd893`; only staging `c285c6d` was pushed. Vercel dashboard
+  required sign-in, so no deployment ID/READY status is claimed; the updated alias and actual
+  request path/results were checked directly. Production promotion awaits separate approval.
+- Historical Search Box-derived rows must be reviewed
+  for provenance/replacement with Mapbox separately; no existing rows were deleted or relicensed.
+  Prior dated Mapbox “awaiting reply” gates below are superseded by this clarification, not by
+  blanket legal approval or retroactive storage permission.
+- User tested `Warren Sports Pitch` and `Haggerston Park Football Pitches` on staging; Permanent
+  Geocoding did not find these POIs. This is a material search-quality regression for pitch-name
+  discovery, not a bug in those queries. Manual pin placement remains available, but is not an
+  equivalent experience. The owner sent Mapbox a follow-up asking for a licensed venue-name
+  discovery and permanent-storage workflow, including whether Search Box discovery followed
+  by Permanent Geocoding is permitted and which fields can be retained. **Reply pending.**
+- Owner explicitly chose to leave Permanent Geocoding on staging while awaiting Mapbox's answer.
+  Do not revert staging, restore Search Box, change the flow, modify historical rows or touch
+  Production until the reply is assessed. No Production code/config/database changes were made
+  for this migration; Production remains `72cd893`.
+
+### Daily handoff and remaining order (2026-10-26)
+
+**Completed today, with evidence recorded below and in the [operations runbook](../../docs/privacy-support-operations.md):**
+
+1. Accepted the iPhone/Safari beta checks: recovery, Explore/GPS, actual check-in/camera,
+   denied-location feedback, no input zoom and corrected landscape navigation (`e33ec54`).
+   Exact QA coordinates/photo removed. Real-pitch London distance accuracy remains unverified.
+2. Observed the timed Preview unread-chat and check-in emails delivered; cancellation removed
+   the remaining two reminders in both DB and Resend. Older scheduled-labelled rows were
+   reconciled against delivered provider messages. Terminal Preview records were subsequently
+   removed by the explicitly authorised staging reset below; written QA evidence remains.
+3. Configured the Vercel 5xx alert rule; owner declined usage-billed Observability Plus.
+   The rule does not deliver alerts without Plus. Sentry was not added.
+4. Verified Supabase Pro, daily DB backups, Production Auth/Storage/RLS and project separation;
+   enabled leaked-password protection. Owner accepted no external photo backup/PITR for beta.
+   No restore was tested and DB backups do not include Storage objects.
+5. Updated and deployed Privacy/Terms/Safety; documented monitored email support, no support
+   SLA, purpose-based retention/monthly review, manual rights/closure and human appeals.
+   Preview access/erasure rehearsal passed and its three new accounts/files were cleaned.
+6. Researched provider/contact obligations; recorded the owner's public-launch decision without
+   claiming legal approval, an exemption or permission from Mapbox.
+7. Promoted the tested candidate to Production (`db46d98`); 174 tests, full lint, build/TypeScript
+   and production dependency audit passed. Actual Production signup/confirmation/profile/recovery,
+   password-change/reused-link checks and rolled-back free-booking/RLS acceptance passed.
+   Production templates were updated after compatible code; localhost Auth redirects removed.
+   The owner confirmed recovery in the inbox. All new Production QA account/session/DB fixtures
+   were removed and cleanup verified; no QA Storage/outbox schedules remain.
+8. Persisted acceptance on `main` in documentation-only merge `1f04ad6`, deployed READY as
+   `dpl_6UebekXvrU49YB98noYePSfzb5JH`. Final public/legal and unauthorised-cron checks passed;
+   enabled cron definitions were associated with that deployment. No paid services or Stripe live.
+9. Owner confirmed both personal Production accounts and the new staging administrator work.
+   Completed the authorised Preview-only reset: removed 16 other accounts, all usage history
+   (including 35 matches, 46 applications, 32 bookings, 10 messages, one review and four strikes)
+   and three obsolete avatars. Exactly one admin, one player and one approved keeper remain,
+   with unchanged profiles/password hashes and their three avatar objects preserved.
+   Nine formerly scheduled-labelled emails were confirmed delivered in Resend before clearing
+   the outbox; no future sends remained. Production was not changed by this cleanup.
+
+**Next actions, in priority order:**
+
+| Priority | Status / owner | Action and exact completion evidence |
+| --- | --- | --- |
+| 1. Daily automatic cron | Pending; next check after 27 Oct 06:00 UTC | Find `/api/cron/release` in Production Vercel logs at its scheduled run, check HTTP result, error logs and any failed work/counters; reconcile DB if work was due. Manual Run 200 on 26 Oct is not automatic daily evidence. Email cron was already observed automatically at 13:55:46.095 UTC with 200 on the promoted application deployment. No background watcher or future check is running. |
+| 2. Routine beta operation | Ongoing; owner | Monitor `hello@matchkeeperuk.com`, manual keeper approvals, reports/review bookings, Vercel errors and `email_outbox` failed/stale cancellation states. Inspect logs manually because paid alert delivery is off. Check provider usage/billing; alerts are not spending caps. |
+| 3. Legal/provider and Mapbox questions | Open; owner/provider or qualified adviser | Resolve required geographic contact and UK/EU territorial/representative questions; consumer Gmail role/terms, Cloudflare/Mapbox agreement evidence and transfer/cookie assessment. Mapbox clarified Search Box storage is not allowed and Permanent Geocoding is metered/allowed on the existing account; migration verified in staging 27 Oct, Production promotion and historical-record treatment still pending. Public launch did not close or waive these duties. |
+| 4. Retention and rights | Ongoing; owner | Handle requests within applicable deadlines and run the documented monthly necessity review. First next monthly review due by 26 Nov 2026. The automatic 120-day photo/coordinate job does not replace manual retention review. |
+| 5. Recovery, hardware and hardening limits | Deferred/unverified, not silently complete | No DB restore exercise, external Storage backup or general credential rotation was performed in this release. Assess outstanding credential-rotation needs separately; do not claim it completed. Check the local Preview service-role configuration after maintenance returned HTTP 401; dashboard-based reset succeeded, no secret was rotated and no Production credential problem was established. Revisit photo backup/PITR as usage grows. Check actual-pitch GPS from London user feedback and investigate failures promptly. |
+| 6. Optional/future work | Not authorised now | Self-service deletion, richer diagnostics/paid alert delivery, paid booking activation and subscriptions are separate decisions. Stripe-live gates remain untouched; do not buy add-ons or enable payments automatically. |
+
+This is operational acceptance of a scoped free-beta release, not proof of a bug-free app,
+complete Production browser lifecycle, legal compliance, Storage recovery or licensed Mapbox storage.
+Unrelated local maintenance/screenshots were not part of the promotion. This tracking refresh
+is documentation only and does not itself authorise another deployment.
+
+### Post-launch staging fix: mobile post-match step 2 (2026-10-26)
+
+- Owner reported right-edge clipping on a real phone and requested staging first.
+  Reproduced on hosted staging: the details grid/fieldsets expanded to about 406.45px
+  inside a 320px form column at a 375px browser viewport.
+- Fixed intrinsic sizing with explicit single-column `minmax(0,1fr)` grids on the form and
+  details step, zero minimum widths on fieldsets, and wrapping/gaps for fieldset legends.
+  No content-hiding workaround, smaller type, validation or posting-flow change.
+  The shared level selector receives the same fieldset/legend fix.
+- Commit `8b3c39946f5dcb731388c3a0d51945f03aba61e3` pushed only to `staging`.
+  Vercel deployment `dpl_6KWmh9aw1wqkp1HRtrGw6kdqbVRa` READY, with
+  `staging.matchkeeperuk.com` alias verified. Production/main remains `1f04ad6`.
+  Only the two form components were committed; prior local tracking/maintenance/screenshots
+  were not included. This follow-up record remains local.
+- Validation: focused ESLint, production build/TypeScript and `git diff --check` passed.
+  Reloaded the deployed alias without injected layout styles and checked 320, 375, 390,
+  430, 768, 812-landscape and 1440px viewports: no visible step-2 control, legend, label or
+  paragraph overflowed the form. Desktop preview remains visible at 1440px.
+  At 375px the fieldsets now measure 320px, matching their form column.
+  Checked level tooltip bounds/Escape, format/surface, two keepers, age preferences,
+  budget update and retained values when going back/forward. Light mode with 20px root
+  text and reduced motion also had no control/legend overflow.
+- No match was posted and no test-history fixtures were created; unsent form values were
+  discarded afterwards. Browser emulation alone was not hardware acceptance.
+- The owner subsequently confirmed the fix works on the affected phone and explicitly
+  authorised merging to Production. Isolated merge `72cd89327c4805654af90db9ec14bcbff2b33fa2`
+  pushed to `main`; its tree equals the tested staging commit. Only the two components
+  changed from previous Production; local documentation/maintenance/screenshots were excluded.
+  Vercel Production deployment `dpl_41dFvbVhERcdduCdMqDBhi2TsfjW` verified READY for
+  that exact merge, with `matchkeeperuk.com` and `www.matchkeeperuk.com` aliases.
+  Public `/home` and `/login` returned HTTP 200; unauthenticated `/matches/new` correctly
+  redirected to login. No authenticated Production form submission/retest was performed;
+  layout acceptance is the identical tested staging tree plus the owner's phone confirmation.
+  This acceptance record remains local; no further documentation-only deployment was triggered.
+
 ### Staging-to-production policy
 
+Personal account follow-up (2026-10-26): owner requested Production admin
+`matchkeeperuk@gmail.com` and player `lorenzomeolav32@gmail.com`, plus staging admin
+`matchkeeperuk+staging@gmail.com`. Exact Production admin privilege and new staging admin
+profile provisioned; existing staging player/keeper credentials untouched. Confirmation/recovery
+messages requested; the owner subsequently confirmed both Production accounts and the staging
+administrator access. Following explicit approval, the old staging administrator and all other
+extra staging accounts/history were deleted. The preserved staging player is
+`lorenzomeolav32@gmail.com`; the approved keeper is `lorenzomeolav@hotmail.com`.
+See the operations runbook's personal account setup and reset record; do not confuse these
+permanent personal accounts with already deleted release-QA fixtures.
+
 - Work and verify on the existing `staging` branch and `staging.matchkeeperuk.com`.
-- `main` is production. Do not merge or deploy it until the staging checklist below is green and the owner separately confirms the final merge.
+- `main` is production. The owner authorised the 26 October promotion recorded below; future application merges/deployments still require explicit approval and scoped verification.
 - Only committed/pushed changes reach hosted staging. Unrelated local maintenance/screenshots remain outside the release commits. Apply any future SQL separately in the appropriate Supabase project; the lifecycle fixes below require no SQL migration.
 - Supabase SQL changes are applied by hand in SQL Editor because the development VPN blocks direct Postgres connections. Apply/test the mode SQL in Preview first; Production uses its separate project and stays on the Beta flag `false`.
-- Latest local verification on 2026-10-23: Next and `eslint-config-next` are 16.4.2; 168 tests, full lint and production build/TypeScript pass. The production dependency audit earlier today reported 0 vulnerabilities. Dependency, chat, auth and lifecycle fixes have been deployed to staging; `main` remains unchanged.
+- Latest local release verification on 2026-10-26: Next and `eslint-config-next` are 16.4.2; 174 tests, full lint and production build/TypeScript pass; production dependency audit reports 0 vulnerabilities. The tested application is now deployed to Production; `1f04ad6` subsequently persisted acceptance documentation only.
 - Full development audit on 2026-10-23 reports 9 affected packages (5 high, 4 moderate), from advisories in `braces` under `eslint-config-next` and `esbuild` under `drizzle-kit`'s legacy loader. `npm audit fix --force` would downgrade the toolchains; do not use it. These do not appear in the production-only audit.
 
 ### Beta release gates
 
-- Owner launch direction (2026-10-26): intends to open and promote the public free beta without waiting for professional legal sign-off or buying more subscriptions. Record this as a business decision, NOT evidence that unresolved contact/provider/transfer obligations are satisfied or waived. Do not claim legal verification. Data-rights deadlines, monitored support, monthly retention review and incident handling apply from the first user; do not wait for traction/claims to address obligations. Keep adult public signup and manual keeper approval. This direction does not execute a merge/deployment; separate final promotion confirmation and Production acceptance remain, as does unresolved Mapbox permission/billing. See the privacy/support runbook section 8.
+- Owner launch direction (2026-10-26): approved opening/promoting the public free beta without professional legal sign-off or more subscriptions, then separately authorised the completed Production promotion. This is a business decision, NOT evidence that unresolved contact/provider/transfer obligations are satisfied or waived. Data-rights deadlines, monitored support, monthly retention review and incident handling apply from the first user. Keep adult signup/manual keeper approval and unresolved Mapbox permission/billing visible. See runbook sections 8-9.
 
 - Cross-browser auth email links: deploy the callback token-verification code before copying [confirm-signup.html](../../db/auth-email-templates/confirm-signup.html) and [reset-password.html](../../db/auth-email-templates/reset-password.html) into each Supabase project's corresponding email template. The signup template appends `?token_hash=...&type=email` to the app's `/auth/callback` RedirectTo; recovery appends `&token_hash=...&type=recovery` to `/auth/callback?next=/reset-password`. Preserve those redirect shapes and the exact allowlisted URLs. Do not use dashboard-generated invites as a substitute for the app signup/reset tests. Old PKCE links remain supported but still require the originating browser. Verify new signup and recovery emails from a different browser/device, expired/reused links, and login with the changed password. See hosted acceptance below for environment-specific evidence; templates must not be switched on a hosted environment before its updated callback is deployed.
 - Auth regression verification (2026-10-23): 9 new tests exercise a fresh Supabase client with mocked HTTP responses, token verification, fixed recovery destinations, legacy PKCE, expired/reused/malformed links, external redirect rejection and template URL construction for local/Preview/Production. All 142 unit tests pass; focused ESLint, production build/TypeScript and local invalid-link HTTP redirect checks pass.
-- Hosted auth acceptance (2026-10-23): commit `d0d7443` deployed successfully to staging; invalid-link HTTP redirects and recovery page verified there. Owner reports updating both Supabase Preview templates and successfully completing new recovery and signup-confirmation email flows across browsers. Exact receiving device was not recorded, so physical-phone acceptance is not independently verified. Production callback deployment, template installation and production email retest remain pending. Do not update Production templates before deploying the compatible callback.
+- Hosted auth acceptance (2026-10-23, historical): commit `d0d7443` deployed successfully to staging; invalid-link HTTP redirects and recovery page verified there. Owner reported updating both Preview templates and completing new cross-browser recovery/signup flows. Later iPhone and Production acceptance supersede the device/Production gaps from this run; see the 26 October records. Preserve the rule that compatible callback code deploys before template changes.
 - App email acceptance (2026-10-23): with owner approval, provisioned three non-admin QA accounts in Preview and exercised hosted staging UI match `cc28dae6-b763-4bfc-95d6-8a2089d5cdb7`: two applications, chat, free booking, keeper cancellation/reopening, replacement booking and team cancellation. Resend confirms 12 immediate emails delivered to the configured test inbox; application, booking (both parties), not-selected, cancellation (both parties) and reopening notices verified. All inspected action links target staging, no localhost/unresolved placeholders, and chat notification omits message text. Nine reminders were scheduled; reading chat cancelled its notice. All 35 focused email unit tests pass. Provider delivery is not proof of primary-inbox placement or mobile rendering; automatic cron/retry execution, actual timed reminder delivery, photo/review/admin notices were not exercised by this run.
 - Email cancellation regression (2026-10-23): the hosted run exposed [cancelEmails](../../lib/email/outbox.ts) marking any provider cancellation error as `sent`. Four reminders still showed `scheduled` in Resend. Those four QA schedules were manually cancelled/reconciled; the original error was not retained, so its trigger is unconfirmed. The fix, now deployed to staging, persists cancellation intent separately from sending (`cancel_pending`, `cancelling`, `cancel_after_send`, `cancel_failed`), verifies provider state before marking an email sent, and retains failed attempts with explicit error logs. Transient failures back off for 2/10/30/120 minutes; after 5 attempts or a permanent error, `cancel_failed` requires operator reconciliation in Resend. A sender that dies before saving its provider id is also flagged for manual reconciliation, never replayed as a new send. Status is a text column, so no SQL migration is needed. Previously misclassified rows cannot be recovered automatically; reconcile them against Resend, not by replaying sends.
 - Email operations: `/api/cron/emails` retries due cancellations before dispatching pending sends and reports `cancelled`, `cancellationRetry`, and `cancellationFailed` alongside the existing counters. Monitor these counters and `email_outbox` rows with `cancel_failed`/stale `cancel_pending`, not HTTP 200 alone. The owner approved changing this production-only cron from daily to every 5 minutes and confirmed **Vercel Pro enabled** on 2026-10-23 after Hobby rejected the first deployment. Preview does not run Vercel crons automatically. Backoff times are earliest retry times, not a delivery/cancellation SLA. A reminder may still send if Resend is unavailable until its scheduled time. Automatic production cron execution remains unverified.
@@ -99,7 +265,7 @@ Owner authorized controlled QA fixtures, time adjustments, test strikes/reviews,
 - **Automatic closure logic:** manually invoked the protected hosted release cron against controlled overdue bookings, without waiting three actual days. Check-in plus no response completed; no check-in/no response went to review without an automatic strike. The owner separately authorized the one pre-existing staging test booking picked up by the same global cron; it moved to review. Subsequent invocations returned all-zero counters and no failures. Unauthenticated invocation returned 401. This is not evidence of automatic Vercel scheduling.
 - **Reminders and notifications:** seeded two real future Resend schedules/outbox entries for a separate completion fixture; confirming played through the app cancelled both in the DB and provider. Verified **35 scoped immediate notices delivered** in Resend, including photo, review, cancellation, strikes, review requests and admin standing alerts. All inspected recipients were the QA redirect inbox; links had no localhost/unresolved placeholders. Replaying cancellation created no extra strikes. Delivery does not verify Gmail Primary placement or mobile rendering.
 - **Fixes deployed:** `7c45d59` delays Stripe initialization until after the free-booking guard and makes admin decisions/success messages/review email copy distinguish free-beta outcomes from payments. A real free cancellation no longer requires a Stripe key; regression tests also retain the paid key requirement. `fc9b722` makes player/keeper match history show actual completed/cancelled/reviewed booking outcomes and keeps terminal keeper bookings out of the upcoming tab. Rechecked published player and keeper history labels after deployment.
-- **Validation and cleanup:** 168 tests, full lint and production build/TypeScript pass. QA assertions verified 11 terminal booking outcomes, no Stripe payment/refund/transfer IDs, the 35 deliveries and two cancelled reminders. Temporary QA admin privileges revoked; open QA fixtures closed; test photo removed; no active QA reminders remain. Test reviews/strikes and terminal records remain in Preview as evidence. Production and `main` were not modified; no SQL migration required.
+- **Validation and cleanup:** 168 tests, full lint and production build/TypeScript pass. QA assertions verified 11 terminal booking outcomes, no Stripe payment/refund/transfer IDs, the 35 deliveries and two cancelled reminders. Temporary QA admin privileges revoked; open QA fixtures closed; test photo removed; no active QA reminders remain. Test reviews/strikes and terminal records were retained until the separately authorised 26 October staging reset; written evidence remains. Production and `main` were not modified by this QA run; no SQL migration required.
 
 The agreed post-match functional block is accepted in staging. Real-phone GPS/camera, production auth/templates and scheduler, actual timed reminder arrival, 120-day retention execution, backups, legal/support and Mapbox licensing remain separate release gates, not implied by this acceptance.
 
@@ -133,9 +299,9 @@ Cleanup is complete for today's post-match run: temporary admin revoked, photo/h
 
 - The 10-minute unread-chat notification for the temporary Preview QA conversation changed from `scheduled` to `delivered` in Resend at 09:24 UTC. Its recipient matched the configured QA redirect; no production recipient was used.
 - The keeper's 30-minute check-in reminder changed from `scheduled` to `delivered` at its scheduled 10:25 UTC time, also to the QA redirect.
-- After both deliveries, the team cancelled the temporary booking through the staging UI. Its two remaining future team-played emails changed to `cancelled` in `email_outbox` and `canceled` in Resend. No QA reminder schedules remain active; the terminal, clearly labelled QA record remains in Preview as evidence.
+- After both deliveries, the team cancelled the temporary booking through the staging UI. Its two remaining future team-played emails changed to `cancelled` in `email_outbox` and `canceled` in Resend. No QA reminder schedules remain active; the terminal, clearly labelled QA record was retained until the authorised 26 October staging reset.
 - Two older Preview rows still labelled `scheduled` in `email_outbox` were checked separately; Resend confirms both were delivered on their original 2026-10-23/24 schedule, so they are not active provider sends.
-- Preview cron is manual; the hosted protected cron has been exercised. Per the owner's direction on 2026-10-26, automatic Production cron verification is deferred until all other release gates are complete and the owner authorizes the merge to `main`; verify after deployment and before opening the beta to the public. Vercel Analytics is installed; Sentry/error alerting is not configured.
+- Preview cron is manual. After the authorised Production promotion, automatic email cron returned 200 and manual daily release returned 200; the next automatic daily release remains to be checked on 27 October at 06:00 UTC. Vercel Analytics is installed; Sentry is absent and the saved 5xx alert rule does not deliver without Observability Plus.
 - Monitoring configuration (2026-10-26): confirmed the Vercel team is on Pro. Added alert rule `MatchKeeper function 5xx errors`, scoped to project `matchkeeper`, matching 5xx errors on any route, medium/high severity, Vercel notification inbox and email, with team owners subscribed. Observability Plus is not enabled; the owner declined its usage-based event billing ($1.20 per million events). The rule is saved but alert delivery requires Observability Plus; enabling it remains an explicit owner decision. Do not add Sentry for the Beta unless richer client-side diagnostics become necessary. Vercel alerts use minimum-activity thresholds and need 24 hours of active Plus data before error-anomaly alerts start, so they are not guaranteed to catch every issue in a low-traffic beta. See [Vercel Observability](https://vercel.com/docs/observability), [Observability Plus and pricing](https://vercel.com/docs/observability/observability-plus), and [Vercel Alerts](https://vercel.com/docs/alerts).
 
 ### Paid-release gates (not Beta gates)

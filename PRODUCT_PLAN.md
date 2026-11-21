@@ -14,7 +14,48 @@
 
 La Beta es de registro público. El objetivo de 20–50 usuarios es una meta de captación, no un límite de acceso. Una fila ausente de `payments_enabled` equivale a Beta gratis; errores de lectura o valores inválidos bloquean reservas.
 
-Estado: Beta gratuita implementada y en preparación de lanzamiento por staging. El booking protegido está implementado, pero permanece inactivo. Suscripciones no diseñadas.
+Estado al 2026-10-26: Beta gratuita publicada en **https://matchkeeperuk.com** tras promoción controlada autorizada. El booking protegido está implementado, pero permanece inactivo. Suscripciones no diseñadas.
+
+### Seguimiento al 2026-10-26
+
+**Decision vigente 2026-10-28:** a peticion del propietario se revierte la prueba de Permanent
+Geocoding y se restaura Search Box solo en staging (`114cd04`), conservando el arreglo movil.
+Production no se toca. Recargar pestanas abiertas para dejar de ejecutar el cliente anterior.
+No se generan nuevas consultas Permanent desde el cliente restaurado; el consumo pasado
+no se anula y Search Box tambien puede tener costes. Se espera respuesta de Mapbox sobre
+busqueda por nombre de campo y almacenamiento permitido; la reversion no resuelve esa licencia.
+
+**Actualizacion 2026-10-27, Mapbox:** migracion a Permanent Geocoding enviada primero a
+staging en `c285c6d`, sin promover a Production. Siempre `permanent=true`, sin autocomplete
+ni fallback temporal/Search Box; busqueda por direccion/codigo postal, con alternativa
+de pin manual. Continue no consulta la API. Coste inicial publicado US$5/1.000 consultas,
+sin franquicia gratis; GPS de check-in sin cambios ni llamadas de geocoding.
+Mapbox confirmo cuenta actual con tarjeta sin Enterprise/minimo; no autorizo almacenamiento
+de resultados Search Box ni regularizo historicos. Pruebas API/privacidad, lint focalizado
+y build/TypeScript correctos. Busqueda real en staging HTTP 200 verificada con `permanent=true`,
+seleccion/coordenadas/paso 2 y alternativa manual correctas; sin publicar partidos.
+Privacidad actualizada visible en staging. Production sigue en `72cd893`, pendiente de
+autorizacion separada para promover. El propietario comprobo que no encuentra POIs
+“Warren Sports Pitch” ni “Haggerston Park Football Pitches”: regresion de cobertura frente
+a la busqueda anterior, con pin manual como alternativa no equivalente. Se envio consulta
+de seguimiento a Mapbox sobre descubrimiento de campos y almacenamiento permitido; respuesta
+pendiente. Decision: mantener esta version en staging, sin revertirla ni tocar Production
+hasta valorar la respuesta. No se modificaron ubicaciones historicas. Evidencia en MASTER.
+
+- **Funcionalidad y móvil aceptados para beta:** se conserva la aceptación Preview de 11 escenarios postpartido y 35 avisos entregados. Hoy se aceptaron iPhone/Safari, recuperación, Explore/GPS, check-in/cámara, permisos denegados, campos sin zoom y navegación horizontal corregida (`e33ec54`). La precisión en un campo real de Londres sigue pendiente de feedback.
+- **Correos y operación:** recordatorios temporizados entregados y cancelaciones verificadas en Preview. Cron de correos automático en Production observado con 200; cron diario ejecutado manualmente con 200. Regla 5xx guardada, pero sin entrega de alertas porque el propietario rechazó Observability Plus de pago; Sentry no añadido.
+- **Infraestructura:** Vercel/Supabase Pro activos; protección contra contraseñas filtradas habilitada; RLS, Auth, Storage y separación Production/Preview revisados. Backups diarios de DB sin fotos; no se probó restauración. Se acepta no contratar PITR ni copia externa de fotos durante esta beta.
+- **Privacidad/soporte:** textos actualizados y publicados, retención por finalidad y revisión mensual, solicitudes manuales por email y soporte sin SLA. Ensayo Preview de acceso/borrado verificado y sus fixtures eliminadas. Investigación contractual/legal documentada, no certificada.
+- **Producción:** candidata con 174 tests, lint, build/TypeScript y auditoría de dependencias de producción sin vulnerabilidades. Promoción `db46d98`; seguimiento publicado en `1f04ad6` y despliegue READY. Registro/confirmación, perfil y recuperación reales; contraseña antigua y enlaces reutilizados rechazados. Reserva gratis/RLS probados en transacción revertida. Cuenta QA/sesiones eliminadas y ausencia comprobada; sin pendientes QA de Storage/outbox. Plantillas Auth actualizadas y localhost retirado.
+- **Cuentas y limpieza de staging:** propietario confirmó las dos cuentas personales de Production y el nuevo admin de staging. Limpieza completa autorizada y verificada: solo quedan admin `matchkeeperuk+staging@gmail.com`, jugador `lorenzomeolav32@gmail.com` y portero aprobado `lorenzomeolav@hotmail.com`. Eliminadas otras 16 cuentas y todo el historial de pruebas; conservados perfiles, contraseñas y tres fotos. Outbox vacío tras reconciliar Resend; evidencia QA conservada en los informes, no en filas de Preview. Production no se modificó durante la limpieza.
+- **Pendiente local de mantenimiento:** revisar la configuración de la credencial service-role de Preview, que devolvió 401. Se completó la limpieza por dashboard autenticado, sin rotar secretos; no se ha establecido un problema de Production.
+- **Mejora móvil posterior al lanzamiento:** corregido el recorte derecho del paso 2 de “Post a match” en `8b3c399`, desplegado READY en staging. La cuadrícula y los fieldsets ya se ajustan al ancho disponible; etiquetas pueden saltar de línea. Build/TypeScript, lint focalizado y comprobaciones del formulario publicado entre 320 y 1440 px correctos, sin publicar partidos. Propietario confirmó que funciona en el móvil real y autorizó promoción: merge `72cd893` enviado a `main`, con árbol idéntico al probado en staging y sin incluir cambios locales ajenos.
+- **Siguiente comprobación:** observar el cron diario automático el **27 de octubre a las 06:00 UTC**, sin confundirlo con el Run manual. No hay comprobación futura ejecutándose en segundo plano.
+- **Pendientes continuos:** soporte/aprobaciones/reportes, logs y correos fallidos, uso/costes, derechos y revisión mensual de retención (próxima antes del 26 de noviembre). Resolver licencia/almacenamiento/facturación de Mapbox y cuestiones de contacto/territorio/contratos/transferencias/cookies; el lanzamiento no las resuelve. Restauración, rotación general de credenciales y precisión GPS real no verificadas. Borrado autoservicio, alertas de pago y pagos/suscripciones son decisiones futuras.
+
+La mejora móvil está publicada en Production: despliegue `dpl_41dFvbVhERcdduCdMqDBhi2TsfjW` READY para `72cd893`, con alias público verificado. Home/login responden 200 y publicar partido sigue requiriendo sesión. No se crearon partidos de prueba en Production.
+
+El orden completo y las evidencias están en el [seguimiento diario vigente](design-system/matchkeeper/MASTER.md#daily-handoff-and-remaining-order-2026-10-26) y el [runbook de privacidad y operaciones](docs/privacy-support-operations.md). La decisión del propietario de lanzar sin revisión profesional no equivale a cumplimiento legal verificado.
 
 ## 1. Visión
 
