@@ -5,6 +5,7 @@ import { CONTACT_EMAIL } from "@/lib/site";
 export const metadata: Metadata = {
   title: "Terms of Service",
   description: "The rules for using MatchKeeper as a team, player or goalkeeper.",
+  alternates: { canonical: "/terms" },
 };
 
 // El texto depende del interruptor de pagos: se regenera cada minuto para reflejar un cambio.

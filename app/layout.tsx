@@ -7,7 +7,7 @@ import {
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
 import { themeInitScript } from "@/components/platform/theme-config";
-import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
+import { IS_PRODUCTION, SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,14 +33,12 @@ export const metadata: Metadata = {
     template: `%s · ${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,
-  alternates: {
-    canonical: "/",
-  },
+  robots: IS_PRODUCTION ? undefined : { index: false, follow: false },
   openGraph: {
     title: SITE_NAME,
     description: SITE_DESCRIPTION,
-    url: SITE_URL,
     siteName: SITE_NAME,
+    locale: "en_GB",
     type: "website",
   },
   twitter: {

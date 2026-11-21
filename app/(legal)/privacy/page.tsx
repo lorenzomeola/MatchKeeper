@@ -5,6 +5,7 @@ import { CONTACT_EMAIL } from "@/lib/site";
 export const metadata: Metadata = {
   title: "Privacy Policy",
   description: "What MatchKeeper collects, why, and how it's protected.",
+  alternates: { canonical: "/privacy" },
 };
 
 // El texto depende del interruptor de pagos: se regenera cada minuto para reflejar un cambio.

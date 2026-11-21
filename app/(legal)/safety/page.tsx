@@ -5,6 +5,7 @@ import { CONTACT_EMAIL } from "@/lib/site";
 export const metadata: Metadata = {
   title: "Safety",
   description: "How MatchKeeper reviews goalkeeper profiles and handles match safety reports.",
+  alternates: { canonical: "/safety" },
 };
 
 // El texto depende del interruptor de pagos: se regenera cada minuto para reflejar un cambio.
