@@ -34,3 +34,6 @@ next-env.d.ts
 
 # claude skills (local only)
 .claude/
+
+# social media videos (local only)
+/social/

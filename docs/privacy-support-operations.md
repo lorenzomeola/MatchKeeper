@@ -124,7 +124,8 @@ old reminders from becoming active again. Never store this register in the publi
   Mapbox, Cloudflare Email Routing and Google Gmail account. Document processing locations,
   subprocessors, roles, transfer mechanism and any required assessment. A link to a provider's
   privacy policy or DPA does not prove the required terms apply to this account.
-- Resolve Mapbox Search Box result-storage permission and `/forward` billing separately.
+- Apply the Permanent Geocoding migration and review historical Search Box-derived records
+  separately, following the 27 October provider clarification below.
 - The synthetic Preview rehearsal below is complete. Real identity verification, secure delivery
   and provider-held correspondence must still be handled case by case; do not treat synthetic
   acceptance as proof that those external processes have been exercised.
@@ -227,6 +228,9 @@ The owner subsequently gave separate deployment and scoped Production-QA authori
 Candidate `01c447c` passed 174 tests, full lint, build/TypeScript and the production dependency
 audit (zero vulnerabilities). Merge `db46d98` had the same tree as that candidate and deployed
 as `dpl_CbNiQPHXrwG8d7yaFXajEisRZmx6` on `https://matchkeeperuk.com`.
+Documentation-only follow-up `1f04ad6` then deployed READY as
+`dpl_6UebekXvrU49YB98noYePSfzb5JH`; enabled cron definitions were associated with it.
+Final public/legal and unauthorised-cron smoke checks passed without changing application code.
 
 Acceptance evidence:
 
@@ -269,3 +273,135 @@ tested forward fix or a rollback that retains the compatible callback.
 This acceptance does not resolve the legal/provider matrix above, Mapbox storage rights/billing,
 real-pitch GPS accuracy, general credential rotation or untested restore/Storage-backup limits.
 No paid service or Stripe-live mode was enabled.
+
+### Current handoff after acceptance
+
+- Next scheduled observation: daily release on **27 October 2026, 06:00 UTC**. No helper,
+  background watcher or future verification is running; an operator must inspect that run.
+  Check HTTP status, function errors and failed work/counters, not status alone.
+- Continue monitoring support/rights requests, manual keeper approval, reports/review bookings,
+  Vercel errors, failed/stale outbox cancellation states and provider use/costs. The saved 5xx
+  rule is not delivering alerts because the owner declined paid Observability Plus.
+- Perform the next monthly necessity/retention review by **26 November 2026**; ongoing
+  requests and incidents cannot wait for that review. Daily photo/coordinate expiry does not
+  replace case-specific retention decisions.
+- Legal/contact/provider/transfer/cookie and Mapbox storage/billing questions in section 7
+  remain open after public launch. No general credential rotation, restore rehearsal or
+  actual London-pitch GPS accuracy test was completed by this release.
+- Terminal Preview lifecycle records were retained until the separately authorised staging reset
+  below. Written QA evidence remains; provider-retained emails/logs were not erased.
+
+The consolidated daily record and ordered follow-up are maintained in
+[MASTER.md](../design-system/matchkeeper/MASTER.md#daily-handoff-and-remaining-order-2026-10-26).
+This later tracking refresh is documentation only, not a further deployment authorisation.
+
+### Personal account setup (2026-10-26, after promotion)
+
+The owner authorised two personal Production accounts and a separate staging administrator,
+keeping existing staging player/keeper accounts and passwords unchanged.
+
+- Production administrator: existing `matchkeeperuk@gmail.com`, confirmed Auth identity;
+  `profiles.is_admin` enabled for its exact existing UUID. Its previous profile display name
+  is `Production Email Test`; retained rather than silently rewriting the owner's profile.
+- Production player: `lorenzomeolav32@gmail.com`, registered through the app, player profile
+  without administrator privileges. Signup confirmation and password-setup recovery requested.
+- Staging administrator: new `matchkeeperuk+staging@gmail.com`, registered through the app;
+  player-role profile with `is_admin=true`. The plus alias reaches the existing Gmail inbox,
+  but its Supabase account/password is independent of Production. Confirmation and recovery
+  requested; the owner subsequently confirmed access.
+- The owner confirmed both Production accounts were ready, then confirmed the new staging
+  administrator and explicitly authorised retiring all other staging accounts/history.
+  Old staging `matchkeeperuk@gmail.com` was deleted in the reset below. The existing staging
+  player/keeper profiles, passwords and avatar objects were preserved.
+
+The app accepted all three recovery requests. Provider metadata lists the five signup/recovery
+messages as `queued` at the bounded check; that alone was not inbox-delivery proof. Subsequent
+owner confirmation supplies the account-access acceptance; password uniqueness was not inspected.
+No email token was opened or extracted for these personal accounts, and no chosen password
+is requested in chat. New signup bootstrap passwords were random and not kept for future use;
+replace them through recovery before using the accounts. No deploy, payment or mailbox change.
+
+### Authorised staging reset (2026-10-26)
+
+Only Preview project `mzliunqgszmxhwtgnbgy` was changed. The owner explicitly approved deleting
+all staging history and extra accounts after confirming new administrator access.
+
+| Preserved account | Verified role |
+| --- | --- |
+| `matchkeeperuk+staging@gmail.com` | Sole administrator, player-role profile |
+| `lorenzomeolav32@gmail.com` | Player, not administrator |
+| `lorenzomeolav@hotmail.com` | Approved goalkeeper, not administrator |
+
+- All three Auth identities are confirmed. The reset compared their complete profiles and
+  password hashes internally before/after; equality was required for the transaction to commit.
+  No hash or chosen password was exposed.
+- Removed 16 other Auth accounts/profiles, 35 matches, 46 applications, 32 bookings, 10 messages,
+  one review and four strikes. All 15 explicitly listed usage/history tables are empty, including
+  outbox, booking events, reports, debts and disputes. Teams/members are also empty and no
+  orphan Auth sessions remain.
+- Nine outbox rows labelled scheduled were individually checked against Resend: all had already
+  been delivered, so no provider cancellation was needed. After reconciliation, the reset
+  cleared all 127 terminal/failed outbox rows; no future provider sends were left by this cleanup.
+- Deleted exactly three obsolete avatar objects through Storage UI, not direct metadata SQL.
+  Exactly three objects belonging to the retained player/keeper remain; current avatar URLs
+  return HTTP 200. Deleted object URLs return HTTP 400 and are absent from Storage inventory.
+  The private check-in bucket is empty.
+- [Reset SQL](../db/maintenance/reset-test-data.sql) passed a database dry-run before execution.
+  Its local default setting remains `v_dry_run := true`; exact Preview identities,
+  outbox/Storage gates, explicit non-CASCADE truncation and transactional invariants guard reuse.
+  Preview remains in free mode. No Production changes, commit, push or deployment were made
+  for this maintenance; prior local tracking edits remain local.
+- Historical Preview QA rows were intentionally removed under this later authorisation;
+  the written reports/session evidence are retained. External Stripe sandbox objects and
+  provider-held messages/logs were not deleted.
+- Separate follow-up: the local Preview service-role credential returned HTTP 401 during
+  maintenance; authenticated dashboard access was used instead. Check the local credential
+  configuration separately before relying on maintenance scripts. No secret was printed or
+  rotated, and this does not establish a Production credential problem.
+
+### Mapbox clarification and Permanent Geocoding migration (2026-10-27)
+
+**Superseded operational state, 28 October:** owner requested returning staging to Search Box
+to avoid further Permanent Geocoding test requests. Scoped revert `114cd04` restores the
+pre-trial search/form/privacy baseline and removes Permanent-only tests; mobile layout fix
+preserved. Production and database rows untouched. Build/TypeScript, six legal-page tests and
+focused lint passed. Reload old tabs before testing: previously loaded Permanent client code
+can still make requests until refreshed. Past charges are not undone; Search Box usage can
+also be billable. This decision does not permit storing Search Box responses. Await Mapbox's
+venue-name/storage reply; do not treat the historical migration/hold instructions below as
+the current implementation or authorisation to promote Permanent Geocoding.
+
+The owner shared Mapbox's reply from William Davies: Search Box is for real-time search/map
+display, not permanent storage of responses or venue POI data in Supabase. Geocoding with
+`permanent=true` permits retained addresses/coordinates on the existing Pay-As-You-Go account
+with a valid card; no Enterprise agreement, minimum spend or sales agreement is required for
+the described workflow. This is product/storage guidance, not closure of DPA/transfer questions.
+
+- Replace Search Box forward search with Geocoding v6 forward, always `permanent=true`,
+  `autocomplete=false`, GB/London bounds and no POI type. No temporary/Search Box fallback.
+  Searches are explicit button/Enter actions; Continue must not incur a search request.
+- Published initial rate checked on 27 October: US$5/1,000 requests, no Permanent free
+  allowance. Every search, including one abandoned before posting, can be billable.
+  Map display has separate usage pricing; no fixed-price subscription or spend cap is implied.
+- Geocoding v6 does not search venue POIs. The form explains address/postcode searches and
+  manual pin placement for a user-entered pitch name. Device check-in GPS does not make
+  a Mapbox forward/reverse-geocoding call; that flow is unchanged.
+- The new API does not retroactively license historical Search Box results. Do not blanket
+  delete records or reclassify them as permanently licensed: identify provenance and ask Mapbox
+  about appropriate replacement/removal. No database rows were changed by this migration.
+- During staging acceptance, the owner found that Permanent Geocoding does not return the POIs
+  “Warren Sports Pitch” and “Haggerston Park Football Pitches.” This is a known search-quality
+  limitation: address/postcode search plus a manually placed pin remains possible, but is not
+  equivalent to venue-name discovery.
+- The owner emailed Mapbox asking whether a licensed workflow can support venue-name discovery
+  and permanently retain selected venue name/coordinates, including whether Search Box discovery
+  followed by a separate Permanent Geocoding request is allowed and what fields may be retained.
+  **Await the provider's written answer before changing the search design or evaluating whether
+  any historical Search Box data may be retained.**
+- Owner decision on 27 October: keep the current Permanent Geocoding implementation on staging
+  while waiting; do not revert staging or touch Production. No Production code/config/database
+  change or historical-row cleanup is authorised by that decision.
+- Sources: [Geocoding docs](https://docs.mapbox.com/api/search/geocoding/) and
+  [published pricing](https://www.mapbox.com/pricing#search), plus the owner's shared email.
+  Staging validation/deployment status is maintained in MASTER; Production promotion requires
+  separate approval after staging acceptance.
