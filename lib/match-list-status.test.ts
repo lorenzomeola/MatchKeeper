@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { bookingListStatus, keeperMatchTab, matchListStatus } from "./match-list-status.ts";
+import { relativeDay } from "./format.ts";
+import { adminMatchStatus, bookingListStatus, groupByMonth, keeperMatchTab, matchListStatus } from "./match-list-status.ts";
 
 test("played and cancelled matches do not retain a booked history badge", () => {
   assert.equal(matchListStatus("completed", ["completed"]).label, "Played");
@@ -45,4 +46,35 @@ test("waiting applications and active bookings preserve their tabs", () => {
   assert.equal(keeperMatchTab({ applicationStatus: "accepted", matchStatus: "assigned", bookingStatus: "confirmed", ended: false }), "booked");
   assert.equal(keeperMatchTab({ applicationStatus: "pending", matchStatus: "open", bookingStatus: null, ended: true }), "past");
   assert.equal(keeperMatchTab({ applicationStatus: "withdrawn", matchStatus: "open", bookingStatus: null, ended: false }), "past");
+});
+
+const NOW = new Date("2026-11-24T12:00:00Z");
+
+test("admin: a match that ended without a keeper is not still open", () => {
+  assert.equal(adminMatchStatus("open", "2026-11-20T11:00:00Z", NOW).label, "No keeper");
+  assert.equal(adminMatchStatus("open", "2026-11-29T12:30:00Z", NOW).label, "Needs a keeper");
+  assert.equal(adminMatchStatus("assigned", "2026-11-29T12:30:00Z", NOW).label, "Booked");
+  assert.equal(adminMatchStatus("assigned", "2026-11-20T11:00:00Z", NOW).label, "Played");
+  assert.equal(adminMatchStatus("completed", "2026-11-20T11:00:00Z", NOW).label, "Played");
+  assert.equal(adminMatchStatus("cancelled", "2026-11-29T12:30:00Z", NOW).label, "Cancelled");
+  assert.equal(adminMatchStatus("open", "2026-11-20T11:00:00Z", NOW).past, true);
+  assert.equal(adminMatchStatus("open", "2026-11-24T12:30:00Z", NOW).past, false);
+});
+
+test("admin: matches grouped by London month and year, keeping their order", () => {
+  const groups = groupByMonth([
+    { starts_at: "2026-11-29T10:30:00Z" },
+    { starts_at: "2026-11-02T10:30:00Z" },
+    { starts_at: "2026-10-31T23:30:00Z" },
+    { starts_at: "2025-12-01T10:00:00Z" },
+  ]);
+  assert.deepEqual(groups.map((g) => [g.label, g.rows.length]), [["November 2026", 2], ["October 2026", 1], ["December 2025", 1]]);
+});
+
+test("relative day in London calendar days", () => {
+  assert.equal(relativeDay("2026-11-24T20:00:00Z", NOW), "Today");
+  assert.equal(relativeDay("2026-11-25T09:00:00Z", NOW), "Tomorrow");
+  assert.equal(relativeDay("2026-11-23T09:00:00Z", NOW), "Yesterday");
+  assert.equal(relativeDay("2026-11-29T10:30:00Z", NOW), "In 5 days");
+  assert.equal(relativeDay("2026-11-20T10:30:00Z", NOW), "4 days ago");
 });
