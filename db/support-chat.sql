@@ -37,6 +37,9 @@ revoke all on table public.support_threads from anon, authenticated;
 revoke all on table public.support_messages from anon, authenticated;
 grant select on table public.support_threads to authenticated;
 grant select on table public.support_messages to authenticated;
+-- Los avisos por email y el resumen semanal leen con service_role; este proyecto no lo concede solo en tablas nuevas.
+grant all on table public.support_threads to service_role;
+grant all on table public.support_messages to service_role;
 
 drop policy if exists "support_threads_select_keeper_or_admin" on public.support_threads;
 create policy "support_threads_select_keeper_or_admin"
