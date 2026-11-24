@@ -23,24 +23,24 @@ const NO_FILTERS: Filters = { when: "any", format: "", surface: "", radius: "" }
 
 const PIN_BASE =
   "absolute left-0 top-0 inline-flex min-h-9 min-w-9 cursor-pointer items-center justify-center rounded-full px-3 text-xs font-bold leading-none shadow-[0_4px_14px_rgba(0,0,0,0.35)] transition-shadow duration-150";
-const PIN_KIND: Record<PinKind, string> = {
-  open: "bg-[#3dd68c] text-[#06210f]",
-  mine: "bg-[#3dd68c] text-[#06210f]",
-  applied: "border-2 border-[#3dd68c] bg-[var(--bg-2)] text-[var(--success)]",
-  booked: "bg-[#ff7a1a] text-[#1a1005]",
-  "mine-booked": "bg-[#ff7a1a] text-[#1a1005]",
+// Un solo sitio para el color de cada estado: pin, leyenda y etiqueta de la tarjeta lo leen de aquí.
+const KIND: Record<PinKind, { label: string; tone: "accent" | "warning" | "success"; pin: string; dot: string }> = {
+  open: { label: "Needs a keeper", tone: "success", pin: "bg-[var(--success)] text-[var(--bg)]", dot: "bg-success" },
+  mine: { label: "Looking for a keeper", tone: "success", pin: "bg-[var(--success)] text-[var(--bg)]", dot: "bg-success" },
+  applied: {
+    label: "You applied",
+    tone: "warning",
+    pin: "border-2 border-[var(--warning)] bg-[var(--bg-2)] text-[var(--warning)]",
+    dot: "border-2 border-warning bg-transparent",
+  },
+  booked: { label: "You're booked", tone: "accent", pin: "bg-[var(--accent)] text-[var(--accent-ink)]", dot: "bg-accent" },
+  "mine-booked": { label: "Keeper booked", tone: "accent", pin: "bg-[var(--accent)] text-[var(--accent-ink)]", dot: "bg-accent" },
 };
-const KIND_LABEL: Record<PinKind, { label: string; tone: "accent" | "warning" | "success" }> = {
-  open: { label: "Open", tone: "success" },
-  mine: { label: "Looking for a keeper", tone: "success" },
-  applied: { label: "You applied", tone: "warning" },
-  booked: { label: "You are booked", tone: "accent" },
-  "mine-booked": { label: "Keeper booked", tone: "accent" },
-};
+const LEGEND: Record<"keeper" | "player", PinKind[]> = { keeper: ["open", "applied", "booked"], player: ["mine", "mine-booked"] };
 
 // Sin `scale`: el CSS `scale` se compone con el transform que Mapbox pone al pin y lo desplaza del punto real.
 const pinClass = (kind: PinKind, selected: boolean) =>
-  `${PIN_BASE} ${PIN_KIND[kind]} ${selected ? "ring-4 ring-white/50 brightness-110" : ""}`;
+  `${PIN_BASE} ${KIND[kind].pin} ${selected ? "ring-4 ring-white/50 brightness-110" : ""}`;
 
 function matchesWhen(startsAt: string, when: When, today: string) {
   if (when === "any") return true;
@@ -262,13 +262,13 @@ export function ExploreMap({
                   <span className="block font-semibold text-fg">How to read the map</span>
                   <span className="mt-2 block">Each pin is a match and shows its start time. Tap one to see the details.</span>
                   <span className="mt-2 block">
-                    <span className="font-semibold text-success">Green</span> is looking for a keeper.{" "}
+                    <span className="font-semibold text-success">Green</span> {isKeeper ? "needs a keeper" : "is still looking for a keeper"}.{" "}
                     {isKeeper ? (
                       <>
-                        <span className="font-semibold text-fg">Outlined</span> means you applied.{" "}
+                        <span className="font-semibold text-warning">Yellow outline</span> means you applied.{" "}
                       </>
                     ) : null}
-                    <span className="font-semibold text-accent-strong">Orange</span> has a keeper booked.
+                    <span className="font-semibold text-accent-strong">Orange</span> {isKeeper ? "means you are booked" : "has a keeper booked"}.
                   </span>
                   {isKeeper && <span className="mt-2 block">Open a match to apply with your own rate.</span>}
                 </InfoTip>
@@ -431,17 +431,12 @@ export function ExploreMap({
 }
 
 function Legend({ isKeeper }: { isKeeper: boolean }) {
-  const items: { label: string; className: string }[] = [
-    { label: "Open", className: "bg-accent" },
-    ...(isKeeper ? [{ label: "You applied", className: "border-2 border-accent bg-transparent" }] : []),
-    { label: "Booked", className: "bg-success" },
-  ];
   return (
     <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-muted" aria-label="Legend">
-      {items.map((i) => (
-        <li key={i.label} className="flex items-center gap-1.5">
-          <span aria-hidden className={`h-3 w-3 rounded-full ${i.className}`} />
-          {i.label}
+      {LEGEND[isKeeper ? "keeper" : "player"].map((kind) => (
+        <li key={kind} className="flex items-center gap-1.5">
+          <span aria-hidden className={`h-3 w-3 rounded-full ${KIND[kind].dot}`} />
+          {KIND[kind].label}
         </li>
       ))}
     </ul>
@@ -461,7 +456,7 @@ function ExploreCard({
   onSelect: () => void;
   onOpenMap: () => void;
 }) {
-  const k = KIND_LABEL[match.kind];
+  const k = KIND[match.kind];
   return (
     <div
       role="button"
