@@ -49,7 +49,7 @@ export default async function AdminMatchesPage({ searchParams }: { searchParams:
                               {relativeDay(m.starts_at, now)} ·{" "}
                               {keeperIds.length > 0
                                 ? `${keeperIds.length > 1 ? "Keepers" : "Keeper"}: ${keeperNames(keeperIds.map((id) => names.get(id)?.name ?? "booked"))}${keeperIds.length < m.keepers_needed ? ` (${keeperIds.length} of ${m.keepers_needed})` : ""}`
-                                : `${m.applications.length} ${m.applications.length === 1 ? "application" : "applications"}${pending ? `, ${pending} waiting` : ""}`}
+                                : `${m.applications.length} ${m.applications.length === 1 ? "application" : "applications"}${pending && !status.past ? `, ${pending} waiting` : ""}`}
                             </span>
                             <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
                           </>
