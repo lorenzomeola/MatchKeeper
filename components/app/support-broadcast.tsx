@@ -10,12 +10,12 @@ import { SUPPORT_TEMPLATES, fillTemplate, type SupportVars } from "@/lib/support
 
 const template = (id: string) => SUPPORT_TEMPLATES.find((t) => t.id === id)!.body;
 
-type BroadcastTemplate = "open_matches" | "urgent_match" | "welcome" | "inactive";
+type BroadcastTemplate = "open_matches" | "urgent_match" | "inactive";
 
+// "Welcome" no está aquí: se envía solo al aprobar a cada portero.
 const OPTIONS: { id: BroadcastTemplate; label: string; hint: string }[] = [
   { id: "open_matches", label: "Open matches", hint: "Tells them how many matches need a keeper right now, with a link to the map." },
   { id: "urgent_match", label: "Urgent match", hint: "Announces one specific match that needs a keeper soon." },
-  { id: "welcome", label: "Welcome", hint: "For newly approved keepers: they can start applying." },
   { id: "inactive", label: "Haven't seen you", hint: "Asks keepers who stopped applying what is getting in the way." },
 ];
 
