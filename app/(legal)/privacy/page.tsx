@@ -13,7 +13,7 @@ export const revalidate = 60;
 
 export default function PrivacyPage() {
   return (
-    <LegalShell eyebrow="Legal" title="Privacy Policy" updated="2026-10-26">
+    <LegalShell eyebrow="Legal" title="Privacy Policy" updated="2026-11-24">
       {(payments) => (
         <>
       <p>
@@ -53,6 +53,12 @@ export default function PrivacyPage() {
           a report or protected-booking dispute.
         </li>
         <li>
+          Goalkeepers only: messages exchanged with the MatchKeeper team in the app&apos;s
+          &quot;MatchKeeper team&quot; conversation, for example questions about your profile before
+          approval or news about open matches. Every MatchKeeper admin can read and reply to this
+          conversation.
+        </li>
+        <li>
           Check-in location: when a goalkeeper taps &quot;I have arrived&quot;, we record the time,
           their coordinates at that moment and the distance to the pitch. We only read the
           location when they tap the button, never in the background.
@@ -90,6 +96,12 @@ export default function PrivacyPage() {
           Running your account, matches, applications, chat and bookings, and sending the emails
           that go with them: performance of our agreement to provide the service you asked for. We send emails
           about your account, your matches and your bookings. We do not send marketing emails.
+        </li>
+        <li>
+          Approved goalkeepers also receive a weekly email on Wednesdays listing open matches they
+          haven&apos;t applied to, and occasional messages from the MatchKeeper team about open
+          matches. This is part of the service goalkeepers sign up for. You can turn the weekly email
+          off at any time in your profile.
         </li>
         <li>
           Check-in location: our legitimate interest in recording attendance and resolving
