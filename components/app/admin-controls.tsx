@@ -139,7 +139,7 @@ export function ApprovalControl({
         <p className="pl-prose text-[15px]">
           {approved
             ? "They will keep their profile and existing bookings, but they will not be able to apply to new matches."
-            : "They will be able to apply to matches and teams will see them."}
+            : "They will be able to apply to matches and teams will see them. They also get a welcome message in their MatchKeeper chat."}
         </p>
         {!approved && missing.length > 0 && (
           <p className="mt-3 rounded-[var(--r-md)] bg-[color-mix(in_oklab,var(--warning)_10%,transparent)] px-3 py-2.5 text-[13px] leading-snug text-warning">

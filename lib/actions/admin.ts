@@ -5,9 +5,11 @@ import { revalidatePath } from "next/cache";
 import { defer } from "@/lib/email/booking-emails";
 import { notifyKeeperApproved } from "@/lib/email/marketplace-emails";
 import { queueEmail } from "@/lib/email/outbox";
+import { firstName } from "@/lib/format";
 import { appUrl } from "@/lib/payments/app-url";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { SUPPORT_TEMPLATES, fillTemplate } from "@/lib/support-templates";
 
 export type AdminActionState = { error: string | null; done?: boolean };
 
@@ -19,8 +21,31 @@ export async function setKeeperApprovalAction(profileId: string, approved: boole
     return { error: "We couldn't update this keeper. Check that db/admin.sql has been applied." };
   }
   revalidatePath("/admin", "layout");
-  if (approved) defer(() => notifyKeeperApproved(profileId));
+  if (approved) {
+    await sendWelcomeMessage(supabase, profileId);
+    defer(() => notifyKeeperApproved(profileId));
+  }
   return { error: null, done: true };
+}
+
+const WELCOME = SUPPORT_TEMPLATES.find((t) => t.id === "welcome")!.body;
+
+/** Bienvenida en el chat al aprobar, una sola vez. Sin aviso por email: ya le llega el de aprobación. */
+async function sendWelcomeMessage(supabase: Awaited<ReturnType<typeof createClient>>, keeperId: string) {
+  const opening = WELCOME.slice(0, WELCOME.indexOf("{name}"));
+  const { data: sent } = await supabase
+    .from("support_messages")
+    .select("id")
+    .eq("keeper_id", keeperId)
+    .eq("from_admin", true)
+    .like("body", `${opening}%`)
+    .limit(1);
+  if (sent?.length) return;
+
+  const { data: keeper } = await supabase.from("profiles").select("display_name").eq("id", keeperId).maybeSingle();
+  const body = fillTemplate(WELCOME, { name: firstName(keeper?.display_name), browseLink: `${appUrl()}/map` });
+  const { error } = await supabase.rpc("send_support_message", { p_keeper_id: keeperId, p_body: body });
+  if (error) console.error("welcome message failed", error);
 }
 
 export async function setReportStatusAction(
