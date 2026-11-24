@@ -102,6 +102,15 @@ export function shortWhen(iso: string) {
   return parts(iso, { day: "numeric", month: "short" });
 }
 
+/** "Today", "Tomorrow", "Yesterday", "In 5 days" o "3 days ago", en días naturales de Londres. */
+export function relativeDay(iso: string, now = new Date()) {
+  const diff = Math.round((Date.parse(ymd(new Date(iso))) - Date.parse(ymd(now))) / 86_400_000);
+  if (diff === 0) return "Today";
+  if (diff === 1) return "Tomorrow";
+  if (diff === -1) return "Yesterday";
+  return diff > 0 ? `In ${diff} days` : `${-diff} days ago`;
+}
+
 /** Separador de día dentro de una conversación. */
 export function dayLabel(iso: string) {
   const dayDiff = Math.round((Date.parse(ymd(new Date())) - Date.parse(ymd(new Date(iso)))) / 86_400_000);

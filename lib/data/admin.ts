@@ -2,6 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { signedCheckInPhotoUrls } from "@/lib/data/checkin-photos";
 import { createClient } from "@/lib/supabase/server";
 import { completeness, profileChecklist, valuesFromRow, type Role } from "@/lib/profile";
+import type { AdminMatchTab } from "@/lib/match-list-status";
 import { isActiveStrike, keeperStanding } from "@/lib/strikes";
 
 type Client = Awaited<ReturnType<typeof createClient>>;
@@ -57,7 +58,6 @@ export async function loadAdminOverview() {
     openReports,
     { data: pendingList },
     { data: reportList },
-    { data: matchList },
   ] = await Promise.all([
     count(supabase.from("profiles").select("id", head)),
     count(supabase.from("profiles").select("id", head).eq("role", "player")),
@@ -72,21 +72,15 @@ export async function loadAdminOverview() {
     count(supabase.from("reports").select("id", head).eq("status", "open")),
     supabase.from("profiles").select("*").eq("role", "goalkeeper").eq("approved", false).order("created_at", { ascending: true }).limit(4),
     supabase.from("reports").select("id, reporter_id, reported_id, reason, created_at").eq("status", "open").order("created_at", { ascending: true }).limit(3),
-    supabase.from("matches").select("id, address, starts_at, status, created_by").order("created_at", { ascending: false }).limit(5),
   ]);
 
   const reports = reportList ?? [];
-  const matches = matchList ?? [];
-  const names = await namesOf(supabase, [
-    ...reports.flatMap((r) => [r.reporter_id, r.reported_id]),
-    ...matches.map((m) => m.created_by),
-  ]);
+  const names = await namesOf(supabase, reports.flatMap((r) => [r.reporter_id, r.reported_id]));
 
   return {
     counts: { users, players, keepers, pendingKeepers, newUsers, openMatches, bookedMatches, totalMatches, applications, bookings, openReports },
     pending: (pendingList ?? []) as AdminProfile[],
     reports,
-    matches,
     names,
   };
 }
@@ -151,24 +145,23 @@ export async function loadUsers(tab: "all" | "player" | "goalkeeper", q: string)
   return { list: (data ?? []) as AdminProfile[], counts: { all, player: players, goalkeeper: keepers } };
 }
 
-export async function loadAdminMatches(tab: "open" | "booked" | "past" | "cancelled") {
+export async function loadAdminMatches(tab: AdminMatchTab, limit = 100) {
   const supabase = await createClient();
   const nowIso = new Date().toISOString();
   const base = () => supabase.from("matches").select("*, applications(id, status, goalkeeper_id)");
 
   let query = base();
-  if (tab === "open") query = query.eq("status", "open").gte("ends_at", nowIso);
-  if (tab === "booked") query = query.eq("status", "assigned").gte("ends_at", nowIso);
+  if (tab === "upcoming") query = query.neq("status", "cancelled").gte("ends_at", nowIso);
   if (tab === "past") query = query.neq("status", "cancelled").lt("ends_at", nowIso);
   if (tab === "cancelled") query = query.eq("status", "cancelled");
-  const { data } = await query.order("starts_at", { ascending: tab === "open" || tab === "booked" }).limit(100);
+  const { data } = await query.order("starts_at", { ascending: tab === "upcoming" }).limit(limit);
 
   const head = { count: "exact", head: true } as const;
-  const [open, booked, past, cancelled] = await Promise.all([
-    count(supabase.from("matches").select("id", head).eq("status", "open").gte("ends_at", nowIso)),
-    count(supabase.from("matches").select("id", head).eq("status", "assigned").gte("ends_at", nowIso)),
+  const [upcoming, past, cancelled, all] = await Promise.all([
+    count(supabase.from("matches").select("id", head).neq("status", "cancelled").gte("ends_at", nowIso)),
     count(supabase.from("matches").select("id", head).neq("status", "cancelled").lt("ends_at", nowIso)),
     count(supabase.from("matches").select("id", head).eq("status", "cancelled")),
+    count(supabase.from("matches").select("id", head)),
   ]);
 
   const rows = (data ?? []) as {
@@ -190,7 +183,7 @@ export async function loadAdminMatches(tab: "open" | "booked" | "past" | "cancel
     ...rows.map((r) => r.created_by),
     ...rows.flatMap((r) => r.applications.filter((a) => a.status === "accepted").map((a) => a.goalkeeper_id)),
   ]);
-  return { rows, names, counts: { open, booked, past, cancelled } };
+  return { rows, names, counts: { upcoming, past, cancelled, all } };
 }
 
 export type ReportRow = {

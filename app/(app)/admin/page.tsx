@@ -5,15 +5,28 @@ import { EmptyState } from "@/components/app/empty-state";
 import { joined } from "@/components/app/admin-parts";
 import { PageHeader, Section, SectionLink } from "@/components/app/page-header";
 import { StatCard } from "@/components/app/stat-card";
-import { MATCH_STATUS, StatusBadge } from "@/components/app/status-badge";
+import { StatusBadge } from "@/components/app/status-badge";
+import { Tabs } from "@/components/app/tabs";
 import { ShieldCheckIcon } from "@/components/platform/icons";
-import { loadAdminOverview, profileRating } from "@/lib/data/admin";
-import { dateTile } from "@/lib/format";
+import { loadAdminMatches, loadAdminOverview, profileRating } from "@/lib/data/admin";
+import { dateTile, relativeDay, timeRange } from "@/lib/format";
+import { ADMIN_MATCH_TABS, adminMatchStatus, groupByMonth, type AdminMatchTab } from "@/lib/match-list-status";
 
 export const metadata: Metadata = { title: "Admin", robots: { index: false } };
 
-export default async function AdminOverviewPage() {
-  const { counts: c, pending, reports, matches, names } = await loadAdminOverview();
+const MATCH_TAB_LABEL: Record<AdminMatchTab, string> = { upcoming: "Upcoming", past: "Past", cancelled: "Cancelled", all: "All" };
+const MATCH_EMPTY: Record<AdminMatchTab, string> = {
+  upcoming: "No upcoming matches.",
+  past: "No matches have been played yet.",
+  cancelled: "No cancelled matches.",
+  all: "No matches posted yet.",
+};
+
+export default async function AdminOverviewPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
+  const { tab: rawTab } = await searchParams;
+  const tab: AdminMatchTab = ADMIN_MATCH_TABS.includes(rawTab as AdminMatchTab) ? (rawTab as AdminMatchTab) : "upcoming";
+  const [{ counts: c, pending, reports, names }, matchList] = await Promise.all([loadAdminOverview(), loadAdminMatches(tab, 8)]);
+  const now = new Date();
 
   return (
     <>
@@ -106,31 +119,42 @@ export default async function AdminOverviewPage() {
         </Section>
       )}
 
-      <Section title="Latest matches" action={<SectionLink href="/admin/matches">All matches</SectionLink>}>
-        {matches.length === 0 ? (
-          <p className="pl-prose text-[15px]">No matches posted yet.</p>
+      <Section title="Matches" action={<SectionLink href={`/admin/matches?tab=${tab}`}>All matches</SectionLink>}>
+        <Tabs base="/admin" active={tab} tabs={ADMIN_MATCH_TABS.map((t) => ({ value: t, label: MATCH_TAB_LABEL[t], count: matchList.counts[t] }))} />
+        {matchList.rows.length === 0 ? (
+          <p className="pl-prose text-[15px]">{MATCH_EMPTY[tab]}</p>
         ) : (
-          <ul className="pl-surface divide-y divide-line overflow-hidden rounded-[var(--r-lg)]">
-            {matches.map((m) => {
-              const t = dateTile(m.starts_at);
-              const s = MATCH_STATUS[m.status] ?? MATCH_STATUS.open;
-              return (
-                <li key={m.id}>
-                  <Link href={`/matches/${m.id}`} className="flex min-h-16 items-center gap-3.5 px-4 py-3 transition-colors duration-200 hover:bg-surface">
-                    <span className="w-12 shrink-0 text-center leading-none">
-                      <span className="block font-mono text-[10px] uppercase tracking-[0.14em] text-muted">{t.weekday}</span>
-                      <span className="pl-display pl-tnum mt-1 block text-lg text-fg">{t.day}</span>
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[15px] font-medium text-fg">{m.address ?? "Pitch to be confirmed"}</span>
-                      <span className="block truncate text-[13px] text-muted">by {names.get(m.created_by)?.name ?? "a player"}</span>
-                    </span>
-                    <StatusBadge tone={s.tone}>{s.label}</StatusBadge>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+          <div className="grid gap-5">
+            {groupByMonth(matchList.rows).map((g) => (
+              <div key={g.label}>
+                <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.14em] text-muted">{g.label}</p>
+                <ul className="pl-surface divide-y divide-line overflow-hidden rounded-[var(--r-lg)]">
+                  {g.rows.map((m) => {
+                    const t = dateTile(m.starts_at);
+                    const s = adminMatchStatus(m.status, m.ends_at, now);
+                    return (
+                      <li key={m.id} className={s.past ? "opacity-70" : ""}>
+                        <Link href={`/matches/${m.id}`} className="flex min-h-16 items-center gap-3.5 px-4 py-3 transition-colors duration-200 hover:bg-surface">
+                          <span className="w-12 shrink-0 text-center leading-none">
+                            <span className="block font-mono text-[10px] uppercase tracking-[0.14em] text-muted">{t.weekday}</span>
+                            <span className="pl-display pl-tnum mt-1 block text-lg text-fg">{t.day}</span>
+                            <span className="mt-0.5 block font-mono text-[10px] uppercase tracking-[0.14em] text-muted">{t.month}</span>
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-[15px] font-medium text-fg">{m.address ?? "Pitch to be confirmed"}</span>
+                            <span className="block truncate text-[13px] text-muted">
+                              {relativeDay(m.starts_at, now)} · {timeRange(m.starts_at, m.ends_at)} · by {matchList.names.get(m.created_by)?.name ?? "a player"}
+                            </span>
+                          </span>
+                          <StatusBadge tone={s.tone}>{s.label}</StatusBadge>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
+          </div>
         )}
       </Section>
     </>
