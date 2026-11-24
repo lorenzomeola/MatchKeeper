@@ -30,8 +30,8 @@ const KIND: Record<PinKind, { label: string; tone: "accent" | "warning" | "succe
   applied: {
     label: "You applied",
     tone: "warning",
-    pin: "border-2 border-[color:var(--warning)] bg-[var(--bg-2)] text-[var(--warning)]",
-    dot: "border-2 border-[color:var(--warning)] bg-transparent",
+    pin: "border-2 !border-warning bg-[var(--bg-2)] text-[var(--warning)]",
+    dot: "border-2 !border-warning bg-transparent",
   },
   booked: { label: "You're booked", tone: "accent", pin: "bg-[var(--accent)] text-[var(--accent-ink)]", dot: "bg-accent" },
   "mine-booked": { label: "Keeper booked", tone: "accent", pin: "bg-[var(--accent)] text-[var(--accent-ink)]", dot: "bg-accent" },
