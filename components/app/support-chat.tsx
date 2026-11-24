@@ -162,7 +162,7 @@ export function SupportChat({
           </div>
         )}
 
-        <ol className="grid gap-1">
+        <ol className="grid grid-cols-1 gap-1">
           {messages.map((m, i) => {
             const mine = mineOf(m);
             const prev = messages[i - 1];
@@ -183,7 +183,7 @@ export function SupportChat({
                 )}
                 <div className={`flex ${mine ? "justify-end" : "justify-start"}`}>
                   <p
-                    className={`max-w-[82%] whitespace-pre-wrap break-words rounded-[var(--r-lg)] px-3.5 py-2.5 text-[15px] leading-snug ${
+                    className={`max-w-[82%] whitespace-pre-wrap rounded-[var(--r-lg)] px-3.5 py-2.5 text-[15px] leading-snug [overflow-wrap:anywhere] ${
                       mine ? "bg-accent text-accent-ink" : "border border-line bg-bg-3 text-fg"
                     } ${mine && endsGroup ? "rounded-br-[var(--r-xs)]" : ""} ${!mine && endsGroup ? "rounded-bl-[var(--r-xs)]" : ""}`}
                   >
