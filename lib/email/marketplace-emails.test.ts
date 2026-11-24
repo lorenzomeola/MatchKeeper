@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { CHAT_DELAY_MS, CHAT_THROTTLE_MS, chatKey, chatNoticeAllowed, readAfter } from "./chat-rules.ts";
+import { CHAT_DELAY_MS, CHAT_THROTTLE_MS, adminSupportKey, chatKey, chatNoticeAllowed, readAfter, supportKey } from "./chat-rules.ts";
 import type { MarketplaceTemplateData } from "./marketplace-templates.ts";
 import { renderEmail } from "./templates.ts";
 
@@ -16,6 +16,8 @@ const SAMPLES: MarketplaceTemplateData = {
   review_received_keeper: { teamName: "Sunday FC", rating: 4, comment: "Great", pitch: "Hackney Marshes", profileUrl: url },
   chat_unread: { senderName: "Sunday FC", pitch: "Hackney Marshes", chatUrl: url },
   keeper_info_request: { question: "Where have you played?\nWhich days can you play?", replyTo: "admin@test.dev", profileUrl: url },
+  support_unread: { chatUrl: url },
+  match_digest_keeper: { count: 8, matches: ["Sat 10 Oct, 10:00 to 11:00 · Hackney Marshes · 7-a-side"], browseUrl: url, profileUrl: "https://app.test/profile" },
 };
 
 test("todas las plantillas de marketplace se generan con asunto, texto y enlace", () => {
@@ -84,6 +86,27 @@ test("pregunta del admin: cada linea es un parrafo y las respuestas van al admin
 
 test("las demas plantillas no llevan reply-to", () => {
   assert.equal(renderEmail("chat_unread", SAMPLES.chat_unread, ctx).replyTo, undefined);
+  assert.equal(renderEmail("support_unread", SAMPLES.support_unread, ctx).replyTo, undefined);
+});
+
+test("claves de los avisos del chat con MatchKeeper", () => {
+  assert.equal(supportKey("k1"), "support_unread:k1:");
+  assert.equal(adminSupportKey("k1"), "admin:support_reply:k1:");
+});
+
+test("resumen semanal: lista, resto y como darse de baja", () => {
+  const r = renderEmail("match_digest_keeper", SAMPLES.match_digest_keeper, ctx);
+  assert.equal(r.subject, "8 open matches are looking for a keeper");
+  assert.ok(r.text.includes("Hackney Marshes · 7-a-side"));
+  assert.ok(r.text.includes("And 7 more on the map."));
+  assert.ok(r.text.includes("turn it off in your profile: https://app.test/profile"));
+
+  const one = renderEmail("match_digest_keeper", { ...SAMPLES.match_digest_keeper, count: 1 }, ctx);
+  assert.equal(one.subject, "1 open match is looking for a keeper");
+  assert.ok(!one.text.includes("more on the map"));
+
+  const evil = renderEmail("match_digest_keeper", { ...SAMPLES.match_digest_keeper, matches: ["<b>x</b> Pitch"] }, ctx);
+  assert.ok(!evil.html.includes("<b>x</b>"));
 });
 
 test("aprobacion de keeper: el texto depende del modo de pagos conocido", () => {

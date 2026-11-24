@@ -15,7 +15,7 @@ import { LogOutIcon, MoreIcon, PlusIcon, ShieldCheckIcon } from "@/components/pl
 import { PaymentModeNotice } from "@/components/platform/payment-mode-notice";
 import { ThemeToggle } from "@/components/platform/theme";
 
-export type ShellBadges = { unread: number; pending: number; reports: number };
+export type ShellBadges = { unread: number; pending: number; reports: number; support: number };
 
 type ShellUser = { name: string; avatarUrl: string | null; roleLabel: string };
 
@@ -32,6 +32,7 @@ function countFor(item: NavItem, badges: ShellBadges) {
   if (item.badge === "unread") return badges.unread;
   if (item.badge === "pending") return badges.pending;
   if (item.badge === "reports") return badges.reports;
+  if (item.badge === "support") return badges.support;
   return 0;
 }
 
@@ -145,6 +146,9 @@ export function AppShell({
     const channel = supabase
       .channel("shell-unread")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
+        if ((payload.new as { sender_id?: string }).sender_id !== userId) router.refresh();
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "support_messages" }, (payload) => {
         if ((payload.new as { sender_id?: string }).sender_id !== userId) router.refresh();
       })
       .subscribe();

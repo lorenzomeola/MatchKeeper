@@ -38,7 +38,7 @@ export function InfoRequestControl({ profileId, name, asked }: { profileId: stri
         onClick={() => setOpen(true)}
         className="inline-flex min-h-12 w-full items-center justify-center rounded-[var(--r-md)] border border-line-strong px-5 text-[15px] font-medium text-fg transition-colors duration-200 hover:border-accent"
       >
-        {asked ? "Ask another question" : "Ask for more info"}
+        {asked ? "Ask again by email" : "Ask by email"}
       </button>
 
       <Sheet open={open} title={`Ask ${name} a question`} onClose={() => !pending && setOpen(false)}>

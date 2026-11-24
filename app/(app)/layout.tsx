@@ -5,6 +5,7 @@ import { AppShell } from "@/components/app/app-shell";
 import type { NavVariant } from "@/components/app/nav-config";
 import { ThemeScope } from "@/components/platform/theme";
 import { loadUnreadCount } from "@/lib/data/messages";
+import { loadSupportUnread } from "@/lib/data/support";
 import { getPaymentMode } from "@/lib/payments/mode";
 
 // Sin viewport-fit=cover: con él, iOS Safari ancla la barra fija inferior bajo su propia barra de herramientas y queda oculta al hacer scroll hacia arriba.
@@ -49,7 +50,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   const roleLabel = isKeeper ? "Goalkeeper" : profile?.player_kind === "team" ? "Team" : "Player";
-  const unread = await loadUnreadCount();
+  const [unread, supportUnread] = await Promise.all([loadUnreadCount(), loadSupportUnread(isAdmin)]);
   const paymentMode = await getPaymentMode();
 
   return (
@@ -64,7 +65,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             avatarUrl: profile?.avatar_url ?? null,
             roleLabel,
           }}
-          badges={{ unread, pending, reports }}
+          badges={{ unread: unread + supportUnread.keeper, pending, reports, support: supportUnread.inbox }}
           paymentsEnabled={paymentMode === "paid"}
           paymentModeUnavailable={paymentMode === "unavailable"}
         >
