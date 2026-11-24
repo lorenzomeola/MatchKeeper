@@ -10,6 +10,15 @@ import { SUPPORT_TEMPLATES, fillTemplate, type SupportVars } from "@/lib/support
 
 const template = (id: string) => SUPPORT_TEMPLATES.find((t) => t.id === id)!.body;
 
+type BroadcastTemplate = "open_matches" | "urgent_match" | "welcome" | "inactive";
+
+const OPTIONS: { id: BroadcastTemplate; label: string; hint: string }[] = [
+  { id: "open_matches", label: "Open matches", hint: "Tells them how many matches need a keeper right now, with a link to the map." },
+  { id: "urgent_match", label: "Urgent match", hint: "Announces one specific match that needs a keeper soon." },
+  { id: "welcome", label: "Welcome", hint: "For newly approved keepers: they can start applying." },
+  { id: "inactive", label: "Haven't seen you", hint: "Asks keepers who stopped applying what is getting in the way." },
+];
+
 /** El mismo mensaje a todos los porteros aprobados, cada uno en su propio hilo. */
 export function SupportBroadcast({
   approvedCount,
@@ -25,10 +34,28 @@ export function SupportBroadcast({
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [templateId, setTemplateId] = useState<BroadcastTemplate>("open_matches");
+  const [matchId, setMatchId] = useState("");
   const [text, setText] = useState(() => fillTemplate(template("open_matches"), vars));
+  const [edited, setEdited] = useState(false);
   const [pending, startTransition] = useTransition();
 
-  const choices = SUPPORT_TEMPLATES.filter((t) => t.stage === "approved" && t.id !== "urgent_match");
+  const options = OPTIONS.filter((o) => o.id !== "urgent_match" || urgentMatches.length > 0);
+  const selected = OPTIONS.find((o) => o.id === templateId)!;
+
+  function draftFor(id: BroadcastTemplate, match: string) {
+    if (id !== "urgent_match") return fillTemplate(template(id), vars);
+    const m = urgentMatches.find((u) => u.id === match);
+    return m ? fillTemplate(template(id), { ...vars, pitch: m.pitch, when: m.when, matchLink: m.url }) : "";
+  }
+
+  function choose(id: BroadcastTemplate, match = matchId) {
+    setTemplateId(id);
+    setMatchId(match);
+    setText(draftFor(id, match));
+    setEdited(false);
+    setConfirming(false);
+  }
 
   function send() {
     startTransition(async () => {
@@ -68,35 +95,32 @@ export function SupportBroadcast({
         <p className="pl-prose text-[15px]">
           Each keeper gets it in their own conversation with MatchKeeper. <code>{"{name}"}</code> becomes their first name.
         </p>
-        <ul className="mt-3 flex flex-wrap gap-1.5">
-          {choices.map((t) => (
-            <li key={t.id}>
-              <button
-                type="button"
-                onClick={() => setText(fillTemplate(t.body, vars))}
-                className="rounded-[var(--r-xs)] bg-surface-2 px-2.5 py-1.5 text-xs font-medium text-fg-2 transition-colors duration-200 hover:text-fg"
-              >
-                {t.label}
-              </button>
-            </li>
+
+        <label htmlFor="broadcast-template" className="mt-4 block text-sm font-medium text-fg">
+          1. Template
+        </label>
+        <select
+          id="broadcast-template"
+          value={templateId}
+          onChange={(e) => choose(e.target.value as BroadcastTemplate)}
+          className="pl-input mt-1.5"
+        >
+          {options.map((o) => (
+            <option key={o.id} value={o.id}>
+              {o.label}
+            </option>
           ))}
-        </ul>
-        {urgentMatches.length > 0 && (
+        </select>
+        <p className="mt-1.5 text-[13px] text-muted">{selected.hint}</p>
+
+        {templateId === "urgent_match" && (
           <>
-            <label htmlFor="broadcast-urgent" className="mt-4 block text-sm font-medium text-fg">
-              Urgent match
+            <label htmlFor="broadcast-match" className="mt-4 block text-sm font-medium text-fg">
+              2. Match to announce
             </label>
-            <select
-              id="broadcast-urgent"
-              defaultValue=""
-              onChange={(e) => {
-                const m = urgentMatches.find((u) => u.id === e.target.value);
-                if (m) setText(fillTemplate(template("urgent_match"), { ...vars, pitch: m.pitch, when: m.when, matchLink: m.url }));
-              }}
-              className="pl-input mt-1.5"
-            >
+            <select id="broadcast-match" value={matchId} onChange={(e) => choose("urgent_match", e.target.value)} className="pl-input mt-1.5">
               <option value="" disabled>
-                Pick a match to announce
+                Pick a match
               </option>
               {urgentMatches.map((m) => (
                 <option key={m.id} value={m.id}>
@@ -106,14 +130,30 @@ export function SupportBroadcast({
             </select>
           </>
         )}
-        <label htmlFor="broadcast-text" className="mt-4 block text-sm font-medium text-fg">
-          Message
-        </label>
+
+        <div className="mt-4 flex items-baseline justify-between gap-3">
+          <label htmlFor="broadcast-text" className="block text-sm font-medium text-fg">
+            {templateId === "urgent_match" ? "3." : "2."} Message
+          </label>
+          {edited ? (
+            <button
+              type="button"
+              onClick={() => choose(templateId)}
+              className="text-[13px] font-medium text-accent-strong underline underline-offset-4"
+            >
+              Edited · reset to template
+            </button>
+          ) : (
+            <span className="text-[13px] text-muted">From template: {selected.label}</span>
+          )}
+        </div>
         <textarea
           id="broadcast-text"
           value={text}
+          placeholder={templateId === "urgent_match" && !matchId ? "Pick a match first." : undefined}
           onChange={(e) => {
             setText(e.target.value);
+            setEdited(true);
             setConfirming(false);
           }}
           maxLength={1000}
