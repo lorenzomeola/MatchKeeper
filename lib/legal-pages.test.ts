@@ -39,7 +39,9 @@ for (const payments of [false, true]) {
 
   test(`${mode}: privacy discloses searches, public photos and manual rights handling`, () => {
     const html = renderLegalPage("privacy", payments);
-    assert.match(html, /data-updated="2026-10-26"/);
+    assert.match(html, /data-updated="2026-11-24"/);
+    assert.match(html, /MatchKeeper team&quot; conversation/);
+    assert.match(html, /turn the weekly email\s+off at any time in your profile/);
     assert.match(html, /pitch or address search terms/);
     assert.match(html, /store its address and coordinates/);
     assert.match(html, /anyone with the image URL can view them/);
