@@ -71,11 +71,13 @@ export function KeeperReviewCard({ p, requests = [] }: { p: AdminProfile; reques
             <ArrowRightIcon className="h-4 w-4" />
           </Link>
           <ApprovalControl profileId={p.id} name={p.display_name} approved={p.approved} missing={missing} />
-          {!p.approved && (
-            <div className="sm:col-span-2">
-              <InfoRequestControl profileId={p.id} name={p.display_name} asked={requests.length > 0} />
-            </div>
-          )}
+          <Link
+            href={`/admin/inbox/${p.id}`}
+            className={`inline-flex min-h-12 items-center justify-center rounded-[var(--r-md)] border border-line-strong px-5 text-[15px] font-medium text-fg transition-colors duration-200 hover:border-accent ${p.approved ? "sm:col-span-2" : ""}`}
+          >
+            Message in the app
+          </Link>
+          {!p.approved && <InfoRequestControl profileId={p.id} name={p.display_name} asked={requests.length > 0} />}
         </div>
       </div>
     </article>

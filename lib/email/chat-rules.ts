@@ -15,3 +15,8 @@ export function readAfter(lastReadAt: Date | null, messageAt: Date): boolean {
 }
 
 export const chatKey = (applicationId: string, recipientId: string) => `chat_unread:${applicationId}:${recipientId}:`;
+
+/** Aviso al portero de un mensaje del equipo de MatchKeeper sin leer. */
+export const supportKey = (keeperId: string) => `support_unread:${keeperId}:`;
+/** Aviso al buzón de admins de una respuesta de un portero sin leer. */
+export const adminSupportKey = (keeperId: string) => `admin:support_reply:${keeperId}:`;

@@ -9,7 +9,7 @@
 --
 -- Qué borra
 --   Para todos los usuarios, también los que se quedan: partidos, aplicaciones, reservas, mensajes,
---   lecturas de chat, reseñas, denuncias, bloqueos y strikes.
+--   lecturas de chat, chat con MatchKeeper, reseñas, denuncias, bloqueos y strikes.
 --   De los usuarios que NO están en la lista: perfil, equipo, miembros de equipo y la cuenta de acceso
 --   (auth.users), incluidos los usuarios reales que se hayan registrado.
 -- Qué no toca
@@ -114,6 +114,8 @@ begin
     public.stripe_events,
     public.messages,
     public.message_reads,
+    public.support_messages,
+    public.support_threads,
     public.reports,
     public.blocks,
     public.strikes,

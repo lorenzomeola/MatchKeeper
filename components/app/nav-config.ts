@@ -30,7 +30,7 @@ export type NavItem = {
   primary?: boolean;
   /** Rutas hijas que no deben marcar este elemento como activo. */
   excludes?: string[];
-  badge?: "unread" | "pending" | "reports";
+  badge?: "unread" | "pending" | "reports" | "support";
   /** Solo tiene sentido con los pagos encendidos; en la beta sin pagos se oculta. */
   paymentsOnly?: boolean;
   /** Nombre que se muestra en la beta sin pagos, si es distinto. */
@@ -61,7 +61,8 @@ const GOALKEEPER: NavItem[] = [
 const ADMIN: NavItem[] = [
   { href: "/admin", label: "Overview", icon: GridIcon, tab: true },
   { href: "/admin/goalkeepers", label: "Keepers", icon: ShieldCheckIcon, tab: true, badge: "pending" },
-  { href: "/admin/users", label: "Users", icon: UsersIcon, tab: true },
+  { href: "/admin/inbox", label: "Inbox", icon: ChatIcon, tab: true, badge: "support" },
+  { href: "/admin/users", label: "Users", icon: UsersIcon },
   { href: "/admin/matches", label: "Matches", icon: ListIcon, tab: true },
   { href: "/admin/reports", label: "Reports", icon: FlagIcon, tab: true, badge: "reports" },
   { href: "/admin/payments", label: "Payments", freeLabel: "Bookings", icon: WalletIcon },

@@ -85,6 +85,8 @@ export const profiles = pgTable("profiles", {
   approved: boolean("approved").notNull().default(false),
   // acceso al panel /admin — se setea a mano en la DB, nunca desde el cliente.
   isAdmin: boolean("is_admin").notNull().default(false),
+  // porteros: recibir el resumen semanal de partidos abiertos (db/support-chat.sql).
+  matchDigest: boolean("match_digest").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -306,6 +308,35 @@ export const blocks = pgTable(
       .defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.blockerId, t.blockedId] })],
+);
+
+// Chat entre el buzón compartido de los admins y un portero: un hilo por portero (db/support-chat.sql).
+export const supportThreads = pgTable("support_threads", {
+  keeperId: uuid("keeper_id")
+    .primaryKey()
+    .references(() => profiles.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  lastMessageAt: timestamp("last_message_at", { withTimezone: true }).notNull().defaultNow(),
+  keeperReadAt: timestamp("keeper_read_at", { withTimezone: true }),
+  adminReadAt: timestamp("admin_read_at", { withTimezone: true }),
+});
+
+export const supportMessages = pgTable(
+  "support_messages",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    keeperId: uuid("keeper_id")
+      .notNull()
+      .references(() => supportThreads.keeperId, { onDelete: "cascade" }),
+    senderId: uuid("sender_id").references(() => profiles.id, { onDelete: "set null" }),
+    fromAdmin: boolean("from_admin").notNull(),
+    body: text("body").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("support_messages_keeper_created_idx").on(t.keeperId, t.createdAt),
+    check("support_messages_body_chk", sql`char_length(${t.body}) between 1 and 1000`),
+  ],
 );
 
 export const reports = pgTable("reports", {

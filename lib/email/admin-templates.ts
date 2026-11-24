@@ -10,6 +10,7 @@ export type AdminTemplateData = {
   admin_report: { reporterName: string; reportedName: string; reason: string; details: string | null; adminUrl: string };
   admin_keeper_standing: { keeperName: string; level: "review" | "suspended"; points: number; removalCandidate: boolean; adminUrl: string };
   admin_payment_problem: { kind: PaymentProblemKind; pitch: string; keeperName: string; teamName: string; detail: string | null; adminUrl: string };
+  admin_support_reply: { keeperName: string; adminUrl: string };
 };
 
 const REVIEW_REASONS: Record<string, string> = {
@@ -110,5 +111,13 @@ export const ADMIN_BUILDERS: { [K in keyof AdminTemplateData]: Builder<K> } = {
       ...(d.detail ? [`Error: ${d.detail}`] : []),
     ],
     cta: { label: "Open payments", url: d.adminUrl },
+  }),
+
+  admin_support_reply: (d) => ({
+    title: "A keeper replied",
+    subject: `[Admin] ${d.keeperName} replied in the inbox`,
+    paragraphs: [`${d.keeperName} replied to the MatchKeeper team in the app.`],
+    cta: { label: "Open the conversation", url: d.adminUrl },
+    note: "Only sent if no admin has read the reply after 10 minutes, at most once an hour per keeper.",
   }),
 };

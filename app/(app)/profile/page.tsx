@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { DigestToggle } from "@/components/app/digest-toggle";
 import { PageHeader } from "@/components/app/page-header";
 import { LogOutIcon } from "@/components/platform/icons";
 import { signOutAction } from "@/lib/actions/auth";
@@ -55,6 +56,8 @@ export default async function ProfilePage() {
         </Link>
       )}
       <ProfileForm role={role} userId={user.id} initial={valuesFromRow(profile, teamName)} inShell />
+
+      {role === "goalkeeper" && <DigestToggle initial={profile.match_digest !== false} />}
 
       <form action={signOutAction} className="mt-12 border-t border-line pt-6">
         <button

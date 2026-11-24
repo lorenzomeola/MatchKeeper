@@ -10,6 +10,8 @@ export type MarketplaceTemplateData = {
   review_received_keeper: { teamName: string; rating: number; comment: string | null; pitch: string; profileUrl: string };
   chat_unread: { senderName: string; pitch: string; chatUrl: string };
   keeper_info_request: { question: string; replyTo: string; profileUrl: string };
+  support_unread: { chatUrl: string };
+  match_digest_keeper: { count: number; matches: string[]; browseUrl: string; profileUrl: string };
 };
 
 type Ctx = { siteUrl: string };
@@ -108,4 +110,27 @@ export const MARKETPLACE_BUILDERS: { [K in keyof MarketplaceTemplateData]: Build
     note: "Your reply goes straight to the MatchKeeper team.",
     replyTo: d.replyTo,
   }),
+
+  support_unread: (d) => ({
+    title: "A message from MatchKeeper",
+    subject: "The MatchKeeper team sent you a message",
+    paragraphs: ["The MatchKeeper team sent you a message in the app. You can read it and reply there."],
+    cta: { label: "Read the message", url: d.chatUrl },
+    note: "We only email you about messages you haven't opened.",
+  }),
+
+  match_digest_keeper: (d) => {
+    const more = d.count - d.matches.length;
+    return {
+      title: "Matches looking for a keeper",
+      subject: d.count === 1 ? "1 open match is looking for a keeper" : `${d.count} open matches are looking for a keeper`,
+      paragraphs: [
+        d.count === 1 ? "This match still needs a keeper:" : "These matches still need a keeper:",
+        { quote: d.matches },
+        ...(more > 0 ? [`And ${more} more on the map.`] : []),
+      ],
+      cta: { label: "See open matches", url: d.browseUrl },
+      note: `You get this email on Wednesdays when there are matches you haven't applied to. You can turn it off in your profile: ${d.profileUrl}`,
+    };
+  },
 };
