@@ -22,7 +22,7 @@ export default async function AdminReportsPage({ searchParams }: { searchParams:
 
   return (
     <>
-      <PageHeader eyebrow="Admin" title="Reports" description="People reported from a conversation. Read what was said before you decide." />
+      <PageHeader eyebrow="Admin" title="Reports" description="People and goalkeeper clips reported by users. Check what was reported before you decide." />
       <Tabs base="/admin/reports" active={tab} tabs={TABS.map((t) => ({ value: t, label: LABEL[t], count: counts[t] }))} />
 
       {rows.length === 0 ? (
@@ -52,9 +52,15 @@ export default async function AdminReportsPage({ searchParams }: { searchParams:
                   <div className="mt-auto pt-4">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <ReportActions reportId={r.id} status={r.status} />
-                      <Link href={`/admin/reports/${r.id}`} className="inline-flex min-h-11 items-center text-sm font-semibold text-accent-strong underline underline-offset-4">
-                        Read the conversation
-                      </Link>
+                      {r.application_id ? (
+                        <Link href={`/admin/reports/${r.id}`} className="inline-flex min-h-11 items-center text-sm font-semibold text-accent-strong underline underline-offset-4">
+                          Read the conversation
+                        </Link>
+                      ) : (
+                        <Link href={`/admin/users/${r.reported_id}`} className="inline-flex min-h-11 items-center text-sm font-semibold text-accent-strong underline underline-offset-4">
+                          {r.reason === "Inappropriate clip" ? "See the clips" : "See the profile"}
+                        </Link>
+                      )}
                     </div>
                   </div>
                 </article>
