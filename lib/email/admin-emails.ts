@@ -25,9 +25,14 @@ export async function notifyAdminNewKeeper(profileId: string) {
 }
 
 export async function notifyAdminDeletionRequest(profileId: string) {
-  const { data: p } = await createAdminClient().from("profiles").select("display_name, role").eq("id", profileId).maybeSingle();
-  if (!p) return;
-  await toAdmin("admin_deletion_request", `admin:deletion:${profileId}`, {
+  const admin = createAdminClient();
+  const [{ data: p }, { data: req }] = await Promise.all([
+    admin.from("profiles").select("display_name, role").eq("id", profileId).maybeSingle(),
+    admin.from("deletion_requests").select("requested_at").eq("profile_id", profileId).maybeSingle(),
+  ]);
+  if (!p || !req) return;
+  // Si cancela y vuelve a pedirlo, es una solicitud nueva y el admin debe enterarse.
+  await toAdmin("admin_deletion_request", `admin:deletion:${profileId}:${req.requested_at}`, {
     name: p.display_name,
     role: p.role === "goalkeeper" ? "goalkeeper" : "player or team",
     adminUrl: adminUrl(`users/${profileId}`),
