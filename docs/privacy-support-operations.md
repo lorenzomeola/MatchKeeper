@@ -42,6 +42,12 @@ Do not commit request contents, email addresses, exports, credentials or identit
 
 ## 3. Erasure and account closure
 
+Users can start a request themselves with "Request account deletion" in their profile (table
+`deletion_requests`, db/deletion-requests.sql), or by email. The in-app request only records the
+intent and emails the admin; it never deletes anything. The admin sees a "Deletion requested" badge
+in Users and a banner on the user's page. The one-month deadline starts at `requested_at`. Remove the
+`deletion_requests` row only as part of finishing the erasure (it cascades with the profile).
+
 ### Scope and authorisation
 
 1. Confirm the project and account UUID explicitly: Preview is not Production. Obtain explicit

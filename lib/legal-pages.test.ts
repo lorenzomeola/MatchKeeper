@@ -51,7 +51,8 @@ for (const payments of [false, true]) {
     assert.match(html, /anyone with the image URL can view them/);
     assert.match(html, /Cloudflare Email Routing and Google Gmail/);
     assert.match(html, /normally one month/);
-    assert.match(html, /no self-service/);
+    assert.match(html, /Request account deletion/);
+    assert.match(html, /not an immediate, automatic deletion/);
     assert.match(html, /There is no automatic|there is no automatic/);
     assert.match(html, /not covered by the exact-coordinate purge/);
     assert.match(html, /seven-day retention window/);

@@ -423,6 +423,16 @@ export const profileContacts = pgTable("profile_contacts", {
     .defaultNow(),
 });
 
+// Solicitud de borrado de cuenta: la crea el usuario y la ejecuta un admin a mano (db/deletion-requests.sql).
+export const deletionRequests = pgTable("deletion_requests", {
+  profileId: uuid("profile_id")
+    .primaryKey()
+    .references(() => profiles.id, { onDelete: "cascade" }),
+  requestedAt: timestamp("requested_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 // Registro de auditoría por reserva: solo se inserta, nunca se edita. Base de la evidencia de disputas.
 export const bookingEvents = pgTable("booking_events", {
   id: uuid("id").primaryKey().defaultRandom(),

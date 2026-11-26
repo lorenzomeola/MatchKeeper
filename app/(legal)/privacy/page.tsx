@@ -228,8 +228,10 @@ export default function PrivacyPage() {
         possible and tell us what you are requesting. We may ask for proportionate information to
         verify your identity; do not send passwords or identity documents unless we explain why
         they are necessary and provide a suitable way to send them. Some records may need to be retained
-        where required for legal claims, security or dispute handling. There is no self-service
-        account deletion in the app; a request is not an immediate deletion command.
+        where required for legal claims, security or dispute handling. You can ask for your account
+        to be deleted from your profile (&quot;Request account deletion&quot;) or by email. A
+        person handles each request: it is not an immediate, automatic deletion, and you can cancel
+        it from your profile until it is completed.
       </p>
       <p>
         We respond to data-rights requests without undue delay and within the applicable legal

@@ -59,7 +59,8 @@ export default function TermsPage() {
         </li>
         <li>You are responsible for anything that happens under your account.</li>
         <li>
-          To request account closure or deletion of personal data, email{" "}
+          To request account closure or deletion of personal data, use &quot;Request account
+          deletion&quot; in your profile or email{" "}
           <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>. Requests are handled manually;
           see the <a href="/privacy">Privacy Policy</a> for verification, retention and your rights.
           Closing an account does not by itself cancel an upcoming booking: tell us about any

@@ -24,6 +24,16 @@ export async function notifyAdminNewKeeper(profileId: string) {
   await toAdmin("admin_new_keeper", `admin:new_keeper:${profileId}`, { name: p.display_name, city: p.city, adminUrl: adminUrl("goalkeepers") });
 }
 
+export async function notifyAdminDeletionRequest(profileId: string) {
+  const { data: p } = await createAdminClient().from("profiles").select("display_name, role").eq("id", profileId).maybeSingle();
+  if (!p) return;
+  await toAdmin("admin_deletion_request", `admin:deletion:${profileId}`, {
+    name: p.display_name,
+    role: p.role === "goalkeeper" ? "goalkeeper" : "player or team",
+    adminUrl: adminUrl(`users/${profileId}`),
+  });
+}
+
 export async function notifyAdminDispute(d: { stripeId: string; amountPence: number; reason: string; status: string; dueBy: Date | null; matched: boolean }) {
   await toAdmin("admin_dispute", `admin:dispute:${d.stripeId}`, {
     inquiry: d.status.startsWith("warning_"),

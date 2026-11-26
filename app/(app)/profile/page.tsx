@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { DigestToggle } from "@/components/app/digest-toggle";
+import { DeleteAccount } from "@/components/app/delete-account";
 import { PageHeader } from "@/components/app/page-header";
 import { LogOutIcon } from "@/components/platform/icons";
 import { signOutAction } from "@/lib/actions/auth";
@@ -38,6 +39,7 @@ export default async function ProfilePage() {
   }
   const contact = await loadMyContact(supabase, user.id);
   const videos = role === "goalkeeper" ? await loadKeeperVideos(user.id) : [];
+  const { data: deletion } = await supabase.from("deletion_requests").select("requested_at").eq("profile_id", user.id).maybeSingle();
 
   return (
     <>
@@ -71,6 +73,8 @@ export default async function ProfilePage() {
           Log out
         </button>
       </form>
+
+      <DeleteAccount requestedAt={deletion?.requested_at ?? null} />
     </>
   );
 }

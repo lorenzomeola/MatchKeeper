@@ -14,6 +14,7 @@ const SAMPLES: AdminTemplateData = {
   admin_keeper_standing: { keeperName: "Sam", level: "suspended", points: 3, removalCandidate: false, adminUrl: url },
   admin_payment_problem: { kind: "cancellation", pitch: "Hackney Marshes", keeperName: "Sam", teamName: "Sunday FC", detail: "No such charge", adminUrl: url },
   admin_support_reply: { keeperName: "Sam", adminUrl: url },
+  admin_deletion_request: { name: "Sam", role: "goalkeeper", adminUrl: url },
 };
 
 test("todas las plantillas de admin se generan con asunto [Admin], texto y enlace", () => {

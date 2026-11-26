@@ -12,7 +12,7 @@ import { loadUserDetail, profileRating } from "@/lib/data/admin";
 import { loadKeeperVideos } from "@/lib/data/keeper-videos";
 import { KeeperVideos } from "@/components/app/keeper-videos";
 import { RemoveClipButton } from "@/components/app/clip-actions";
-import { dateTile } from "@/lib/format";
+import { dateTile, longDate } from "@/lib/format";
 import { formatUkMobile } from "@/lib/phone";
 
 export const metadata: Metadata = { title: "User", robots: { index: false } };
@@ -45,6 +45,14 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
         <ArrowLeftIcon className="h-4 w-4" />
         Users
       </Link>
+
+      {p.deletion_requested_at && (
+        <p className="mb-4 rounded-[var(--r-md)] border border-danger/40 bg-[color-mix(in_oklab,var(--danger)_8%,transparent)] px-4 py-3 text-sm leading-relaxed text-fg-2">
+          <span className="font-semibold text-fg">Asked to delete their account on {longDate(p.deletion_requested_at)}.</span> Reply
+          within one month. Check upcoming bookings, open reports and disputes first, then follow the erasure steps in
+          docs/privacy-support-operations.md.
+        </p>
+      )}
 
       <section className="pl-surface rounded-[var(--r-xl)] p-5 sm:p-7">
         {/* Identidad a la izquierda y la decisión a la derecha, centradas entre sí. */}
