@@ -19,12 +19,12 @@ export default async function MapPage() {
   const isKeeper = me?.role === "goalkeeper";
   const matches = await loadExplore(user.id, isKeeper, me?.category ?? "men");
   const seenAt: string | null = me?.explore_seen_at ?? null;
-  const hasNew = isKeeper && me?.approved === true && matches.some((m) => m.kind === "open" && isNewSince(m.created_at, seenAt));
+  const newIds = isKeeper ? matches.filter((m) => m.kind === "open" && isNewSince(m.created_at, seenAt)).map((m) => m.id) : [];
 
   return (
     <>
-      {hasNew && <MarkSeen />}
-      <ExploreMap matches={matches} isKeeper={isKeeper} approved={me?.approved === true} />
+      {newIds.length > 0 && <MarkSeen />}
+      <ExploreMap matches={matches} isKeeper={isKeeper} approved={me?.approved === true} newIds={newIds} />
     </>
   );
 }

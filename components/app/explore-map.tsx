@@ -18,8 +18,8 @@ import { FORMAT_OPTIONS, SURFACE_OPTIONS } from "@/lib/match-options";
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
 
 type When = "any" | "week" | "weekend";
-type Filters = { when: When; format: string; surface: string; radius: string };
-const NO_FILTERS: Filters = { when: "any", format: "", surface: "", radius: "" };
+type Filters = { when: When; format: string; surface: string; radius: string; onlyNew: boolean };
+const NO_FILTERS: Filters = { when: "any", format: "", surface: "", radius: "", onlyNew: false };
 
 const PIN_BASE =
   "absolute left-0 top-0 inline-flex min-h-9 min-w-9 cursor-pointer items-center justify-center rounded-full px-3 text-xs font-bold leading-none shadow-[0_4px_14px_rgba(0,0,0,0.35)] transition-shadow duration-150";
@@ -42,6 +42,8 @@ const LEGEND: Record<"keeper" | "player", PinKind[]> = { keeper: ["open", "appli
 const pinClass = (kind: PinKind, selected: boolean) =>
   `${PIN_BASE} ${KIND[kind].pin} ${selected ? "ring-4 ring-white/50 brightness-110" : ""}`;
 
+const NEW_DOT = "absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full bg-[var(--accent)] ring-2 ring-[var(--bg)]";
+
 function matchesWhen(startsAt: string, when: When, today: string) {
   if (when === "any") return true;
   const day = londonDay(startsAt);
@@ -54,13 +56,21 @@ export function ExploreMap({
   matches,
   isKeeper,
   approved,
+  newIds = [],
 }: {
   matches: ExploreMatch[];
   isKeeper: boolean;
   approved: boolean;
+  /** Partidos abiertos publicados desde la última visita del portero a Explore. */
+  newIds?: string[];
 }) {
   const { theme } = useTheme();
   const [today] = useState(todayLondon);
+  // Al marcar Explore como visto la página se refresca sin ellos: se conservan los de esta visita.
+  const [fresh, setFresh] = useState(() => new Set(newIds));
+  if (newIds.some((id) => !fresh.has(id))) setFresh(new Set([...fresh, ...newIds]));
+  const freshCount = matches.filter((m) => m.kind === "open" && fresh.has(m.id)).length;
+  const isNew = (m: ExploreMatch) => m.kind === "open" && fresh.has(m.id);
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
   const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
   const [locating, setLocating] = useState(false);
@@ -84,6 +94,7 @@ export function ExploreMap({
   const visible = useMemo(() => {
     const radius = Number(filters.radius);
     const list = withDistance.filter(({ m, km }) => {
+      if (filters.onlyNew && !(m.kind === "open" && fresh.has(m.id))) return false;
       if (!matchesWhen(m.starts_at, filters.when, today)) return false;
       if (filters.format && String(m.format) !== filters.format) return false;
       if (filters.surface && m.surface !== filters.surface) return false;
@@ -93,9 +104,9 @@ export function ExploreMap({
     return userPos
       ? [...list].sort((a, b) => (a.km ?? 0) - (b.km ?? 0))
       : list;
-  }, [withDistance, filters, today, userPos]);
+  }, [withDistance, filters, today, userPos, fresh]);
 
-  const activeFilters = [filters.when !== "any", filters.format, filters.surface, filters.radius].filter(Boolean).length;
+  const activeFilters = [filters.when !== "any", filters.format, filters.surface, filters.radius, filters.onlyNew].filter(Boolean).length;
   const selected = visible.find(({ m }) => m.id === selectedId) ?? null;
   const listed = selected ? [selected] : visible;
   const fitKey = visible.map(({ m }) => m.id).join(",");
@@ -152,6 +163,13 @@ export function ExploreMap({
       el.textContent = clockTime(m.starts_at);
       el.setAttribute("aria-label", `${m.address ?? "Match"}, ${timeRange(m.starts_at, m.ends_at)}`);
       el.className = pinClass(m.kind, false);
+      if (m.kind === "open" && fresh.has(m.id)) {
+        const dot = document.createElement("span");
+        dot.className = NEW_DOT;
+        dot.setAttribute("aria-hidden", "true");
+        el.appendChild(dot);
+        el.setAttribute("aria-label", `New: ${el.getAttribute("aria-label")}`);
+      }
       el.addEventListener("click", (e) => {
         e.stopPropagation();
         onSelectRef.current(m.id);
@@ -159,7 +177,7 @@ export function ExploreMap({
       const marker = new mapboxgl.Marker({ element: el }).setLngLat([m.lng, m.lat]).addTo(map);
       store.set(m.id, { marker, el, kind: m.kind });
     }
-  }, [visible]);
+  }, [visible, fresh]);
 
   /* Encuadre: al cargar y al cambiar filtros. */
   useEffect(() => {
@@ -302,7 +320,16 @@ export function ExploreMap({
           </button>
         )}
 
-        <Legend isKeeper={isKeeper} />
+        <Legend isKeeper={isKeeper} showNew={freshCount > 0} />
+
+        {isKeeper && freshCount > 0 && (
+          <NewToggle
+            count={freshCount}
+            on={filters.onlyNew}
+            onToggle={() => setFilters((f) => ({ ...f, onlyNew: !f.onlyNew }))}
+            className="mt-4"
+          />
+        )}
 
         <div className="mt-4 flex min-h-11 items-center justify-between gap-3" aria-live="polite">
           <p className="text-[13px] text-muted">
@@ -321,7 +348,7 @@ export function ExploreMap({
           )}
         </div>
 
-        <ul className="mt-3 min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain pb-4">
+        <ul className="mt-1 min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain pb-4 pt-3">
           {visible.length === 0 && (
             <li className="rounded-[var(--r-lg)] border border-dashed border-line-strong px-5 py-8 text-center">
               <p className="text-[15px] font-semibold text-fg">
@@ -347,7 +374,14 @@ export function ExploreMap({
           )}
           {listed.map(({ m, km }) => (
             <li key={m.id}>
-              <ExploreCard match={m} km={km} selected={m.id === selectedId} onSelect={() => select(m.id)} onOpenMap={() => setView("map")} />
+              <ExploreCard
+                match={m}
+                km={km}
+                isNew={isNew(m)}
+                selected={m.id === selectedId}
+                onSelect={() => select(m.id)}
+                onOpenMap={() => setView("map")}
+              />
             </li>
           ))}
         </ul>
@@ -361,18 +395,28 @@ export function ExploreMap({
 
         <div className="pointer-events-none absolute inset-x-3 top-3 flex items-center justify-between gap-2 lg:hidden">
           {isKeeper ? (
-            <button
-              type="button"
-              onClick={() => setFilterSheet(true)}
-              className="pointer-events-auto pl-glass inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-medium text-fg"
-            >
-              Filters
-              {activeFilters > 0 && (
-                <span className="pl-tnum grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1 text-[11px] font-bold text-accent-ink">
-                  {activeFilters}
-                </span>
+            <span className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setFilterSheet(true)}
+                className="pointer-events-auto pl-glass inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-medium text-fg"
+              >
+                Filters
+                {activeFilters > 0 && (
+                  <span className="pl-tnum grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1 text-[11px] font-bold text-accent-ink">
+                    {activeFilters}
+                  </span>
+                )}
+              </button>
+              {freshCount > 0 && (
+                <NewToggle
+                  count={freshCount}
+                  on={filters.onlyNew}
+                  onToggle={() => setFilters((f) => ({ ...f, onlyNew: !f.onlyNew }))}
+                  className="pointer-events-auto"
+                />
               )}
-            </button>
+            </span>
           ) : (
             <span />
           )}
@@ -393,6 +437,7 @@ export function ExploreMap({
               <div className="flex items-start gap-3">
                 <DateTile iso={selected.m.starts_at} />
                 <div className="min-w-0 flex-1">
+                  {isNew(selected.m) && <NewBadge className="mb-1" />}
                   <p className="truncate text-[15px] font-semibold text-fg">{selected.m.address ?? "Pitch to be confirmed"}</p>
                   <p className="text-sm text-muted">
                     {timeRange(selected.m.starts_at, selected.m.ends_at)}
@@ -430,7 +475,7 @@ export function ExploreMap({
   );
 }
 
-function Legend({ isKeeper }: { isKeeper: boolean }) {
+function Legend({ isKeeper, showNew }: { isKeeper: boolean; showNew: boolean }) {
   return (
     <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-muted" aria-label="Legend">
       {LEGEND[isKeeper ? "keeper" : "player"].map((kind) => (
@@ -439,19 +484,53 @@ function Legend({ isKeeper }: { isKeeper: boolean }) {
           {KIND[kind].label}
         </li>
       ))}
+      {isKeeper && showNew && (
+        <li className="flex items-center gap-1.5">
+          <span aria-hidden className="relative h-3 w-3 rounded-full bg-success">
+            <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-accent" />
+          </span>
+          New since your last visit
+        </li>
+      )}
     </ul>
+  );
+}
+
+function NewBadge({ className = "" }: { className?: string }) {
+  return (
+    <span className={`inline-flex rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-accent-ink ${className}`}>
+      New
+    </span>
+  );
+}
+
+function NewToggle({ count, on, onToggle, className = "" }: { count: number; on: boolean; onToggle: () => void; className?: string }) {
+  return (
+    <button
+      type="button"
+      aria-pressed={on}
+      onClick={onToggle}
+      className={`inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm font-semibold transition-colors duration-200 ${
+        on ? "!border-accent bg-accent text-accent-ink" : "!border-accent/60 bg-[var(--bg-2)] text-accent-strong"
+      } ${className}`}
+    >
+      <span aria-hidden className={`h-2 w-2 rounded-full ${on ? "bg-[var(--accent-ink)]" : "bg-accent"}`} />
+      {on ? `Showing ${count} new` : `${count} new`}
+    </button>
   );
 }
 
 function ExploreCard({
   match,
   km,
+  isNew,
   selected,
   onSelect,
   onOpenMap,
 }: {
   match: ExploreMatch;
   km: number | null;
+  isNew: boolean;
   selected: boolean;
   onSelect: () => void;
   onOpenMap: () => void;
@@ -469,10 +548,11 @@ function ExploreCard({
         }
       }}
       aria-pressed={selected}
-      className={`pl-surface block cursor-pointer rounded-[var(--r-lg)] p-4 transition-[border-color,box-shadow] duration-200 ${
-        selected ? "!border-accent shadow-[var(--shadow-glow)]" : ""
+      className={`pl-surface relative block cursor-pointer rounded-[var(--r-lg)] p-4 transition-[border-color,box-shadow] duration-200 ${
+        selected ? "!border-accent shadow-[var(--shadow-glow)]" : isNew ? "!border-accent/70" : ""
       }`}
     >
+      {isNew && <NewBadge className="absolute -top-2.5 left-4" />}
       <div className="flex items-start gap-3.5">
         <DateTile iso={match.starts_at} />
         <div className="min-w-0 flex-1">
