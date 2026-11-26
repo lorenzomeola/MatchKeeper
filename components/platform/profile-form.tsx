@@ -237,7 +237,7 @@ export function ProfileForm({
             value={v.instagram}
             onChange={(e) => set("instagram", e.target.value)}
             error={fe.instagram}
-            hint="Only our team sees it, to help verify you. Teams never see it."
+            hint="Only the MatchKeeper team sees it, to verify your profile. Players and teams never see it."
           />
         )}
 

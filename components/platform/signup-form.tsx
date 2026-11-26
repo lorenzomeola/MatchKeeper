@@ -171,7 +171,7 @@ export function SignupForm({ role, initialCategory = null }: { role: Role; initi
         {role === "goalkeeper" && (
           <TextField
             label="Instagram (optional)"
-            hint="Only our team sees it, to help verify you. Teams never see it."
+            hint="Only the MatchKeeper team sees it, to verify your profile. Players and teams never see it."
             name="instagram"
             type="text"
             autoComplete="off"
