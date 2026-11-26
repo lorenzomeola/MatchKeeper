@@ -146,7 +146,7 @@ export function ApplicantList({
               </div>
             </div>
 
-            {a.bio && <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-muted">{a.bio}</p>}
+            {a.bio && <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-muted [overflow-wrap:anywhere]">{a.bio}</p>}
             {a.message && (
               <p className="mt-3 rounded-[var(--r-md)] bg-surface px-3 py-2.5 text-sm leading-snug text-fg-2">
                 <span className="mb-0.5 block text-xs font-medium text-muted">Their message</span>

@@ -44,7 +44,7 @@ export function KeeperReviewCard({ p, requests = [] }: { p: AdminProfile; reques
 
       <div className="mt-5 flex-1 rounded-[var(--r-md)] bg-surface px-4 py-3">
         <p className="text-xs font-medium text-muted">Bio</p>
-        <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-fg-2">{p.bio?.trim() || "No bio yet."}</p>
+        <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-fg-2 [overflow-wrap:anywhere]">{p.bio?.trim() || "No bio yet."}</p>
       </div>
 
       {requests.length > 0 && (
