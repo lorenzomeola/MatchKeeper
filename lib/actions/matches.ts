@@ -91,6 +91,7 @@ export async function createMatchAction(
       lng,
       format,
       surface,
+      // category: la pone un trigger con la del perfil que publica.
       level: isLevel(level) ? level : null,
       budget_suggested: budget,
       keepers_needed: keepersNeeded,

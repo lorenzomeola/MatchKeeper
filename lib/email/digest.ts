@@ -1,4 +1,5 @@
 import "server-only";
+import { sameCategory } from "@/lib/profile";
 import { appUrl } from "@/lib/payments/app-url";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
@@ -21,20 +22,20 @@ export async function sendMatchDigest(now = new Date()) {
   const horizon = new Date(now.getTime() + DIGEST_WINDOW_DAYS * 86_400_000).toISOString();
   const { data: matches, error } = await admin
     .from("matches")
-    .select("id, created_by, starts_at, ends_at, address, format")
+    .select("id, created_by, starts_at, ends_at, address, format, category")
     .eq("status", "open")
     .gt("starts_at", now.toISOString())
     .lte("starts_at", horizon)
     .order("starts_at", { ascending: true })
     .limit(200);
   if (error) throw error;
-  const open = (matches ?? []) as DigestMatch[];
+  const open = (matches ?? []) as (DigestMatch & { category: string | null })[];
   summary.openMatches = open.length;
   if (open.length === 0) return summary;
 
   const { data: keepers, error: keepersError } = await admin
     .from("profiles")
-    .select("id")
+    .select("id, category")
     .eq("role", "goalkeeper")
     .eq("approved", true)
     .eq("match_digest", true);
@@ -65,7 +66,8 @@ export async function sendMatchDigest(now = new Date()) {
   }
 
   for (const k of keepers) {
-    const picks = pickDigestMatches(open, k.id, applied.get(k.id) ?? new Set());
+    const joinable = open.filter((m) => sameCategory(m.category, k.category));
+    const picks = pickDigestMatches(joinable, k.id, applied.get(k.id) ?? new Set());
     if (picks.length === 0) {
       summary.nothingNew++;
       continue;

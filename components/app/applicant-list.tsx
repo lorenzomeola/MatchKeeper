@@ -21,6 +21,7 @@ export type Applicant = {
   level: string | null;
   experienceYears: number | null;
   ageRange: string | null;
+  clips: number;
 };
 
 const SORTS = [
@@ -35,14 +36,20 @@ export function ApplicantList({
   applicants,
   minutes,
   free = false,
+  newIds = [],
 }: {
   matchId: string;
   applicants: Applicant[];
   minutes: number;
   /** Beta sin pagos: elegir portero no cobra nada. */
   free?: boolean;
+  /** Aplicaciones que el equipo aún no había visto al abrir la página. */
+  newIds?: string[];
 }) {
   const [sort, setSort] = useState<Sort>("rate");
+  // Al marcarlas como vistas la página se refresca sin ellas: se conservan las de esta visita.
+  const [fresh, setFresh] = useState(() => new Set(newIds));
+  if (newIds.some((id) => !fresh.has(id))) setFresh(new Set([...fresh, ...newIds]));
 
   const sorted = [...applicants].sort((a, b) => {
     if (sort === "experience") return (b.experienceYears ?? -1) - (a.experienceYears ?? -1) || a.rate - b.rate;
@@ -50,9 +57,16 @@ export function ApplicantList({
     return a.rate - b.rate;
   });
   const lowest = Math.min(...applicants.map((a) => a.rate));
+  const freshCount = applicants.filter((a) => fresh.has(a.id)).length;
 
   return (
     <div>
+      {freshCount > 0 && (
+        <p className="mb-4 flex items-center gap-2 text-sm font-semibold text-accent-strong">
+          <span aria-hidden className="h-2 w-2 rounded-full bg-accent" />
+          {freshCount === 1 ? "1 new application since your last visit" : `${freshCount} new applications since your last visit`}
+        </p>
+      )}
       {applicants.length > 1 && (
         <label className="mb-4 flex items-center justify-between gap-3 text-sm text-muted">
           <span>{applicants.length} keepers applied</span>
@@ -76,7 +90,15 @@ export function ApplicantList({
 
       <ul className="grid grid-cols-1 gap-3">
         {sorted.map((a) => (
-          <li key={a.id} className="pl-surface rounded-[var(--r-lg)] p-4 sm:p-5">
+          <li
+            key={a.id}
+            className={`pl-surface relative rounded-[var(--r-lg)] p-4 sm:p-5 ${fresh.has(a.id) ? "!border-accent ring-1 ring-accent" : ""}`}
+          >
+            {fresh.has(a.id) && (
+              <span className="absolute -top-2.5 left-4 rounded-full bg-accent px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-accent-ink">
+                New
+              </span>
+            )}
             <div className="flex items-start gap-3.5">
               <Link href={`/keepers/${a.keeperId}`} aria-label={`${a.name}'s profile`} className="shrink-0">
                 <Avatar name={a.name} src={a.avatarUrl} size="lg" />
@@ -96,8 +118,18 @@ export function ApplicantList({
                   </div>
                 </div>
 
-                {(a.experienceYears != null || a.level || a.ageRange) && (
+                {(a.experienceYears != null || a.level || a.ageRange || a.clips > 0) && (
                 <ul className="mt-2.5 flex flex-wrap gap-1.5">
+                  {a.clips > 0 && (
+                    <li>
+                      <Link
+                        href={`/keepers/${a.keeperId}`}
+                        className="inline-flex rounded-[var(--r-xs)] bg-accent-soft px-2 py-1 text-xs font-semibold text-accent-strong"
+                      >
+                        Watch {a.clips} {a.clips === 1 ? "clip" : "clips"}
+                      </Link>
+                    </li>
+                  )}
                   {a.ageRange && (
                     <li className="rounded-[var(--r-xs)] bg-surface-2 px-2 py-1 text-xs font-medium text-fg-2">Age {a.ageRange}</li>
                   )}

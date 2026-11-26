@@ -1,7 +1,15 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { relativeDay } from "./format.ts";
-import { adminMatchStatus, bookingListStatus, groupByMonth, keeperMatchTab, matchListStatus } from "./match-list-status.ts";
+import { adminMatchStatus, bookingListStatus, groupByMonth, isNewSince, keeperMatchTab, matchListStatus } from "./match-list-status.ts";
+
+test("isNewSince: sin visita previa todo es nuevo; despues, solo lo posterior", () => {
+  assert.equal(isNewSince("2026-11-26T10:00:00Z", null), true);
+  assert.equal(isNewSince("2026-11-26T10:00:00Z", "2026-11-26T09:00:00Z"), true);
+  assert.equal(isNewSince("2026-11-26T10:00:00Z", "2026-11-26T10:00:00Z"), false);
+  assert.equal(isNewSince("2026-11-26T08:00:00Z", "2026-11-26T09:00:00Z"), false);
+  assert.equal(isNewSince(null, null), false);
+});
 
 test("played and cancelled matches do not retain a booked history badge", () => {
   assert.equal(matchListStatus("completed", ["completed"]).label, "Played");

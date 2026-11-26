@@ -16,7 +16,7 @@ export default async function NewMatchPage({ searchParams }: { searchParams: Pro
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
+  const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
   if (profile?.role === "goalkeeper") redirect("/dashboard");
 
   return (
@@ -26,7 +26,7 @@ export default async function NewMatchPage({ searchParams }: { searchParams: Pro
         title="Post a match"
         description="Add the details once. Keepers nearby apply with their own rate and you pick one."
       />
-      <NewMatchForm initialDate={initialDate} />
+      <NewMatchForm initialDate={initialDate} category={profile?.category ?? "men"} />
     </>
   );
 }

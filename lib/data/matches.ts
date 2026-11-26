@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import type { KeeperApplication, MatchRow, OwnMatch } from "@/lib/data/dashboard";
-import { keeperMatchTab } from "@/lib/match-list-status";
+import { isNewSince, keeperMatchTab } from "@/lib/match-list-status";
 
 export type MatchTab = "open" | "booked" | "past";
 export const TABS: MatchTab[] = ["open", "booked", "past"];
@@ -8,6 +8,8 @@ export const TABS: MatchTab[] = ["open", "booked", "past"];
 export type PlayerItem = {
   match: OwnMatch;
   pending: number;
+  /** Aplicaciones pendientes que el equipo aún no ha visto. */
+  fresh: number;
   /** Porteros ya reservados (con 2 plazas puede haber 0, 1 o 2). */
   keepers: { name: string; avatarUrl: string | null }[];
   bookingStatuses: string[];
@@ -23,7 +25,7 @@ export async function loadPlayerMatches(userId: string) {
 
   const { data } = await supabase
     .from("matches")
-    .select("*, applications(id, status, rate, goalkeeper_id)")
+    .select("*, applications(id, status, rate, goalkeeper_id, created_at)")
     .eq("created_by", userId)
     .order("starts_at", { ascending: true });
   const matches = (data ?? []) as OwnMatch[];
@@ -42,6 +44,7 @@ export async function loadPlayerMatches(userId: string) {
   const item = (m: OwnMatch): PlayerItem => ({
     match: m,
     pending: m.applications.filter((a) => a.status === "pending").length,
+    fresh: m.applications.filter((a) => a.status === "pending" && isNewSince(a.created_at, m.applications_seen_at)).length,
     bookingStatuses: (bookings ?? []).filter((b) => b.match_id === m.id).map((b) => b.status),
     keepers: acceptedOf(m)
       .map((a) => keepers.get(a.goalkeeper_id))

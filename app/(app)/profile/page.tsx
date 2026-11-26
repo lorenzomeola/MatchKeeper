@@ -7,7 +7,8 @@ import { LogOutIcon } from "@/components/platform/icons";
 import { signOutAction } from "@/lib/actions/auth";
 import { ProfileForm } from "@/components/platform/profile-form";
 import { valuesFromRow, type Role } from "@/lib/profile";
-import { getOrCreateProfile } from "@/lib/profile-ensure";
+import { getOrCreateProfile, loadMyContact } from "@/lib/profile-ensure";
+import { loadKeeperVideos } from "@/lib/data/keeper-videos";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Your profile", robots: { index: false } };
@@ -35,6 +36,8 @@ export default async function ProfilePage() {
       .maybeSingle();
     teamName = team?.name ?? "";
   }
+  const contact = await loadMyContact(supabase, user.id);
+  const videos = role === "goalkeeper" ? await loadKeeperVideos(user.id) : [];
 
   return (
     <>
@@ -55,7 +58,7 @@ export default async function ProfilePage() {
           See how teams view your profile
         </Link>
       )}
-      <ProfileForm role={role} userId={user.id} initial={valuesFromRow(profile, teamName)} inShell />
+      <ProfileForm role={role} userId={user.id} initial={valuesFromRow({ ...profile, ...contact }, teamName)} videos={videos} inShell />
 
       {role === "goalkeeper" && <DigestToggle initial={profile.match_digest !== false} />}
 

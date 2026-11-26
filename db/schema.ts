@@ -79,6 +79,8 @@ export const profiles = pgTable("profiles", {
   playerKind: text("player_kind"),
   // porteros: tramo de edad (18-24 | 25-34 | 35-44 | 45-54 | 55+).
   ageRange: text("age_range"),
+  // men | women. Porteros: solo ven y aplican a partidos de su categoría. Jugadores: sus partidos la heredan.
+  category: text("category").notNull().default("men"),
   baseLat: doublePrecision("base_lat"),
   baseLng: doublePrecision("base_lng"),
   // solo aplica a porteros: se activa tras revisión manual del admin.
@@ -87,6 +89,8 @@ export const profiles = pgTable("profiles", {
   isAdmin: boolean("is_admin").notNull().default(false),
   // porteros: recibir el resumen semanal de partidos abiertos (db/support-chat.sql).
   matchDigest: boolean("match_digest").notNull().default(true),
+  // porteros: última vez que abrieron Explore; lo publicado después enciende el punto (db/seen-notifications.sql).
+  exploreSeenAt: timestamp("explore_seen_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -135,6 +139,8 @@ export const matches = pgTable("matches", {
   format: smallint("format"),
   // grass | artificial | indoor | futsal
   surface: text("surface"),
+  // men | women. La fija un trigger con la categoría del perfil que publica (db/womens-football-phone.sql).
+  category: text("category").notNull().default("men"),
   // preferencia opcional de edad del portero (mismos tramos que profiles.age_range); nunca bloquea aplicar.
   prefAgeMin: text("pref_age_min"),
   prefAgeMax: text("pref_age_max"),
@@ -142,6 +148,8 @@ export const matches = pgTable("matches", {
   budgetSuggested: numeric("budget_suggested", { precision: 10, scale: 2 }),
   // Porteros que necesita el partido (1 o 2). Baja solo al cancelar una reserva con otra aún vigente.
   keepersNeeded: smallint("keepers_needed").notNull().default(1),
+  // Última vez que el dueño vio los porteros que aplicaron; lo posterior cuenta como nuevo.
+  applicationsSeenAt: timestamp("applications_seen_at", { withTimezone: true }),
   status: matchStatus("status").notNull().default("open"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
@@ -396,6 +404,20 @@ export const keeperStripeAccounts = pgTable("keeper_stripe_accounts", {
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// Móvil del usuario. Tabla aparte porque profiles es legible por otros usuarios; esto solo lo ven su dueño y los admins.
+export const profileContacts = pgTable("profile_contacts", {
+  profileId: uuid("profile_id")
+    .primaryKey()
+    .references(() => profiles.id, { onDelete: "cascade" }),
+  // E.164, móvil de UK: +447XXXXXXXXX
+  phone: text("phone").notNull(),
+  // Solo porteros, sin @. Lo ven los admins para verificar.
+  instagram: text("instagram"),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

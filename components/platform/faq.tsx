@@ -13,6 +13,17 @@ import { CONTACT_EMAIL } from "@/lib/site";
 
 type QA = { q: string; a: React.ReactNode };
 
+const WOMENS_QA: QA = {
+  q: "Can women's teams and female keepers use MatchKeeper?",
+  a: (
+    <>
+      Yes. When you set up your profile you choose men&apos;s or women&apos;s football. A women&apos;s
+      team&apos;s matches are only shown to female keepers, and female keepers only see women&apos;s
+      matches. Every keeper is reviewed by a person either way.
+    </>
+  ),
+};
+
 const TEAM_FAQ: QA[] = [
   {
     q: "What does it cost to post a match?",
@@ -64,6 +75,7 @@ const TEAM_FAQ: QA[] = [
       </>
     ),
   },
+  WOMENS_QA,
   {
     q: "When do I pay, and when is the money released?",
     a: (
@@ -122,6 +134,7 @@ const KEEPER_FAQ: QA[] = [
       </>
     ),
   },
+  WOMENS_QA,
   {
     q: "Do I set my own price?",
     a: (
@@ -210,6 +223,7 @@ const TEAM_FAQ_BETA: QA[] = [
     a: <>Then nothing happens. Keepers nearby can see your match for as long as it is open.</>,
   },
   TEAM_FAQ[4],
+  WOMENS_QA,
   {
     q: "How do I pay the goalkeeper?",
     a: (
@@ -248,6 +262,7 @@ const TEAM_FAQ_BETA: QA[] = [
 const KEEPER_FAQ_BETA: QA[] = [
   KEEPER_FAQ[0],
   KEEPER_FAQ[1],
+  WOMENS_QA,
   {
     q: "Do I set my own price?",
     a: (

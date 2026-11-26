@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { dateTile, money, SURFACE_LABEL, timeRange } from "@/lib/format";
 import { durationShort, isDuration, matchMinutes } from "@/lib/pricing";
-import { ageRangeText } from "@/lib/profile";
+import { ageRangeText, CATEGORY_CHIP } from "@/lib/profile";
 
 type CardMatch = {
   id: string;
@@ -12,6 +12,7 @@ type CardMatch = {
   level: string | null;
   format: number | null;
   surface: string | null;
+  category?: string | null;
   budget_suggested: string | number | null;
   keepers_needed?: number | null;
   pref_age_min?: string | null;
@@ -40,6 +41,7 @@ export function MatchChips({ match }: { match: CardMatch }) {
   const minutes = matchMinutes(match.starts_at, match.ends_at);
   const two = (match.keepers_needed ?? 1) > 1;
   const chips = [
+    match.category ? (CATEGORY_CHIP[match.category] ?? null) : null,
     isDuration(minutes) ? durationShort(minutes) : null,
     two ? `${match.keepers_needed} keepers` : null,
     match.format ? `${match.format}-a-side` : null,

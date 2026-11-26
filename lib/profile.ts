@@ -1,3 +1,5 @@
+import { formatUkMobile, normalizeUkMobile } from "@/lib/phone";
+
 export type Role = "player" | "goalkeeper";
 
 export const LEVELS = ["Casual", "Intermediate", "Competitive", "Semi-pro"] as const;
@@ -47,6 +49,33 @@ export function ageRangeText(min: string | null | undefined, max: string | null 
   return hi!.to == null ? null : `up to ${hi!.to}`;
 }
 
+// Fútbol masculino o femenino. Un portero solo ve y aplica a partidos de su categoría; los partidos heredan la del jugador.
+export const CATEGORIES = ["men", "women"] as const;
+export type Category = (typeof CATEGORIES)[number];
+
+export function isCategory(value: string | null | undefined): value is Category {
+  return (CATEGORIES as readonly string[]).includes(value ?? "");
+}
+
+export const CATEGORY_COPY: Record<Role, Record<Category, { title: string; body: string }>> = {
+  goalkeeper: {
+    men: { title: "Men's football", body: "You keep goal in men's matches. You only see men's matches." },
+    women: { title: "Women's football", body: "You keep goal in women's matches. You only see women's matches." },
+  },
+  player: {
+    men: { title: "Men's football", body: "You play men's football. Your matches go to male keepers." },
+    women: { title: "Women's football", body: "You play women's football. Your matches go to female keepers only." },
+  },
+};
+
+/** Etiqueta en la tarjeta del partido; los masculinos no llevan, para no repetir lo obvio. */
+export const CATEGORY_CHIP: Record<string, string> = { women: "Women's football" };
+
+/** Mismo criterio que el trigger de la base de datos: sin valor cuenta como "men". */
+export function sameCategory(a: string | null | undefined, b: string | null | undefined): boolean {
+  return (a || "men") === (b || "men");
+}
+
 export const PLAYER_KINDS = ["individual", "team"] as const;
 export type PlayerKind = (typeof PLAYER_KINDS)[number];
 
@@ -84,6 +113,13 @@ export function isAvailableCity(city: string) {
 
 export const AVATAR_MAX_BYTES = 5 * 1024 * 1024;
 export const AVATAR_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
+
+// Clips de porteros (bucket privado, ver db/keeper-videos.sql).
+export const KEEPER_VIDEO_BUCKET = "keeper-videos";
+export const KEEPER_VIDEO_MAX = 3;
+export const KEEPER_VIDEO_MAX_BYTES = 50 * 1024 * 1024;
+export const KEEPER_VIDEO_TYPES: Record<string, string> = { "video/mp4": "mp4", "video/quicktime": "mov", "video/webm": "webm" };
+export type KeeperVideo = { path: string; url: string };
 export const BIO_MAX = 500;
 export const KEEPER_BIO_MIN = 40;
 export const DETAILED_BIO_MIN = 150;
@@ -98,6 +134,9 @@ export type ProfileValues = {
   avatarUrl: string;
   teamName: string;
   playerKind: PlayerKind;
+  phone: string;
+  instagram: string;
+  category: Category;
 };
 
 export type ChecklistItem = {
@@ -123,6 +162,7 @@ export function profileChecklist(role: Role, v: ProfileValues): ChecklistItem[] 
     return [
       { key: "avatar", label: "Profile photo", done: !!v.avatarUrl, required: true, weight: 25 },
       { key: "city", label: "City", done: isAvailableCity(v.city), required: true, weight: 5 },
+      { key: "phone", label: "Mobile number", done: !!normalizeUkMobile(v.phone), required: true, weight: 5 },
       { key: "age", label: "Age range", done: isAgeRange(v.ageRange), required: true, weight: 5 },
       {
         key: "bio",
@@ -144,7 +184,7 @@ export function profileChecklist(role: Role, v: ProfileValues): ChecklistItem[] 
         label: "Years of experience",
         done: v.experienceYears.trim() !== "",
         required: false,
-        weight: 15,
+        weight: 10,
         tip: "Teams use it to compare keepers at a glance.",
       },
       {
@@ -161,11 +201,19 @@ export function profileChecklist(role: Role, v: ProfileValues): ChecklistItem[] 
     return [
       { key: "city", label: "City", done: isAvailableCity(v.city), required: true, weight: 10 },
       {
+        key: "phone",
+        label: "Mobile number",
+        done: !!normalizeUkMobile(v.phone),
+        required: false,
+        weight: 10,
+        tip: "So we can reach you fast if something changes on match day.",
+      },
+      {
         key: "level",
         label: "Usual level",
         done: !!v.level,
         required: false,
-        weight: 35,
+        weight: 30,
         tip: "Keepers know what standard to expect.",
       },
       {
@@ -173,7 +221,7 @@ export function profileChecklist(role: Role, v: ProfileValues): ChecklistItem[] 
         label: "About your group",
         done: !!v.bio.trim(),
         required: false,
-        weight: 30,
+        weight: 25,
         tip: "Pitch details, kit colour, how the group likes to play.",
       },
       {
@@ -190,6 +238,14 @@ export function profileChecklist(role: Role, v: ProfileValues): ChecklistItem[] 
     { key: "team", label: "Team name", done: !!v.teamName.trim(), required: true, weight: 35 },
     { key: "city", label: "City", done: isAvailableCity(v.city), required: true, weight: 5 },
     {
+      key: "phone",
+      label: "Mobile number",
+      done: !!normalizeUkMobile(v.phone),
+      required: false,
+      weight: 10,
+      tip: "So we can reach you fast if something changes on match day.",
+    },
+    {
       key: "level",
       label: "Usual level",
       done: !!v.level,
@@ -202,7 +258,7 @@ export function profileChecklist(role: Role, v: ProfileValues): ChecklistItem[] 
       label: "Team photo or crest",
       done: !!v.avatarUrl,
       required: false,
-      weight: 20,
+      weight: 15,
       tip: "Makes your match listings easier to recognise.",
     },
     {
@@ -210,7 +266,7 @@ export function profileChecklist(role: Role, v: ProfileValues): ChecklistItem[] 
       label: "About your team",
       done: !!v.bio.trim(),
       required: false,
-      weight: 25,
+      weight: 20,
       tip: "Pitch details, kit colour, how the group likes to play.",
     },
   ];
@@ -246,6 +302,10 @@ type ProfileRow = {
   age_range?: string | null;
   avatar_url?: string | null;
   player_kind?: string | null;
+  category?: string | null;
+  /** De profile_contacts, que se lee aparte: profiles no la incluye. */
+  phone?: string | null;
+  instagram?: string | null;
 };
 
 export function valuesFromRow(row: ProfileRow | null, teamName = ""): ProfileValues {
@@ -266,5 +326,8 @@ export function valuesFromRow(row: ProfileRow | null, teamName = ""): ProfileVal
     avatarUrl: row?.avatar_url ?? "",
     teamName,
     playerKind,
+    phone: row?.phone ? formatUkMobile(row.phone) : "",
+    instagram: row?.instagram ?? "",
+    category: isCategory(row?.category) ? row.category : "men",
   };
 }

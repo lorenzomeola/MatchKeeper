@@ -12,6 +12,7 @@ import {
   PinIcon,
   ShieldCheckIcon,
   StarIcon,
+  UsersIcon,
 } from "@/components/platform/icons";
 
 type Proof = { icon: (props: { className?: string }) => React.ReactNode; text: string };
@@ -19,6 +20,7 @@ type Proof = { icon: (props: { className?: string }) => React.ReactNode; text: s
 const PROOFS: Proof[] = [
   { icon: LockIcon, text: "Keeper paid after the match" },
   { icon: ShieldCheckIcon, text: "Every keeper manually reviewed" },
+  { icon: UsersIcon, text: "Men's & women's football" },
   { icon: StarIcon, text: "Public rating & match history" },
   { icon: ChatIcon, text: "In-app chat with your keeper" },
   { icon: NoFeeIcon, text: "No subscription, no listing fee" },

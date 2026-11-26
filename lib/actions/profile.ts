@@ -2,12 +2,17 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { BIO_MAX, KEEPER_BIO_MIN, LEVELS, PLAYER_KINDS, isAgeRange, isAvailableCity, type PlayerKind } from "@/lib/profile";
+import { normalizeInstagram } from "@/lib/instagram";
+import { normalizeUkMobile } from "@/lib/phone";
+import { BIO_MAX, KEEPER_BIO_MIN, LEVELS, PLAYER_KINDS, isAgeRange, isAvailableCity, isCategory, type PlayerKind } from "@/lib/profile";
 
 export type ProfileActionState = {
   error: string | null;
   fieldErrors?: Partial<
-    Record<"displayName" | "city" | "bio" | "experienceYears" | "ageRange" | "teamName" | "avatarUrl" | "playerKind", string>
+    Record<
+      "displayName" | "city" | "bio" | "experienceYears" | "ageRange" | "teamName" | "avatarUrl" | "playerKind" | "phone" | "instagram" | "category",
+      string
+    >
   >;
 };
 
@@ -40,6 +45,11 @@ export async function saveProfileAction(
   const ageRange = text("ageRange");
   const avatarUrl = text("avatarUrl");
   const playerKind = text("playerKind") as PlayerKind;
+  const phoneRaw = text("phone");
+  const phone = normalizeUkMobile(phoneRaw);
+  const category = text("category");
+  const instagramRaw = isKeeper ? text("instagram") : "";
+  const instagram = instagramRaw ? normalizeInstagram(instagramRaw) : null;
 
   const fieldErrors: NonNullable<ProfileActionState["fieldErrors"]> = {};
   if (!displayName) fieldErrors.displayName = "Enter your name.";
@@ -61,6 +71,10 @@ export async function saveProfileAction(
   }
   if (isKeeper && !avatarUrl) fieldErrors.avatarUrl = "Add a photo so teams can recognise you.";
   if (isKeeper && !isAgeRange(ageRange)) fieldErrors.ageRange = "Choose your age range.";
+  if (!isCategory(category)) fieldErrors.category = "Choose men's or women's football.";
+  if (phoneRaw && !phone) fieldErrors.phone = "Enter a UK mobile number, like 07700 900123.";
+  else if (isKeeper && !phone) fieldErrors.phone = "Add your mobile so we can reach you about bookings.";
+  if (instagramRaw && !instagram) fieldErrors.instagram = "Enter your Instagram username, like @yourhandle.";
 
   // La URL solo se acepta si apunta a la carpeta propia del bucket de avatares:
   // evita guardar enlaces externos arbitrarios como foto de perfil.
@@ -82,6 +96,7 @@ export async function saveProfileAction(
       level: (LEVELS as readonly string[]).includes(level) ? level : null,
       experience_years: experienceYears,
       ...(isKeeper ? { age_range: ageRange } : {}),
+      category,
       avatar_url: avatarUrl || null,
       ...(isKeeper ? {} : { player_kind: playerKind }),
     })
@@ -90,6 +105,16 @@ export async function saveProfileAction(
   if (profileError) {
     console.error("saveProfileAction: profiles update failed", profileError);
     return { error: "We couldn't save your profile. Please try again." };
+  }
+
+  const { error: phoneError } = phone
+    ? await supabase
+        .from("profile_contacts")
+        .upsert({ profile_id: user.id, phone, instagram, updated_at: new Date().toISOString() })
+    : await supabase.from("profile_contacts").delete().eq("profile_id", user.id);
+  if (phoneError) {
+    console.error("saveProfileAction: phone save failed", phoneError);
+    return { error: "We saved your profile but not your mobile number. Please try again." };
   }
 
   if (playerKind === "team" && teamName) {

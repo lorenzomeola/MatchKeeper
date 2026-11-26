@@ -1,11 +1,11 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import Link from "next/link";
 import { signUpAction, type AuthActionState } from "@/lib/actions/auth";
 import { FormError, PasswordField, SelectField, SubmitButton, TextField } from "@/components/platform/form-fields";
-import { ChatIcon } from "@/components/platform/icons";
-import { CITY_OPTIONS, DEFAULT_CITY, type Role } from "@/lib/profile";
+import { ArrowRightIcon, ChatIcon } from "@/components/platform/icons";
+import { CATEGORIES, CATEGORY_COPY, CITY_OPTIONS, DEFAULT_CITY, type Category, type Role } from "@/lib/profile";
 
 const initialState: AuthActionState = { error: null };
 
@@ -52,9 +52,10 @@ const COPY: Record<
   },
 };
 
-export function SignupForm({ role }: { role: Role }) {
+export function SignupForm({ role, initialCategory = null }: { role: Role; initialCategory?: Category | null }) {
   const copy = COPY[role];
   const [state, formAction, pending] = useActionState(signUpAction, initialState);
+  const [category, setCategory] = useState<Category | null>(initialCategory);
 
   if (state.checkEmail) {
     return (
@@ -84,8 +85,44 @@ export function SignupForm({ role }: { role: Role }) {
       <h1 className="pl-display mt-3 text-fg [font-size:var(--t-4xl)]">{copy.title}</h1>
       <p className="pl-prose mt-3 [font-size:var(--t-base)]">{copy.body}</p>
 
+      {!category ? (
+        <div className="mt-8">
+          <p className="text-sm font-medium text-fg-2">
+            {role === "goalkeeper" ? "First, which football do you keep goal in?" : "First, which football do you play?"}
+          </p>
+          <ul className="mt-3 grid grid-cols-1 gap-3">
+            {CATEGORIES.map((c) => (
+              <li key={c}>
+                <button
+                  type="button"
+                  onClick={() => setCategory(c)}
+                  className="pl-focus pl-lift group flex w-full items-center gap-4 rounded-[var(--r-xl)] border border-line bg-surface p-5 text-left shadow-[var(--shadow-2),var(--ring-inset)]"
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="pl-display block text-fg [font-size:var(--t-xl)]">{CATEGORY_COPY[role][c].title}</span>
+                    <span className="mt-1 block text-sm text-muted">{CATEGORY_COPY[role][c].body}</span>
+                  </span>
+                  <ArrowRightIcon className="h-5 w-5 shrink-0 text-muted transition-[transform,color] duration-200 group-hover:translate-x-1 group-hover:text-accent" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : (
       <form action={formAction} className="mt-8 grid grid-cols-1 gap-5">
         <input type="hidden" name="role" value={role} />
+        <input type="hidden" name="category" value={category} />
+
+        <p className="flex items-center justify-between gap-3 rounded-[var(--r-md)] border border-accent/40 bg-accent-soft px-4 py-2.5 text-sm">
+          <span className="font-semibold text-fg">{CATEGORY_COPY[role][category].title}</span>
+          <button
+            type="button"
+            onClick={() => setCategory(null)}
+            className="pl-focus inline-flex min-h-11 items-center font-semibold text-accent-strong underline underline-offset-4"
+          >
+            Change
+          </button>
+        </p>
 
         {state.error && <FormError>{state.error}</FormError>}
 
@@ -116,6 +153,33 @@ export function SignupForm({ role }: { role: Role }) {
           autoComplete="email"
           defaultValue={state.values?.email}
         />
+        <TextField
+          label="Mobile number"
+          hint={
+            role === "goalkeeper"
+              ? "UK mobile. Only MatchKeeper sees it, to reach you about bookings."
+              : "Optional. UK mobile, only MatchKeeper sees it, in case something changes on match day."
+          }
+          name="phone"
+          type="tel"
+          inputMode="tel"
+          autoComplete="tel"
+          required={role === "goalkeeper"}
+          placeholder="07700 900123"
+          defaultValue={state.values?.phone}
+        />
+        {role === "goalkeeper" && (
+          <TextField
+            label="Instagram (optional)"
+            hint="Only our team sees it, to help verify you. Teams never see it."
+            name="instagram"
+            type="text"
+            autoComplete="off"
+            autoCapitalize="none"
+            placeholder="@yourhandle"
+            defaultValue={state.values?.instagram}
+          />
+        )}
         <PasswordField
           label="Password"
           hint="At least 8 characters."
@@ -145,6 +209,7 @@ export function SignupForm({ role }: { role: Role }) {
           </p>
         </div>
       </form>
+      )}
 
       <div className="mt-8 grid gap-1 border-t border-line pt-4 text-sm text-muted">
         <p className="flex flex-wrap items-center gap-x-1.5">

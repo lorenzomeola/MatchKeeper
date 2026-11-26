@@ -9,7 +9,10 @@ import { StatCard } from "@/components/app/stat-card";
 import { StatusBadge } from "@/components/app/status-badge";
 import { ArrowLeftIcon } from "@/components/platform/icons";
 import { loadUserDetail, profileRating } from "@/lib/data/admin";
+import { loadKeeperVideos } from "@/lib/data/keeper-videos";
+import { KeeperVideos } from "@/components/app/keeper-videos";
 import { dateTile } from "@/lib/format";
+import { formatUkMobile } from "@/lib/phone";
 
 export const metadata: Metadata = { title: "User", robots: { index: false } };
 
@@ -19,6 +22,7 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
   if (!data) notFound();
   const { profile: p, teamName, counts, reports } = data;
   const isKeeper = p.role === "goalkeeper";
+  const videos = isKeeper ? await loadKeeperVideos(p.id) : [];
   const rating = profileRating(p);
   const role = p.is_admin ? "Admin" : isKeeper ? "Goalkeeper" : p.player_kind === "team" ? "Team" : "Player";
   const profileValue = `${rating.tier} · ${rating.percent}%`;
@@ -52,6 +56,29 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
                 {role}
                 {teamName ? ` · ${teamName}` : ""} · {p.city ?? "No city"} · joined {joined(p.created_at)}
               </p>
+              <p className="mt-1 text-sm text-muted">
+                {p.phone ? (
+                  <a href={`tel:${p.phone}`} className="font-medium text-accent-strong underline underline-offset-4">
+                    {formatUkMobile(p.phone)}
+                  </a>
+                ) : (
+                  "No mobile number"
+                )}
+                {p.category === "women" ? " · Women's football" : " · Men's football"}
+                {isKeeper && p.instagram && (
+                  <>
+                    {" · "}
+                    <a
+                      href={`https://www.instagram.com/${encodeURIComponent(p.instagram)}/`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-medium text-accent-strong underline underline-offset-4"
+                    >
+                      @{p.instagram}
+                    </a>
+                  </>
+                )}
+              </p>
               {isKeeper && (
                 <div className="mt-3">
                   <StatusBadge tone={p.approved ? "success" : "warning"}>{p.approved ? "Approved" : "In review"}</StatusBadge>
@@ -81,6 +108,17 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
           <p className="text-xs font-medium text-muted">{isKeeper ? "Bio" : "About"}</p>
           <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-fg-2">{p.bio?.trim() || "Nothing written yet."}</p>
         </div>
+
+        {isKeeper && (
+          <div className="mt-3 rounded-[var(--r-md)] bg-surface px-4 py-3">
+            <p className="text-xs font-medium text-muted">Clips</p>
+            {videos.length > 0 ? (
+              <KeeperVideos videos={videos} className="mt-2" />
+            ) : (
+              <p className="mt-1 text-sm text-fg-2">No clips uploaded.</p>
+            )}
+          </div>
+        )}
       </section>
 
       <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">

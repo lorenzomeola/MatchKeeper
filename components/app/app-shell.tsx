@@ -15,12 +15,27 @@ import { LogOutIcon, MoreIcon, PlusIcon, ShieldCheckIcon } from "@/components/pl
 import { PaymentModeNotice } from "@/components/platform/payment-mode-notice";
 import { ThemeToggle } from "@/components/platform/theme";
 
-export type ShellBadges = { unread: number; pending: number; reports: number; support: number };
+export type ShellBadges = {
+  unread: number;
+  pending: number;
+  reports: number;
+  support: number;
+  applications: number;
+  /** 1 si hay partidos nuevos en Explore: se pinta como punto, sin número. */
+  explore: number;
+};
 
 type ShellUser = { name: string; avatarUrl: string | null; roleLabel: string };
 
-function Badge({ count }: { count: number }) {
+function Badge({ count, dot = false }: { count: number; dot?: boolean }) {
   if (count <= 0) return null;
+  if (dot) {
+    return (
+      <span className="block h-2.5 w-2.5 rounded-full bg-accent ring-2 ring-[var(--bg)]">
+        <span className="sr-only">New matches</span>
+      </span>
+    );
+  }
   return (
     <span className="pl-tnum grid h-[18px] min-w-[18px] place-items-center rounded-full bg-accent px-1 text-[11px] font-bold leading-none text-accent-ink">
       {count > 9 ? "9+" : count}
@@ -33,6 +48,8 @@ function countFor(item: NavItem, badges: ShellBadges) {
   if (item.badge === "pending") return badges.pending;
   if (item.badge === "reports") return badges.reports;
   if (item.badge === "support") return badges.support;
+  if (item.badge === "applications") return badges.applications;
+  if (item.badge === "explore") return badges.explore;
   return 0;
 }
 
@@ -151,11 +168,18 @@ export function AppShell({
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "support_messages" }, (payload) => {
         if ((payload.new as { sender_id?: string }).sender_id !== userId) router.refresh();
       })
+      // Aplicación a un partido propio (equipos) o partido nuevo de otro (porteros): actualiza los avisos.
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "applications" }, (payload) => {
+        if (variant === "player" && (payload.new as { goalkeeper_id?: string }).goalkeeper_id !== userId) router.refresh();
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "matches" }, (payload) => {
+        if (variant === "goalkeeper" && (payload.new as { created_by?: string }).created_by !== userId) router.refresh();
+      })
       .subscribe();
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [supabase, userId, router]);
+  }, [supabase, userId, router, variant]);
 
   return (
     <ToastProvider>
@@ -199,7 +223,7 @@ export function AppShell({
                     >
                       <item.icon className="h-5 w-5 shrink-0" />
                       <span className="flex-1">{item.label}</span>
-                      <Badge count={countFor(item, badges)} />
+                      <Badge count={countFor(item, badges)} dot={item.badge === "explore"} />
                     </Link>
                   </li>
                 );
@@ -336,8 +360,8 @@ export function AppShell({
                     >
                       <item.icon className="h-[22px] w-[22px]" />
                       {count > 0 && (
-                        <span className="absolute right-2 top-0">
-                          <Badge count={count} />
+                        <span className={`absolute ${item.badge === "explore" ? "right-3 top-0.5" : "right-2 top-0"}`}>
+                          <Badge count={count} dot={item.badge === "explore"} />
                         </span>
                       )}
                     </span>

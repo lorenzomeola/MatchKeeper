@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { sameCategory } from "@/lib/profile";
 
 export type MatchRow = {
   id: string;
@@ -9,6 +10,9 @@ export type MatchRow = {
   level: string | null;
   format: number | null;
   surface: string | null;
+  category?: string | null;
+  created_at?: string;
+  applications_seen_at?: string | null;
   notes: string | null;
   budget_suggested: string | number | null;
   keepers_needed: number;
@@ -17,7 +21,7 @@ export type MatchRow = {
   status: "open" | "assigned" | "completed" | "cancelled";
 };
 
-type AppRef = { id: string; status: string; rate: string | number; goalkeeper_id: string };
+type AppRef = { id: string; status: string; rate: string | number; goalkeeper_id: string; created_at?: string };
 export type OwnMatch = MatchRow & { applications: AppRef[] };
 export type KeeperApplication = {
   id: string;
@@ -87,7 +91,7 @@ export async function loadPlayerHome(userId: string) {
   };
 }
 
-export async function loadKeeperHome(userId: string) {
+export async function loadKeeperHome(userId: string, category: string | null = "men") {
   const supabase = await createClient();
   const nowMs = Date.now();
   const nowIso = new Date(nowMs).toISOString();
@@ -117,7 +121,7 @@ export async function loadKeeperHome(userId: string) {
   const waiting = apps.filter(
     (a) => a.status === "pending" && a.matches && a.matches.status === "open" && isUpcoming(a.matches, nowMs),
   );
-  const available = ((openData ?? []) as MatchRow[]).filter((m) => !appliedIds.has(m.id));
+  const available = ((openData ?? []) as MatchRow[]).filter((m) => !appliedIds.has(m.id) && sameCategory(m.category, category));
 
   const posterIds = [...new Set([...available.slice(0, 6), ...booked.map((b) => b.matches!)].map((m) => m.created_by))];
   const posters = await namesOf(supabase, posterIds);

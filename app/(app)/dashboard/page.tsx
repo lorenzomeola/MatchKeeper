@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { completeness, profileChecklist, valuesFromRow } from "@/lib/profile";
-import { getOrCreateProfile } from "@/lib/profile-ensure";
+import { getOrCreateProfile, loadMyContact } from "@/lib/profile-ensure";
 import { KeeperHome } from "./keeper-home";
 import { PlayerHome } from "./player-home";
 
@@ -32,7 +32,7 @@ export default async function DashboardPage() {
     teamName = team?.name ?? "";
   }
 
-  const values = valuesFromRow(profile, teamName);
+  const values = valuesFromRow({ ...profile, ...(await loadMyContact(supabase, user.id)) }, teamName);
   const rating = completeness(profileChecklist(isKeeper ? "goalkeeper" : "player", values));
 
   return isKeeper ? (

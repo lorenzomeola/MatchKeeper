@@ -14,11 +14,15 @@ import { StandingCard } from "@/components/app/standing-card";
 import { PaymentModeNotice } from "@/components/platform/payment-mode-notice";
 import { loadMyStanding } from "@/lib/data/standing";
 import { signedCheckInPhotoUrls } from "@/lib/data/checkin-photos";
+import { keeperVideoCounts } from "@/lib/data/keeper-videos";
+import { MarkSeen } from "@/components/app/mark-seen";
+import { isNewSince } from "@/lib/match-list-status";
 import { PostedToast } from "@/components/app/posted-toast";
 import { ReviewCard } from "@/components/app/review-card";
 import { MATCH_STATUS, StatusBadge } from "@/components/app/status-badge";
 import { ArrowLeftIcon, ChatIcon, PinIcon, StarIcon, UsersIcon } from "@/components/platform/icons";
 import { daysAway, isPast, longDate, money, splitAddress, timeRange } from "@/lib/format";
+import { sameCategory } from "@/lib/profile";
 import { matchMinutes } from "@/lib/pricing";
 import { getPaymentMode } from "@/lib/payments/mode";
 import { slotsLabel } from "@/lib/slots";
@@ -57,9 +61,10 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
   const { data: match } = await supabase.from("matches").select("*").eq("id", id).maybeSingle();
   if (!match) notFound();
 
-  const { data: me } = await supabase.from("profiles").select("role, approved").eq("id", user.id).maybeSingle();
+  const { data: me } = await supabase.from("profiles").select("role, approved, category").eq("id", user.id).maybeSingle();
   const isOwner = match.created_by === user.id;
   const isKeeper = me?.role === "goalkeeper";
+  const otherCategory = !sameCategory(match.category, me?.category);
 
   let paymentsReady = false;
   let hasPayAccount = false;
@@ -126,6 +131,9 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
       : (MATCH_STATUS[match.status] ?? MATCH_STATUS.open);
 
   const pending = applications.filter((a) => a.status === "pending");
+  // Se lee antes de marcar como visto: esta visita aún muestra qué aplicaciones son nuevas.
+  const newApplicantIds = isOwner ? pending.filter((a) => isNewSince(a.created_at, match.applications_seen_at)).map((a) => a.id) : [];
+  const clipCounts = await keeperVideoCounts(pending.map((a) => a.goalkeeper_id));
   const applicants: Applicant[] = pending.map((a) => ({
     id: a.id,
     keeperId: a.goalkeeper_id,
@@ -139,9 +147,11 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
     level: a.profiles?.level ?? null,
     experienceYears: a.profiles?.experience_years ?? null,
     ageRange: a.profiles?.age_range ?? null,
+    clips: clipCounts.get(a.goalkeeper_id) ?? 0,
   }));
 
-  const canApply = !modeUnavailable && !isOwner && isKeeper && me?.approved && match.status === "open" && !expired && !mine;
+  const canApply =
+    !modeUnavailable && !isOwner && isKeeper && me?.approved && match.status === "open" && !expired && !mine && !otherCategory;
 
   // Reservas del partido (el equipo ve todas; el portero, solo la suya). Las pendientes de pago no se muestran.
   let bookings: (BookingForCard & { application_id: string })[] = [];
@@ -185,6 +195,7 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
       <Suspense>
         <PostedToast />
       </Suspense>
+      {newApplicantIds.length > 0 && <MarkSeen matchId={match.id} />}
 
       <Link
         href="/matches"
@@ -313,7 +324,13 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
                   }
                 />
               ) : (
-                <ApplicantList matchId={match.id} applicants={applicants} minutes={matchMinutes(match.starts_at, match.ends_at)} free={!payments} />
+                <ApplicantList
+                  matchId={match.id}
+                  applicants={applicants}
+                  minutes={matchMinutes(match.starts_at, match.ends_at)}
+                  free={!payments}
+                  newIds={newApplicantIds}
+                />
               )}
             </Section>
           )}
@@ -399,7 +416,15 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
           )}
 
           {!canApply && !mine && me?.approved && (
-            <p className="pl-prose text-[15px]">{expired ? "This match has already been played." : "This match is no longer open for applications."}</p>
+            <p className="pl-prose text-[15px]">
+              {expired
+                ? "This match has already been played."
+                : otherCategory && match.status === "open"
+                  ? match.category === "women"
+                    ? "This is a women's football match. Only female keepers can apply."
+                    : "This is a men's football match. Only male keepers can apply."
+                  : "This match is no longer open for applications."}
+            </p>
           )}
         </div>
       ) : null}

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AuthShell } from "@/components/platform/auth-shell";
 import { ArrowRightIcon, GloveIcon, PinIcon } from "@/components/platform/icons";
+import { isCategory } from "@/lib/profile";
 
 export const metadata: Metadata = {
   title: "Sign up",
@@ -27,11 +28,13 @@ const LANES = [
 export default async function SignupPage({
   searchParams,
 }: {
-  searchParams: Promise<{ role?: string }>;
+  searchParams: Promise<{ role?: string; category?: string }>;
 }) {
   // Los enlaces de /home y del footer apuntan a /signup?role=...
-  const { role } = await searchParams;
-  if (role === "player" || role === "goalkeeper") redirect(`/signup/${role}`);
+  const { role, category } = await searchParams;
+  if (role === "player" || role === "goalkeeper") {
+    redirect(isCategory(category) ? `/signup/${role}?category=${category}` : `/signup/${role}`);
+  }
 
   return (
     <AuthShell aside="join">
