@@ -13,7 +13,7 @@ export const revalidate = 60;
 
 export default function PrivacyPage() {
   return (
-    <LegalShell eyebrow="Legal" title="Privacy Policy" updated="2026-11-24">
+    <LegalShell eyebrow="Legal" title="Privacy Policy" updated="2026-11-26">
       {(payments) => (
         <>
       <p>
@@ -36,6 +36,26 @@ export default function PrivacyPage() {
       <h2>1. What we collect</h2>
       <ul>
         <li>Account details: name, email, city, and role (organiser or goalkeeper).</li>
+        <li>
+          Whether you play men&apos;s or women&apos;s football, chosen when you sign up. It decides
+          which matches a goalkeeper sees and which goalkeepers can apply to a match. Matches you
+          post show it to goalkeepers.
+        </li>
+        <li>
+          Your UK mobile number: required for goalkeepers, optional for players and teams. Only you
+          and MatchKeeper admins can see it. We use it to contact you about your matches and
+          bookings; it is never shown to other users.
+        </li>
+        <li>
+          Goalkeepers only, optional: your Instagram username. Only MatchKeeper admins can see it,
+          to help verify your profile.
+        </li>
+        <li>
+          Goalkeepers only, optional: up to three video clips of you in goal. They are stored
+          privately and shown to signed-in users who can see your profile, such as teams you apply
+          to, through links that expire after an hour, and to MatchKeeper admins. Other users can
+          report a clip, and an admin can remove it.
+        </li>
         <li>
           Profile details you choose to add, such as a photo, a short bio, your experience, level
           and age range.
@@ -104,6 +124,15 @@ export default function PrivacyPage() {
           off at any time in your profile.
         </li>
         <li>
+          Your football category and mobile number: performance of our agreement, to show you the
+          right matches and reach you about a match or booking.
+        </li>
+        <li>
+          A goalkeeper&apos;s Instagram username and clips: our legitimate interest in verifying
+          goalkeeper profiles and helping teams choose a keeper. Both are optional and you can
+          change or remove them in your profile at any time.
+        </li>
+        <li>
           Check-in location: our legitimate interest in recording attendance and resolving
           disagreements. Your browser also asks for location permission; permission to use a device
           feature is separate from the legal basis for processing the resulting record.
@@ -139,7 +168,8 @@ export default function PrivacyPage() {
           Other users can see the match and profile information made available by the service,
           including names, profile photos, playing information, reviews and requested rates.
           Profile photos are stored in a public bucket: anyone with the image URL can view them.
-          Chat and check-in photos are not public.
+          Chat, check-in photos and goalkeeper clips are not public. Mobile numbers and Instagram
+          usernames are only visible to you and MatchKeeper admins.
         </li>
         {payments && <li>Stripe, to process payments.</li>}
         <li>
@@ -224,6 +254,11 @@ export default function PrivacyPage() {
         remain for an outstanding booking, a specific safety issue, a dispute or a legal obligation.
       </p>
       <ul>
+        <li>
+          Mobile number, Instagram username and goalkeeper clips: kept while your account is active.
+          You can change or remove them in your profile at any time, and they are deleted when
+          your account is closed or erased.
+        </li>
         <li>
           Matches, applications, bookings, reviews and chat: kept while needed for coordination,
           account history or an identified unresolved issue. We review their continued need when

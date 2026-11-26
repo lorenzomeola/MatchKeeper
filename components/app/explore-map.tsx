@@ -268,7 +268,7 @@ export function ExploreMap({
     <div className="relative h-full lg:grid lg:h-[calc(100dvh-3rem)] lg:grid-cols-[24rem_minmax(0,1fr)] lg:gap-5">
       {/* Lista: columna en escritorio, pantalla completa en móvil */}
       <section
-        className={`${view === "list" ? "absolute inset-0 z-20 flex" : "hidden"} min-h-0 flex-col bg-bg px-5 pb-4 pt-5 lg:static lg:z-auto lg:flex lg:px-0 lg:pt-0`}
+        className={`${view === "list" ? "absolute inset-0 z-20 flex" : "hidden"} pl-bevel-lg min-h-0 flex-col bg-bg px-5 pb-4 pt-5 lg:static lg:z-auto lg:flex lg:p-6 lg:pb-3`}
         aria-label="Matches list"
       >
         <div className="flex items-start justify-between gap-3">
@@ -388,8 +388,8 @@ export function ExploreMap({
       </section>
 
       {/* Mapa */}
-      <div className="relative h-full overflow-hidden lg:rounded-[var(--r-xl)] lg:border lg:border-line">
-        <div className="absolute inset-0">
+      <div className="pl-bevel-lg relative h-full overflow-hidden">
+        <div className="pl-bevel-lg__fill absolute inset-0">
           <div ref={containerRef} className="h-full w-full" role="application" aria-label="Map of matches" />
         </div>
 

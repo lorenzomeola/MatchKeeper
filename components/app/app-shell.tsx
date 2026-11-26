@@ -11,7 +11,8 @@ import { NAV, isActive, type NavItem, type NavVariant } from "@/components/app/n
 import { Sheet } from "@/components/app/sheet";
 import { ToastProvider } from "@/components/app/toast";
 import { FloodlightBackdrop } from "@/components/platform/floodlight-backdrop";
-import { InfoIcon, LogOutIcon, MoreIcon, PlusIcon, ShieldCheckIcon } from "@/components/platform/icons";
+import { InfoIcon, LogOutIcon, MoreIcon, ShieldCheckIcon } from "@/components/platform/icons";
+import { CtaLink } from "@/components/platform/cta-button";
 import { ProfileMenu } from "@/components/app/profile-menu";
 import { PaymentModeNotice } from "@/components/platform/payment-mode-notice";
 import { ThemeToggle } from "@/components/platform/theme";
@@ -205,13 +206,9 @@ export function AppShell({
           </Link>
 
           {primary && (
-            <Link
-              href={primary.href}
-              className="mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--r-md)] bg-accent px-4 text-[15px] font-semibold text-accent-ink shadow-[var(--shadow-glow)] transition-[transform,background-color] duration-200 hover:bg-accent-strong active:scale-[0.98]"
-            >
-              <PlusIcon className="h-5 w-5" />
+            <CtaLink href={primary.href} size="md" className="mt-6 w-full">
               {primary.label}
-            </Link>
+            </CtaLink>
           )}
 
           <nav aria-label="Main" className="mt-6 flex-1 overflow-y-auto">

@@ -11,6 +11,7 @@ import { ArrowLeftIcon } from "@/components/platform/icons";
 import { loadUserDetail, profileRating } from "@/lib/data/admin";
 import { loadKeeperVideos } from "@/lib/data/keeper-videos";
 import { KeeperVideos } from "@/components/app/keeper-videos";
+import { RemoveClipButton } from "@/components/app/clip-actions";
 import { dateTile } from "@/lib/format";
 import { formatUkMobile } from "@/lib/phone";
 
@@ -113,7 +114,7 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
           <div className="mt-3 rounded-[var(--r-md)] bg-surface px-4 py-3">
             <p className="text-xs font-medium text-muted">Clips</p>
             {videos.length > 0 ? (
-              <KeeperVideos videos={videos} className="mt-2" />
+              <KeeperVideos videos={videos} className="mt-2" action={(v) => <RemoveClipButton path={v.path} />} />
             ) : (
               <p className="mt-1 text-sm text-fg-2">No clips uploaded.</p>
             )}

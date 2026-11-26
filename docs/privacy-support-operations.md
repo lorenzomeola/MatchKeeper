@@ -29,7 +29,8 @@ Do not commit request contents, email addresses, exports, credentials or identit
 
 - Inventory the account's Auth details and profile; teams/memberships; matches; applications;
   bookings and booking events; messages/read markers; reviews; blocks; reports; strikes;
-  private photo paths and avatar files; email outbox entries; support correspondence.
+  private photo paths and avatar files; goalkeeper clips (`keeper-videos/<uuid>/`); mobile and
+  Instagram (`profile_contacts`); email outbox entries; support correspondence.
 - Include payment/account/dispute/debt records only if the account actually has them. The free
   beta must not be described as using Stripe payments.
 - Search both structured IDs and relevant free-text/payload fields; email outbox payloads,
@@ -59,9 +60,11 @@ Do not commit request contents, email addresses, exports, credentials or identit
 - Stop unnecessary future service emails. Reconcile scheduled/cancelling/failed-cancellation
   outbox entries with Resend before removing their provider IDs. A DB row deletion does not
   cancel an email scheduled with the provider. Do not discard failed cancellation evidence.
-- Remove in-scope avatar and check-in files through the Storage API or dashboard, not by
-  deleting `storage.objects` metadata with SQL. Review the user's whole avatar folder, not
-  just the current URL: previous uploads can remain there.
+- Remove in-scope avatar, check-in and goalkeeper clip files through the Storage API or dashboard,
+  not by deleting `storage.objects` metadata with SQL. Review the user's whole avatar and
+  `keeper-videos/<uuid>/` folders, not just the current URL: previous uploads can remain there.
+  Delete the `profile_contacts` row (mobile, Instagram); it cascades with the profile but must
+  not be left behind by a partial erasure.
 - If access must be withdrawn before erasure finishes, use supported Supabase Auth administrative
   controls for sign-in/session restriction and verify their effect; existing JWTs may remain
   usable until expiry. Do not claim immediate revocation without testing it.
@@ -98,6 +101,7 @@ This is an operator task, not a new cron or a promise of fixed record lifetimes.
 | Category | Retention criterion and review action |
 | --- | --- |
 | Auth/profile/team and avatars | Needed for the active account and service. At closure/request, erase or minimise unless a specific exception is documented. Include previous avatar uploads. |
+| Mobile, Instagram (`profile_contacts`) and goalkeeper clips (`keeper-videos`) | Needed while the account is active; users can edit or remove them in their profile. At closure/request, delete the row and every object in the user's clip folder. Clips removed after a report are deleted, not kept as evidence, unless a documented case needs them. |
 | Matches/applications/bookings/chat/reviews | Needed for coordination, account history or an identified unresolved issue. Review unnecessary older records, inactive accounts and closure requests; minimise shared history rather than applying destructive cascades blindly. |
 | Check-in exact coordinates/private photos | Existing SQL and daily release cron target records older than 120 days after match end, except specified open payment-dispute statuses. Ordinary `under_review` bookings/reports are not an automatic purge hold. Check overdue records and cron errors; do not promise that every complaint suspends deletion. |
 | Check-in time/distance | Not removed by the coordinate purge. Review with the booking, and remove/minimise when attendance history or a documented issue no longer needs them. |

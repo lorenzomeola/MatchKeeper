@@ -1313,3 +1313,39 @@ input:focus-visible + .pl-chip {
     }
   }
 }
+
+/* ── Panel biselado (escritorio) ─────────────────────────────────────────────
+   Las mismas esquinas cortadas de `.pl-cta`, para paneles. El trazo es el fondo
+   del panel y el relleno (::before) queda 1px dentro. Sin capa a propósito: debe
+   ganar a `bg-*`/`static` del mismo elemento, que en móvil siguen aplicando. */
+@media (min-width: 1024px) {
+  .pl-bevel-lg {
+    --cut: 18px;
+    position: relative;
+    isolation: isolate;
+    background-color: var(--line-strong);
+    clip-path: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, var(--cut) 100%, 0 calc(100% - var(--cut)));
+  }
+  .pl-bevel-lg::before,
+  .pl-bevel-lg__fill {
+    clip-path: polygon(
+      0 0,
+      calc(100% - var(--cut) + 0.59px) 0,
+      100% calc(var(--cut) - 0.59px),
+      100% 100%,
+      calc(var(--cut) - 0.59px) 100%,
+      0 calc(100% - var(--cut) + 0.59px)
+    );
+  }
+  .pl-bevel-lg::before {
+    content: "";
+    position: absolute;
+    inset: 1px;
+    z-index: -1;
+    background-color: var(--bg-2);
+  }
+  /* Contenido a sangre (el mapa): ocupa el relleno sin tapar el trazo. */
+  .pl-bevel-lg__fill {
+    inset: 1px;
+  }
+}
