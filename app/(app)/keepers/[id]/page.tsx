@@ -76,7 +76,7 @@ export default async function KeeperProfilePage({ params }: { params: Promise<{ 
 
         <div className="relative mt-5 rounded-[var(--r-md)] bg-surface px-4 py-3">
           <p className="text-xs font-medium text-muted">About</p>
-          <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-fg-2">
+          <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-fg-2 [overflow-wrap:anywhere]">
             {k.bio?.trim() || "This keeper has not written a bio yet."}
           </p>
         </div>

@@ -106,7 +106,7 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
 
         <div className="mt-3 rounded-[var(--r-md)] bg-surface px-4 py-3">
           <p className="text-xs font-medium text-muted">{isKeeper ? "Bio" : "About"}</p>
-          <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-fg-2">{p.bio?.trim() || "Nothing written yet."}</p>
+          <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-fg-2 [overflow-wrap:anywhere]">{p.bio?.trim() || "Nothing written yet."}</p>
         </div>
 
         {isKeeper && (
