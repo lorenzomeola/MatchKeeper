@@ -3,7 +3,7 @@ import { ProductHome } from "@/components/platform/product-home";
 import { getPaymentMode } from "@/lib/payments/mode";
 import { CONTACT_EMAIL, SITE_DESCRIPTION, SITE_NAME, SITE_URL, SOCIALS } from "@/lib/site";
 
-const TITLE = "Find a goalkeeper for your football match in London";
+const TITLE = "Find a goalkeeper for your match in London";
 const DESCRIPTION =
   "Post your match and nearby goalkeepers apply, or join as a goalkeeper and play more matches. Free during the London beta.";
 
