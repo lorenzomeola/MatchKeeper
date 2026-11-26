@@ -58,8 +58,8 @@ export function KeeperVideoUpload({ userId, initial }: { userId: string; initial
         <RequirementTag tag="optional" />
       </div>
       <p className="text-[13px] text-muted">
-        Saves, distribution, anything that shows how you play. Teams you apply to can watch them, and they help us verify you
-        faster. Up to {KEEPER_VIDEO_MAX} clips, 50 MB each.
+        Saves, distribution, anything that shows how you play. Teams you apply to can watch them, and they help the
+        MatchKeeper team verify your profile faster. Up to {KEEPER_VIDEO_MAX} clips, 50 MB each.
       </p>
 
       {videos.length > 0 && (
