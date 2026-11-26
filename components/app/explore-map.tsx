@@ -327,7 +327,7 @@ export function ExploreMap({
             count={freshCount}
             on={filters.onlyNew}
             onToggle={() => setFilters((f) => ({ ...f, onlyNew: !f.onlyNew }))}
-            className="mt-4"
+            className="mt-4 self-start"
           />
         )}
 
