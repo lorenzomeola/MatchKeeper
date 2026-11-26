@@ -11,6 +11,7 @@ import { ChatIcon, ShieldCheckIcon, StarIcon } from "@/components/platform/icons
 import { loadKeeperProfile } from "@/lib/data/keeper-profile";
 import { loadKeeperVideos } from "@/lib/data/keeper-videos";
 import { KeeperVideos } from "@/components/app/keeper-videos";
+import { ReportClipButton } from "@/components/app/clip-actions";
 import { monthYear, money, shortDate } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
@@ -113,7 +114,7 @@ export default async function KeeperProfilePage({ params }: { params: Promise<{ 
 
       {videos.length > 0 && (
         <Section title="Clips" className="mt-8">
-          <KeeperVideos videos={videos} />
+          <KeeperVideos videos={videos} action={k.isSelf ? undefined : (v) => <ReportClipButton path={v.path} />} />
         </Section>
       )}
 
