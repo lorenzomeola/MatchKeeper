@@ -8,6 +8,7 @@ import { loadUnreadCount } from "@/lib/data/messages";
 import { countNewApplications, hasNewOpenMatches } from "@/lib/data/seen";
 import { loadSupportUnread } from "@/lib/data/support";
 import { getPaymentMode } from "@/lib/payments/mode";
+import { CONTACT_EMAIL } from "@/lib/site";
 
 // Sin viewport-fit=cover: con él, iOS Safari ancla la barra fija inferior bajo su propia barra de herramientas y queda oculta al hacer scroll hacia arriba.
 export const viewport: Viewport = {
@@ -51,12 +52,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   const roleLabel = isKeeper ? "Goalkeeper" : profile?.player_kind === "team" ? "Team" : "Player";
-  const [unread, supportUnread, newApplications, newMatches] = await Promise.all([
+  const [unread, supportUnread, newApplications, newMatches, supportThread] = await Promise.all([
     loadUnreadCount(),
     loadSupportUnread(isAdmin),
     isKeeper ? 0 : countNewApplications(user.id),
     isKeeper && profile?.approved ? hasNewOpenMatches(user.id, profile.category ?? null, profile.explore_seen_at ?? null) : false,
+    isKeeper ? supabase.from("support_threads").select("keeper_id").eq("keeper_id", user.id).maybeSingle() : null,
   ]);
+  // Solo el portero con un hilo abierto por el equipo tiene chat de soporte; el resto escribe por email.
+  const supportHref = supportThread?.data ? "/messages/support" : `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent("MatchKeeper support")}`;
   const paymentMode = await getPaymentMode();
 
   return (
@@ -80,6 +84,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             explore: newMatches ? 1 : 0,
           }}
           paymentsEnabled={paymentMode === "paid"}
+          supportHref={supportHref}
           paymentModeUnavailable={paymentMode === "unavailable"}
         >
           {children}

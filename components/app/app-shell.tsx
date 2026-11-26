@@ -11,7 +11,8 @@ import { NAV, isActive, type NavItem, type NavVariant } from "@/components/app/n
 import { Sheet } from "@/components/app/sheet";
 import { ToastProvider } from "@/components/app/toast";
 import { FloodlightBackdrop } from "@/components/platform/floodlight-backdrop";
-import { LogOutIcon, MoreIcon, PlusIcon, ShieldCheckIcon } from "@/components/platform/icons";
+import { InfoIcon, LogOutIcon, MoreIcon, PlusIcon, ShieldCheckIcon } from "@/components/platform/icons";
+import { ProfileMenu } from "@/components/app/profile-menu";
 import { PaymentModeNotice } from "@/components/platform/payment-mode-notice";
 import { ThemeToggle } from "@/components/platform/theme";
 
@@ -59,6 +60,7 @@ export function AppShell({
   userId,
   user,
   badges,
+  supportHref,
   paymentsEnabled,
   paymentModeUnavailable,
   children,
@@ -68,6 +70,8 @@ export function AppShell({
   userId: string;
   user: ShellUser;
   badges: ShellBadges;
+  /** Chat con MatchKeeper team si el portero ya lo tiene; si no, email de contacto. */
+  supportHref: string;
   paymentsEnabled: boolean;
   paymentModeUnavailable: boolean;
   children: ReactNode;
@@ -242,6 +246,13 @@ export function AppShell({
           </nav>
 
           <div className="mt-4 border-t border-line pt-4">
+            <a
+              href={supportHref}
+              className="mb-1 flex min-h-11 items-center gap-3 rounded-[var(--r-md)] px-3 text-[15px] font-medium text-muted transition-colors duration-200 hover:bg-surface hover:text-fg"
+            >
+              <InfoIcon className="h-5 w-5 shrink-0" />
+              Support
+            </a>
             <Link
               href="/profile"
               className="flex min-h-14 items-center gap-3 rounded-[var(--r-md)] px-2 transition-colors duration-200 hover:bg-surface"
@@ -297,9 +308,7 @@ export function AppShell({
                 </Link>
               )}
               <ThemeToggle />
-              <Link href="/profile" aria-label="Your profile" className="rounded-[var(--r-md)]">
-                <Avatar name={user.name} src={user.avatarUrl} size="sm" />
-              </Link>
+              <ProfileMenu user={user} supportHref={supportHref} />
             </div>
           </header>
 
