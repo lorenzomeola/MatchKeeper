@@ -9,6 +9,8 @@ import { StatCard } from "@/components/app/stat-card";
 import { StatusBadge } from "@/components/app/status-badge";
 import { ChatIcon, ShieldCheckIcon, StarIcon } from "@/components/platform/icons";
 import { loadKeeperProfile } from "@/lib/data/keeper-profile";
+import { loadKeeperVideos } from "@/lib/data/keeper-videos";
+import { KeeperVideos } from "@/components/app/keeper-videos";
 import { monthYear, money, shortDate } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
@@ -24,6 +26,8 @@ export default async function KeeperProfilePage({ params }: { params: Promise<{ 
 
   const k = await loadKeeperProfile(id, user.id);
   if (!k) notFound();
+  // El perfil ya pasó por RLS: si el visor puede verlo, puede ver sus clips.
+  const videos = await loadKeeperVideos(k.id);
 
   const facts = [
     k.experienceYears != null ? `${k.experienceYears} ${k.experienceYears === 1 ? "year" : "years"} as a keeper` : null,
@@ -106,6 +110,12 @@ export default async function KeeperProfilePage({ params }: { params: Promise<{ 
           hint={k.reviewCount ? `${k.reviewCount} ${k.reviewCount === 1 ? "review" : "reviews"}` : undefined}
         />
       </div>
+
+      {videos.length > 0 && (
+        <Section title="Clips" className="mt-8">
+          <KeeperVideos videos={videos} />
+        </Section>
+      )}
 
       <Section title="Reviews" className="mt-8">
         {k.reviews.length === 0 ? (

@@ -5,6 +5,7 @@ import { AppShell } from "@/components/app/app-shell";
 import type { NavVariant } from "@/components/app/nav-config";
 import { ThemeScope } from "@/components/platform/theme";
 import { loadUnreadCount } from "@/lib/data/messages";
+import { countNewApplications, hasNewOpenMatches } from "@/lib/data/seen";
 import { loadSupportUnread } from "@/lib/data/support";
 import { getPaymentMode } from "@/lib/payments/mode";
 
@@ -50,7 +51,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   const roleLabel = isKeeper ? "Goalkeeper" : profile?.player_kind === "team" ? "Team" : "Player";
-  const [unread, supportUnread] = await Promise.all([loadUnreadCount(), loadSupportUnread(isAdmin)]);
+  const [unread, supportUnread, newApplications, newMatches] = await Promise.all([
+    loadUnreadCount(),
+    loadSupportUnread(isAdmin),
+    isKeeper ? 0 : countNewApplications(user.id),
+    isKeeper && profile?.approved ? hasNewOpenMatches(user.id, profile.category ?? null, profile.explore_seen_at ?? null) : false,
+  ]);
   const paymentMode = await getPaymentMode();
 
   return (
@@ -65,7 +71,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             avatarUrl: profile?.avatar_url ?? null,
             roleLabel,
           }}
-          badges={{ unread: unread + supportUnread.keeper, pending, reports, support: supportUnread.inbox }}
+          badges={{
+            unread: unread + supportUnread.keeper,
+            pending,
+            reports,
+            support: supportUnread.inbox,
+            applications: newApplications,
+            explore: newMatches ? 1 : 0,
+          }}
           paymentsEnabled={paymentMode === "paid"}
           paymentModeUnavailable={paymentMode === "unavailable"}
         >

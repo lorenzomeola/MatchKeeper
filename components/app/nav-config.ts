@@ -30,7 +30,7 @@ export type NavItem = {
   primary?: boolean;
   /** Rutas hijas que no deben marcar este elemento como activo. */
   excludes?: string[];
-  badge?: "unread" | "pending" | "reports" | "support";
+  badge?: "unread" | "pending" | "reports" | "support" | "applications" | "explore";
   /** Solo tiene sentido con los pagos encendidos; en la beta sin pagos se oculta. */
   paymentsOnly?: boolean;
   /** Nombre que se muestra en la beta sin pagos, si es distinto. */
@@ -39,7 +39,7 @@ export type NavItem = {
 
 const PLAYER: NavItem[] = [
   { href: "/dashboard", label: "Home", icon: HomeIcon, tab: true },
-  { href: "/matches", label: "Matches", icon: ListIcon, tab: true, excludes: ["/matches/new"] },
+  { href: "/matches", label: "Matches", icon: ListIcon, tab: true, excludes: ["/matches/new"], badge: "applications" },
   { href: "/matches/new", label: "Post a match", short: "Post", icon: PlusIcon, tab: true, primary: true },
   { href: "/messages", label: "Messages", icon: ChatIcon, tab: true, badge: "unread" },
   { href: "/map", label: "Map", icon: MapIcon, tab: true },
@@ -50,7 +50,7 @@ const PLAYER: NavItem[] = [
 
 const GOALKEEPER: NavItem[] = [
   { href: "/dashboard", label: "Home", icon: HomeIcon, tab: true },
-  { href: "/map", label: "Explore", icon: MapIcon, tab: true },
+  { href: "/map", label: "Explore", icon: MapIcon, tab: true, badge: "explore" },
   { href: "/matches", label: "My games", icon: ListIcon, tab: true },
   { href: "/messages", label: "Messages", icon: ChatIcon, tab: true, badge: "unread" },
   { href: "/calendar", label: "Calendar", icon: CalendarIcon, tab: true },

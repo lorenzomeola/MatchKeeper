@@ -117,10 +117,16 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
         />
       ) : (
         <ul className="pl-cards grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {items.map(({ match, pending, keepers, bookingStatuses }) => {
+          {items.map(({ match, pending, fresh, keepers, bookingStatuses }) => {
             const status = matchListStatus(match.status, bookingStatuses);
             const full = keepers.length >= match.keepers_needed;
             const applied = pending > 0 ? `${pending} ${pending === 1 ? "keeper" : "keepers"} applied` : "No applications yet";
+            const action =
+              fresh > 0 ? (
+                <span className="shrink-0 rounded-full bg-accent px-2.5 py-0.5 text-xs font-bold text-accent-ink">{fresh} new</span>
+              ) : (
+                <span className="font-semibold text-accent-strong">{pending > 0 ? "Review" : "View"}</span>
+              );
             return (
               <li key={match.id}>
                 <MatchCard
@@ -140,7 +146,7 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
                         <span className="min-w-0 truncate font-medium text-fg">
                           {keepers.length} of {match.keepers_needed} booked · {applied}
                         </span>
-                        <span className="font-semibold text-accent-strong">{pending > 0 ? "Review" : "View"}</span>
+                        {action}
                       </>
                     ) : tab === "past" ? (
                       <>
@@ -150,7 +156,7 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
                     ) : (
                       <>
                         <span className={pending > 0 ? "font-medium text-warning" : "text-muted"}>{applied}</span>
-                        <span className="font-semibold text-accent-strong">{pending > 0 ? "Review" : "View"}</span>
+                        {action}
                       </>
                     )
                   }

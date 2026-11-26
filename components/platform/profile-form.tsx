@@ -6,6 +6,8 @@ import { saveProfileAction, type ProfileActionState } from "@/lib/actions/profil
 import {
   AGE_RANGE_OPTIONS,
   BIO_MAX,
+  CATEGORIES,
+  CATEGORY_COPY,
   CITY_OPTIONS,
   DETAILED_BIO_MIN,
   KEEPER_BIO_MIN,
@@ -16,9 +18,11 @@ import {
   completeness,
   profileChecklist,
   type ProfileValues,
+  type KeeperVideo,
   type Role,
 } from "@/lib/profile";
 import { AvatarUpload } from "@/components/platform/avatar-upload";
+import { KeeperVideoUpload } from "@/components/platform/keeper-video-upload";
 import {
   Field,
   FormError,
@@ -36,11 +40,13 @@ export function ProfileForm({
   role,
   userId,
   initial,
+  videos = [],
   inShell = false,
 }: {
   role: Role;
   userId: string;
   initial: ProfileValues;
+  videos?: KeeperVideo[];
   /** Dentro del shell de la app: la barra de avance se pega bajo la barra superior y no hay "Skip". */
   inShell?: boolean;
 }) {
@@ -137,6 +143,33 @@ export function ProfileForm({
           </fieldset>
         )}
 
+        <fieldset className="grid gap-2.5">
+          <legend className="mb-1 flex w-full items-baseline justify-between text-sm font-medium text-fg-2">
+            {isKeeper ? "Which football do you keep goal in?" : "Which football do you play?"}
+            <RequirementTag tag="required" />
+          </legend>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {CATEGORIES.map((c) => (
+              <label
+                key={c}
+                className="flex cursor-pointer flex-col gap-1 rounded-[var(--r-xl)] border border-line-strong bg-surface p-4 transition-colors duration-200 hover:border-accent/60 has-[input:checked]:border-accent has-[input:checked]:bg-accent-soft has-[input:focus-visible]:outline has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-[var(--accent)]"
+              >
+                <input
+                  type="radio"
+                  name="category"
+                  value={c}
+                  className="sr-only"
+                  checked={v.category === c}
+                  onChange={() => set("category", c)}
+                />
+                <span className="text-sm font-semibold text-fg">{CATEGORY_COPY[role][c].title}</span>
+                <span className="text-[13px] leading-snug text-muted">{CATEGORY_COPY[role][c].body}</span>
+              </label>
+            ))}
+          </div>
+          {fe.category && <p className="text-[13px] text-danger">{fe.category}</p>}
+        </fieldset>
+
         <AvatarUpload
           userId={userId}
           value={v.avatarUrl}
@@ -177,6 +210,36 @@ export function ProfileForm({
             hint="More cities coming soon."
           />
         </div>
+
+        <TextField
+          label="Mobile number"
+          name="phone"
+          type="tel"
+          inputMode="tel"
+          autoComplete="tel"
+          tag={isKeeper ? "required" : "recommended"}
+          required={isKeeper}
+          placeholder="07700 900123"
+          value={v.phone}
+          onChange={(e) => set("phone", e.target.value)}
+          error={fe.phone}
+          hint="UK mobile. Only MatchKeeper sees it, to reach you about a booking. Never shown on your profile."
+        />
+
+        {isKeeper && (
+          <TextField
+            label="Instagram"
+            name="instagram"
+            tag="optional"
+            autoComplete="off"
+            autoCapitalize="none"
+            placeholder="@yourhandle"
+            value={v.instagram}
+            onChange={(e) => set("instagram", e.target.value)}
+            error={fe.instagram}
+            hint="Only our team sees it, to help verify you. Teams never see it."
+          />
+        )}
 
         {isTeam && (
           <TextField
@@ -286,6 +349,8 @@ export function ProfileForm({
             {v.bio.length}/{BIO_MAX}
           </span>
         </Field>
+
+        {isKeeper && <KeeperVideoUpload userId={userId} initial={videos} />}
 
         <div className="flex flex-col-reverse items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
           {inShell ? (

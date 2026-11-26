@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import type { KeeperApplication, MatchRow } from "@/lib/data/dashboard";
+import { sameCategory } from "@/lib/profile";
 
 export type PinKind = "open" | "applied" | "booked" | "mine" | "mine-booked";
 
@@ -12,6 +13,8 @@ export type ExploreMatch = {
   ends_at: string;
   format: number | null;
   surface: string | null;
+  category?: string | null;
+  created_at?: string;
   level: string | null;
   budget_suggested: string | number | null;
   pref_age_min?: string | null;
@@ -31,6 +34,8 @@ const pin = (m: MatchWithCoords, kind: PinKind, by: string): ExploreMatch => ({
   ends_at: m.ends_at,
   format: m.format,
   surface: m.surface,
+  category: m.category ?? null,
+  created_at: m.created_at,
   level: m.level,
   budget_suggested: m.budget_suggested,
   pref_age_min: m.pref_age_min ?? null,
@@ -40,7 +45,7 @@ const pin = (m: MatchWithCoords, kind: PinKind, by: string): ExploreMatch => ({
 });
 
 /** Partidos para el mapa. El portero ve abiertos, aplicados y reservados; el jugador, los suyos. */
-export async function loadExplore(userId: string, isKeeper: boolean): Promise<ExploreMatch[]> {
+export async function loadExplore(userId: string, isKeeper: boolean, category: string | null = "men"): Promise<ExploreMatch[]> {
   const supabase = await createClient();
   const nowIso = new Date().toISOString();
 
@@ -77,7 +82,9 @@ export async function loadExplore(userId: string, isKeeper: boolean): Promise<Ex
   const mineIds = new Map(apps.map((a) => [a.match_id, a.status === "accepted" ? "booked" : "applied"] as const));
 
   const all = new Map<string, MatchWithCoords>();
-  for (const m of (openData ?? []) as MatchWithCoords[]) all.set(m.id, m);
+  for (const m of (openData ?? []) as MatchWithCoords[]) {
+    if (sameCategory(m.category, category)) all.set(m.id, m);
+  }
   for (const a of apps) all.set(a.match_id, a.matches as MatchWithCoords);
 
   const posterIds = [...new Set([...all.values()].map((m) => m.created_by))];

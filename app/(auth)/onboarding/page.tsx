@@ -6,7 +6,8 @@ import { FloodlightBackdrop } from "@/components/platform/floodlight-backdrop";
 import { ProfileForm } from "@/components/platform/profile-form";
 import { ThemeToggle } from "@/components/platform/theme";
 import { completeness, profileChecklist, valuesFromRow, type Role } from "@/lib/profile";
-import { getOrCreateProfile } from "@/lib/profile-ensure";
+import { getOrCreateProfile, loadMyContact } from "@/lib/profile-ensure";
+import { loadKeeperVideos } from "@/lib/data/keeper-videos";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
@@ -40,7 +41,8 @@ export default async function OnboardingPage() {
     teamName = team?.name ?? "";
   }
 
-  const initial = valuesFromRow(profile, teamName);
+  const initial = valuesFromRow({ ...profile, ...(await loadMyContact(supabase, user.id)) }, teamName);
+  const videos = role === "goalkeeper" ? await loadKeeperVideos(user.id) : [];
   const isComplete = completeness(profileChecklist(role, initial)).requiredMissing.length === 0;
 
   return (
@@ -66,7 +68,7 @@ export default async function OnboardingPage() {
         </p>
 
         <div className="mt-12">
-          <ProfileForm role={role} userId={user.id} initial={initial} />
+          <ProfileForm role={role} userId={user.id} initial={initial} videos={videos} />
         </div>
       </main>
     </div>

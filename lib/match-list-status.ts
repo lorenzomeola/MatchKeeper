@@ -8,6 +8,12 @@ const BOOKING_STATUS = {
   pending_payment: { label: "Awaiting payment", tone: "warning" },
 } as const;
 
+/** Publicado después de la última visita. Sin visita previa, todo cuenta como nuevo. */
+export function isNewSince(createdAt: string | null | undefined, seenAt: string | null | undefined): boolean {
+  if (!createdAt) return false;
+  return !seenAt || Date.parse(createdAt) > Date.parse(seenAt);
+}
+
 export function bookingListStatus(status: string | null) {
   return status !== null && Object.hasOwn(BOOKING_STATUS, status)
     ? BOOKING_STATUS[status as keyof typeof BOOKING_STATUS]

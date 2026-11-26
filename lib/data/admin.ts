@@ -21,9 +21,23 @@ export type AdminProfile = {
   is_admin: boolean;
   created_at: string;
   player_kind?: string | null;
+  category?: string | null;
+  phone?: string | null;
+  instagram?: string | null;
 };
 
 const count = async (q: PromiseLike<{ count: number | null }>) => (await q).count ?? 0;
+
+/** Suma móvil e Instagram (profile_contacts, solo legible por admins) a cada perfil. */
+export async function withPhones<T extends { id: string }>(
+  supabase: Client,
+  rows: T[],
+): Promise<(T & { phone: string | null; instagram: string | null })[]> {
+  if (rows.length === 0) return [];
+  const { data } = await supabase.from("profile_contacts").select("profile_id, phone, instagram").in("profile_id", rows.map((r) => r.id));
+  const contacts = new Map((data ?? []).map((c) => [c.profile_id as string, c as { phone: string; instagram: string | null }]));
+  return rows.map((r) => ({ ...r, phone: contacts.get(r.id)?.phone ?? null, instagram: contacts.get(r.id)?.instagram ?? null }));
+}
 
 export async function namesOf(supabase: Client, ids: string[]) {
   const map = new Map<string, { name: string; avatarUrl: string | null; role: string }>();
@@ -79,7 +93,7 @@ export async function loadAdminOverview() {
 
   return {
     counts: { users, players, keepers, pendingKeepers, newUsers, openMatches, bookedMatches, totalMatches, applications, bookings, openReports },
-    pending: (pendingList ?? []) as AdminProfile[],
+    pending: await withPhones(supabase, (pendingList ?? []) as AdminProfile[]),
     reports,
     names,
   };
@@ -98,7 +112,7 @@ export async function loadKeepers(tab: "pending" | "approved" | "all", q: string
     count(supabase.from("profiles").select("id", { count: "exact", head: true }).eq("role", "goalkeeper").eq("approved", true)),
     count(supabase.from("profiles").select("id", { count: "exact", head: true }).eq("role", "goalkeeper")),
   ]);
-  return { list: (data ?? []) as AdminProfile[], counts: { pending, approved, all } };
+  return { list: await withPhones(supabase, (data ?? []) as AdminProfile[]), counts: { pending, approved, all } };
 }
 
 export type InfoRequest = { question: string; askedAt: string };
@@ -142,7 +156,7 @@ export async function loadUsers(tab: "all" | "player" | "goalkeeper", q: string)
     count(supabase.from("profiles").select("id", { count: "exact", head: true }).eq("role", "player")),
     count(supabase.from("profiles").select("id", { count: "exact", head: true }).eq("role", "goalkeeper")),
   ]);
-  return { list: (data ?? []) as AdminProfile[], counts: { all, player: players, goalkeeper: keepers } };
+  return { list: await withPhones(supabase, (data ?? []) as AdminProfile[]), counts: { all, player: players, goalkeeper: keepers } };
 }
 
 export async function loadAdminMatches(tab: AdminMatchTab, limit = 100) {
@@ -236,7 +250,8 @@ export async function loadReportDetail(id: string) {
     match = ((app as unknown as { matches: ReportMatch | null } | null)?.matches) ?? null;
   }
   const { data: reportedProfile } = await supabase.from("profiles").select("*").eq("id", r.reported_id).maybeSingle();
-  return { report: r, names, messages, match, reported: (reportedProfile ?? null) as AdminProfile | null };
+  const reported = reportedProfile ? (await withPhones(supabase, [reportedProfile as AdminProfile]))[0] : null;
+  return { report: r, names, messages, match, reported };
 }
 
 export async function loadUserDetail(id: string) {
@@ -254,7 +269,7 @@ export async function loadUserDetail(id: string) {
   ]);
   const { data: reports } = await supabase.from("reports").select("id, reason, status, created_at").eq("reported_id", id).order("created_at", { ascending: false }).limit(5);
   return {
-    profile: profile as AdminProfile,
+    profile: (await withPhones(supabase, [profile as AdminProfile]))[0],
     teamName: team?.name ?? "",
     counts: { matches, applications, bookings: bookingsAs, reportsAgainst, reportsBy },
     reports: reports ?? [],

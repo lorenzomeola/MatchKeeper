@@ -3,7 +3,9 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { isAvailableCity } from "@/lib/profile";
+import { normalizeInstagram } from "@/lib/instagram";
+import { normalizeUkMobile } from "@/lib/phone";
+import { isAvailableCity, isCategory } from "@/lib/profile";
 import { ensureProfile, profileInfoFromUser } from "@/lib/profile-ensure";
 
 export type AuthActionState = {
@@ -11,7 +13,7 @@ export type AuthActionState = {
   checkEmail?: boolean;
   sent?: boolean;
   // Se devuelven para que el formulario no se vacíe tras un error (nunca la contraseña).
-  values?: { displayName?: string; city?: string; email?: string };
+  values?: { displayName?: string; city?: string; email?: string; category?: string; phone?: string; instagram?: string };
 };
 
 async function getOrigin() {
@@ -29,11 +31,29 @@ export async function signUpAction(
   const role = formData.get("role") === "goalkeeper" ? "goalkeeper" : "player";
   const city = String(formData.get("city") ?? "").trim();
   const over18 = formData.get("over18") === "on";
+  const category = String(formData.get("category") ?? "");
+  const mobileRaw = String(formData.get("phone") ?? "").trim();
+  const phone = mobileRaw ? normalizeUkMobile(mobileRaw) : null;
+  const instagramRaw = role === "goalkeeper" ? String(formData.get("instagram") ?? "").trim() : "";
+  const instagram = instagramRaw ? normalizeInstagram(instagramRaw) : null;
 
-  const values = { displayName, city, email };
+  const values = { displayName, city, email, category, phone: mobileRaw, instagram: instagramRaw };
+
+  if (!isCategory(category)) {
+    return { error: "Choose men's or women's football.", values };
+  }
 
   if (!email || !password || !displayName) {
     return { error: "Please fill in your name, email and password.", values };
+  }
+  if (mobileRaw && !phone) {
+    return { error: "Enter a UK mobile number, like 07700 900123.", values };
+  }
+  if (role === "goalkeeper" && !phone) {
+    return { error: "Add your mobile so we can reach you about bookings.", values };
+  }
+  if (instagramRaw && !instagram) {
+    return { error: "Enter your Instagram username, like @yourhandle.", values };
   }
   if (!over18) {
     return { error: "MatchKeeper is for adults. Confirm that you are 18 or over to continue.", values };
@@ -52,7 +72,15 @@ export async function signUpAction(
     email,
     password,
     options: {
-      data: { display_name: displayName, role, city, age_confirmed_at: new Date().toISOString() },
+      data: {
+        display_name: displayName,
+        role,
+        city,
+        category,
+        ...(phone ? { mobile: phone } : {}),
+        ...(instagram ? { instagram } : {}),
+        age_confirmed_at: new Date().toISOString(),
+      },
       emailRedirectTo: `${origin}/auth/callback`,
     },
   });
@@ -67,7 +95,7 @@ export async function signUpAction(
 
   // Si "Confirm email" está desactivado en Supabase, ya hay sesión activa.
   if (data.session) {
-    await ensureProfile(supabase, data.user.id, { displayName, role, city });
+    await ensureProfile(supabase, data.user.id, { displayName, role, city, category, phone, instagram });
     redirect("/onboarding");
   }
 

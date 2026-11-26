@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { MonthCalendar } from "@/components/app/month-calendar";
 import { PageHeader } from "@/components/app/page-header";
@@ -23,8 +24,17 @@ export default async function CalendarPage() {
       <PageHeader
         eyebrow={isKeeper ? "Goalkeeper" : me?.player_kind === "team" ? "Team" : "Player"}
         title="Calendar"
-        description={isKeeper ? "Your games and the applications still waiting for a reply." : "Your matches by day, with the keeper booked for each."}
+        description={
+          isKeeper
+            ? "Only the matches you are booked for or have applied to. Open matches looking for a keeper are in Explore."
+            : "Your matches by day, with the keeper booked for each."
+        }
       />
+      {isKeeper && (
+        <Link href="/map" className="-mt-2 mb-6 inline-flex min-h-11 items-center text-sm font-semibold text-accent-strong underline underline-offset-4">
+          Find open matches in Explore
+        </Link>
+      )}
       <MonthCalendar events={events} isKeeper={isKeeper} />
     </>
   );

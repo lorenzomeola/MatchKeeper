@@ -30,13 +30,13 @@ export const MATCH_EXAMPLES: MatchExample[] = [
   },
   {
     venue: "Clapham Common",
-    format: "Friendly, 5-a-side",
+    format: "Women's league, 5-a-side",
     kickoff: "Sat 10:00",
     area: "SW4, London",
     applicants: [
-      { initials: "SK", name: "Sam K.", rating: "4.8", matches: 27, price: "£20", distance: "0.9 mi", best: true },
-      { initials: "JB", name: "Jamal B.", rating: "4.5", matches: 14, price: "£18", distance: "1.8 mi" },
-      { initials: "LP", name: "Luke P.", rating: "4.4", matches: 8, price: "£15", distance: "2.7 mi" },
+      { initials: "SK", name: "Sophie K.", rating: "4.8", matches: 27, price: "£20", distance: "0.9 mi", best: true },
+      { initials: "JB", name: "Jade B.", rating: "4.5", matches: 14, price: "£18", distance: "1.8 mi" },
+      { initials: "LP", name: "Laura P.", rating: "4.4", matches: 8, price: "£15", distance: "2.7 mi" },
     ],
   },
   {

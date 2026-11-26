@@ -55,7 +55,7 @@ function validateStepOne(v: Values, today: string): Errors {
   return e;
 }
 
-export function NewMatchForm({ initialDate = "" }: { initialDate?: string }) {
+export function NewMatchForm({ initialDate = "", category = "men" }: { initialDate?: string; category?: string }) {
   const [state, formAction, pending] = useActionState(createMatchAction, initialState);
   const [today] = useState(todayLondon);
   const [placeholderIso] = useState(() => new Date().toISOString());
@@ -162,6 +162,7 @@ export function NewMatchForm({ initialDate = "" }: { initialDate?: string }) {
     level: v.level || null,
     format: v.format ? Number(v.format) : null,
     surface: v.surface || null,
+    category,
     budget_suggested: budget || null,
     keepers_needed: Number(v.keepers),
     pref_age_min: v.prefAgeMin || null,
@@ -365,6 +366,12 @@ export function NewMatchForm({ initialDate = "" }: { initialDate?: string }) {
               error={err("surface")}
             />
           </div>
+
+          {category === "women" && (
+            <p className="rounded-[var(--r-md)] bg-accent-soft px-4 py-3 text-[13px] leading-relaxed text-fg-2">
+              This is a women&apos;s football match. Only female keepers see it and can apply.
+            </p>
+          )}
 
           <LevelPicker
             label="Level of the match"

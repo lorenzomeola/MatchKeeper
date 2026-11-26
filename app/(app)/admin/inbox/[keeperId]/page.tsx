@@ -5,7 +5,7 @@ import { Avatar } from "@/components/app/avatar";
 import { StatusBadge } from "@/components/app/status-badge";
 import { SupportChat } from "@/components/app/support-chat";
 import { ArrowLeftIcon } from "@/components/platform/icons";
-import { profileRating, type AdminProfile } from "@/lib/data/admin";
+import { profileRating, withPhones, type AdminProfile } from "@/lib/data/admin";
 import { loadOpenMatchOptions, loadSupportMessages } from "@/lib/data/support";
 import { firstName } from "@/lib/format";
 import { appUrl } from "@/lib/payments/app-url";
@@ -24,7 +24,7 @@ export default async function AdminSupportThreadPage({ params }: { params: Promi
   const supabase = await createClient();
   const { data: keeper } = await supabase.from("profiles").select("*").eq("id", keeperId).eq("role", "goalkeeper").maybeSingle();
   if (!keeper) notFound();
-  const p = keeper as AdminProfile;
+  const [p] = await withPhones(supabase, [keeper as AdminProfile]);
 
   const origin = appUrl();
   const [{ messages, keeperReadAt }, open] = await Promise.all([loadSupportMessages(keeperId), loadOpenMatchOptions(origin)]);

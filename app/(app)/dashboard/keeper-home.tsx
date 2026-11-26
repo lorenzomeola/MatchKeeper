@@ -24,7 +24,7 @@ import { createClient } from "@/lib/supabase/server";
 
 type Props = {
   userId: string;
-  profile: { display_name: string; city: string | null; approved: boolean };
+  profile: { display_name: string; city: string | null; approved: boolean; category?: string | null };
   rating: ReturnType<typeof completeness>;
 };
 
@@ -32,7 +32,7 @@ export async function KeeperHome({ userId, profile, rating }: Props) {
   const supabase = await createClient();
   const payments = (await getPaymentMode()) === "paid";
   const [d, unread, { data: payAccount }, standing, debtPence, payoutProblem] = await Promise.all([
-    loadKeeperHome(userId),
+    loadKeeperHome(userId, profile.category ?? "men"),
     loadUnreadCount(),
     supabase.from("keeper_stripe_accounts").select("payouts_enabled").eq("profile_id", userId).maybeSingle(),
     loadMyStanding(supabase, userId),

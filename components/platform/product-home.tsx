@@ -15,6 +15,7 @@ import {
   ShieldCheckIcon,
   StarIcon,
   StripeWordmark,
+  UsersIcon,
 } from "@/components/platform/icons";
 import { MATCH_EXAMPLES } from "@/components/platform/match-examples";
 import { PlatformNav } from "@/components/platform/nav";
@@ -149,6 +150,7 @@ const BETA_POINTS = [
 const BETA_PROOFS = [
   { icon: NoFeeIcon, text: "Free during the beta" },
   { icon: ShieldCheckIcon, text: "Every keeper manually reviewed" },
+  { icon: UsersIcon, text: "Men's & women's football" },
   { icon: StarIcon, text: "Public rating & match history" },
   { icon: ChatIcon, text: "In-app chat with your keeper" },
   { icon: GloveIcon, text: "Free for goalkeepers to join" },
@@ -186,6 +188,7 @@ export function ProductHome({ payments = true, modeUnavailable = false }: { paym
         <Numbers payments={payments} />
         <HowItWorks payments={payments} />
         <WhyMatchKeeper payments={payments} />
+        <WomensFootball />
         {payments ? <Pricing /> : <BetaNotice />}
         <Questions payments={payments} />
         <FinalCTA />
@@ -543,6 +546,68 @@ function WhyMatchKeeper({ payments }: { payments: boolean }) {
             </Reveal>
           );
         })}
+      </div>
+    </Reveal>
+  );
+}
+
+/* ── Fútbol femenino ─────────────────────────────────────────────────────────── */
+const WOMENS_POINTS = [
+  {
+    title: "Women's teams get female keepers",
+    body: "Choose women's football on your profile and every match you post goes to female keepers only.",
+  },
+  {
+    title: "Female keepers see women's matches",
+    body: "Your list only shows women's games near you, so you are not scrolling past matches that are not for you.",
+  },
+  {
+    title: "The same checks for everyone",
+    body: "A person reviews every keeper before they can apply, whichever side of the game they play.",
+  },
+];
+
+function WomensFootball() {
+  return (
+    <Reveal
+      as="section"
+      id="womens-football"
+      className="mx-auto max-w-[1240px] scroll-mt-24 px-5 py-16 sm:px-8 sm:py-24"
+    >
+      <div className="overflow-hidden rounded-[var(--r-2xl)] border border-accent/30 bg-accent-soft p-7 shadow-[var(--shadow-3)] sm:p-12">
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-center lg:gap-16">
+          <div>
+            <p className="pl-eyebrow">Women&apos;s football</p>
+            <h2 className="pl-display mt-4 text-fg [font-size:var(--t-4xl)] [line-height:1.06]">
+              Women&apos;s football has a place here.
+            </h2>
+            <p className="pl-prose mt-6 max-w-[32rem] [font-size:var(--t-lg)]">
+              Women&apos;s teams and female keepers have been part of MatchKeeper from day one. Same app, same checks, your own matches.
+            </p>
+            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+              <Button href="/signup?role=player&category=women" size="lg" withArrow className="w-full sm:w-auto">
+                Post a women&apos;s match
+              </Button>
+              <Button href="/signup?role=goalkeeper&category=women" size="lg" variant="secondary" className="w-full sm:w-auto">
+                Join as a keeper
+              </Button>
+            </div>
+          </div>
+
+          <ul className="space-y-5 lg:border-l lg:border-accent/25 lg:pl-16">
+            {WOMENS_POINTS.map((p, i) => (
+              <Reveal key={p.title} as="li" variant="soft" delay={i * 90} className="flex gap-3">
+                <span className="mt-1 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-bg text-accent">
+                  <CheckIcon className="h-3 w-3" />
+                </span>
+                <span>
+                  <span className="block text-[15px] font-semibold text-fg">{p.title}</span>
+                  <span className="pl-prose mt-1 block text-sm">{p.body}</span>
+                </span>
+              </Reveal>
+            ))}
+          </ul>
+        </div>
       </div>
     </Reveal>
   );

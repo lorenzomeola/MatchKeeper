@@ -64,6 +64,9 @@ export async function applyToMatchAction(
   if (error) {
     // 23505: ya aplicó (índice único por partido y portero).
     if (error.code === "23505") return { error: "You already applied to this match." };
+    if (error.message?.includes("category_mismatch")) {
+      return { error: "This match is for a different category of football than your profile." };
+    }
     console.error("applyToMatchAction failed", error);
     return { error: "We couldn't send your application. Please try again." };
   }
