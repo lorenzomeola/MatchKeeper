@@ -11,6 +11,7 @@ export type AdminTemplateData = {
   admin_keeper_standing: { keeperName: string; level: "review" | "suspended"; points: number; removalCandidate: boolean; adminUrl: string };
   admin_payment_problem: { kind: PaymentProblemKind; pitch: string; keeperName: string; teamName: string; detail: string | null; adminUrl: string };
   admin_support_reply: { keeperName: string; adminUrl: string };
+  admin_deletion_request: { name: string; role: string; adminUrl: string };
 };
 
 const REVIEW_REASONS: Record<string, string> = {
@@ -119,5 +120,15 @@ export const ADMIN_BUILDERS: { [K in keyof AdminTemplateData]: Builder<K> } = {
     paragraphs: [`${d.keeperName} replied to the MatchKeeper team in the app.`],
     cta: { label: "Open the conversation", url: d.adminUrl },
     note: "Only sent if no admin has read the reply after 10 minutes, at most once an hour per keeper.",
+  }),
+
+  admin_deletion_request: (d) => ({
+    title: "Account deletion requested",
+    subject: `[Admin] ${d.name} asked to delete their account`,
+    paragraphs: [
+      `${d.name} (${d.role}) asked to delete their account from their profile.`,
+      "Reply within one month. Check upcoming bookings, open reports and disputes first, then follow the erasure steps in docs/privacy-support-operations.md.",
+    ],
+    cta: { label: "Open the user", url: d.adminUrl },
   }),
 };

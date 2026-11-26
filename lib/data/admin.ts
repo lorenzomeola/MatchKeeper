@@ -24,19 +24,30 @@ export type AdminProfile = {
   category?: string | null;
   phone?: string | null;
   instagram?: string | null;
+  deletion_requested_at?: string | null;
 };
 
 const count = async (q: PromiseLike<{ count: number | null }>) => (await q).count ?? 0;
 
-/** Suma móvil e Instagram (profile_contacts, solo legible por admins) a cada perfil. */
+/** Suma móvil e Instagram (profile_contacts, solo legible por admins) y la solicitud de borrado a cada perfil. */
 export async function withPhones<T extends { id: string }>(
   supabase: Client,
   rows: T[],
-): Promise<(T & { phone: string | null; instagram: string | null })[]> {
+): Promise<(T & { phone: string | null; instagram: string | null; deletion_requested_at: string | null })[]> {
   if (rows.length === 0) return [];
-  const { data } = await supabase.from("profile_contacts").select("profile_id, phone, instagram").in("profile_id", rows.map((r) => r.id));
+  const ids = rows.map((r) => r.id);
+  const [{ data }, { data: deletions }] = await Promise.all([
+    supabase.from("profile_contacts").select("profile_id, phone, instagram").in("profile_id", ids),
+    supabase.from("deletion_requests").select("profile_id, requested_at").in("profile_id", ids),
+  ]);
   const contacts = new Map((data ?? []).map((c) => [c.profile_id as string, c as { phone: string; instagram: string | null }]));
-  return rows.map((r) => ({ ...r, phone: contacts.get(r.id)?.phone ?? null, instagram: contacts.get(r.id)?.instagram ?? null }));
+  const requested = new Map((deletions ?? []).map((d) => [d.profile_id as string, d.requested_at as string]));
+  return rows.map((r) => ({
+    ...r,
+    phone: contacts.get(r.id)?.phone ?? null,
+    instagram: contacts.get(r.id)?.instagram ?? null,
+    deletion_requested_at: requested.get(r.id) ?? null,
+  }));
 }
 
 export async function namesOf(supabase: Client, ids: string[]) {

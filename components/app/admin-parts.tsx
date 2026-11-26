@@ -122,6 +122,7 @@ export function UserRow({ p }: { p: AdminProfile }) {
           {role} · {p.city ?? "No city"} · joined {joined(p.created_at)}
         </span>
       </span>
+      {p.deletion_requested_at && <StatusBadge tone="danger">Deletion requested</StatusBadge>}
       {p.role === "goalkeeper" && <StatusBadge tone={p.approved ? "success" : "warning"}>{p.approved ? "Approved" : "In review"}</StatusBadge>}
     </Link>
   );
