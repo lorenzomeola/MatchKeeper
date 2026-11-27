@@ -18,8 +18,11 @@ function navLinks(payments: boolean) {
   ];
 }
 
-export function PlatformNav({ payments = true }: { payments?: boolean }) {
+export function PlatformNav({ payments = true, keeperFirst = false }: { payments?: boolean; keeperFirst?: boolean }) {
   const LINKS = navLinks(payments);
+  const team = { href: "/signup?role=player", label: "Find a keeper" };
+  const keeper = { href: "/signup?role=goalkeeper", label: "Join as a goalkeeper" };
+  const [primary, secondary] = keeperFirst ? [keeper, team] : [team, keeper];
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -77,16 +80,16 @@ export function PlatformNav({ payments = true }: { payments?: boolean }) {
           >
             Log in
           </Link>
-          <Button href="/signup?role=player" size="sm" className="hidden sm:inline-flex">
-            Find a keeper
+          <Button href={primary.href} size="sm" className="hidden sm:inline-flex">
+            {primary.label}
           </Button>
           <Button
-            href="/signup?role=goalkeeper"
+            href={secondary.href}
             variant="secondary"
             size="sm"
             className="hidden xl:inline-flex"
           >
-            Join as a goalkeeper
+            {secondary.label}
           </Button>
 
           <button
