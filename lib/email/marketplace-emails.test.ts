@@ -19,6 +19,7 @@ const SAMPLES: MarketplaceTemplateData = {
   support_unread: { chatUrl: url },
   match_digest_keeper: { count: 8, matches: ["Sat 10 Oct, 10:00 to 11:00 · Hackney Marshes · 7-a-side"], browseUrl: url, profileUrl: "https://app.test/profile" },
   match_updated_applicant: { pitch: "Hackney Marshes", when: "Saturday 10 October, 10:00 to 11:00", kind: "budget_up", changes: ["Budget: £30 → £45"], matchUrl: url },
+  match_cancelled_applicant: { pitch: "Hackney Marshes", when: "Saturday 10 October, 10:00 to 11:00", browseUrl: url },
   match_updated_keeper: { pitch: "Hackney Marshes", when: "Saturday 10 October, 10:00 to 11:00", kind: "details", changes: ["Date and time: Saturday 10 October → Sunday 11 October"], matchUrl: url, profileUrl: "https://app.test/profile" },
 };
 

@@ -6,6 +6,7 @@ import { ApplicantList, ApplicantStatus, type Applicant } from "@/components/app
 import { ApplyCard, WithdrawButton } from "@/components/app/apply-card";
 import { BookedKeeper } from "@/components/app/booked-keeper";
 import { BookingCard, type BookingForCard } from "@/components/app/booking-card";
+import { CancelMatchButton } from "@/components/app/cancel-match-button";
 import { EmptyState } from "@/components/app/empty-state";
 import { MatchHero } from "@/components/app/match-hero";
 import { Section } from "@/components/app/page-header";
@@ -21,7 +22,7 @@ import { PostedToast } from "@/components/app/posted-toast";
 import { ReviewCard } from "@/components/app/review-card";
 import { MATCH_STATUS, StatusBadge } from "@/components/app/status-badge";
 import { ArrowLeftIcon, ChatIcon, StarIcon, UsersIcon } from "@/components/platform/icons";
-import { daysAway, isPast, money } from "@/lib/format";
+import { daysAway, isPast, money, splitAddress } from "@/lib/format";
 import { sameCategory } from "@/lib/profile";
 import { matchMinutes } from "@/lib/pricing";
 import { getPaymentMode } from "@/lib/payments/mode";
@@ -216,8 +217,13 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
         canEdit={isOwner && match.status === "open" && !expired}
         editNote={
           isOwner && match.status === "open" && !expired && acceptedApps.length > 0
-            ? "A keeper is booked, so only the notes can be edited."
+            ? "A keeper is booked, so only the notes can be edited. To cancel the match, cancel the booking first."
             : undefined
+        }
+        cancel={
+          isOwner && match.status === "open" && !expired && acceptedApps.length === 0 ? (
+            <CancelMatchButton matchId={match.id} pitch={splitAddress(match.address).name} applicants={pending.length} />
+          ) : undefined
         }
         booked={acceptedApps.length}
       />
@@ -256,7 +262,7 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
             </Section>
           )}
 
-          {(acceptedApps.length === 0 || freeSlot) && (
+          {match.status !== "cancelled" && (acceptedApps.length === 0 || freeSlot) && (
             <Section title="Keepers who applied" className="mt-8">
               {freeSlot && acceptedApps.length > 0 && (
                 <p className="pl-prose mb-4 text-[15px]">

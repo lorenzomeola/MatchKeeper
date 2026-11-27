@@ -14,6 +14,7 @@ export type MarketplaceTemplateData = {
   support_unread: { chatUrl: string };
   match_digest_keeper: { count: number; matches: string[]; browseUrl: string; profileUrl: string };
   match_updated_applicant: { pitch: string; when: string; kind: UpdateKind; changes: string[]; matchUrl: string };
+  match_cancelled_applicant: { pitch: string; when: string; browseUrl: string };
   match_updated_keeper: { pitch: string; when: string; kind: UpdateKind; changes: string[]; matchUrl: string; profileUrl: string };
 };
 
@@ -153,6 +154,16 @@ export const MARKETPLACE_BUILDERS: { [K in keyof MarketplaceTemplateData]: Build
         : "Your application is still active, and you can keep your rate or withdraw from the match page.",
     ],
     cta: { label: "View the match", url: d.matchUrl },
+  }),
+
+  match_cancelled_applicant: (d) => ({
+    title: "This match was cancelled",
+    subject: `${d.pitch}: the match was cancelled`,
+    paragraphs: [
+      `The team cancelled the match at ${d.pitch} (${d.when}), so your application is closed.`,
+      "Other teams are still looking for a keeper.",
+    ],
+    cta: { label: "Find another match", url: d.browseUrl },
   }),
 
   match_updated_keeper: (d) => ({

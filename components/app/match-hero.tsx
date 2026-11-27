@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { DateTile } from "@/components/app/match-card";
 import { Spotlight } from "@/components/app/spotlight";
 import { ClockIcon, PencilIcon, PinIcon } from "@/components/platform/icons";
@@ -53,6 +54,7 @@ export function MatchHero({
   posterName,
   canEdit,
   editNote,
+  cancel,
   booked,
 }: {
   match: HeroMatch;
@@ -66,6 +68,8 @@ export function MatchHero({
   canEdit: boolean;
   /** Aviso bajo el pie cuando solo se pueden editar las notas. */
   editNote?: string;
+  /** Botón de cancelar el partido, a la izquierda del pie. */
+  cancel?: ReactNode;
   booked: number;
 }) {
   const pitch = splitAddress(match.address);
@@ -156,7 +160,10 @@ export function MatchHero({
       </div>
 
       <div className="relative flex flex-col gap-3 border-t border-line bg-[color-mix(in_oklab,var(--bg)_45%,transparent)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-7">
-        <p className="text-[13px] leading-snug text-muted sm:max-w-[18rem]">{editNote ?? ""}</p>
+        <div className="flex flex-col items-start sm:max-w-[18rem]">
+          {editNote && <p className="text-[13px] leading-snug text-muted">{editNote}</p>}
+          {cancel}
+        </div>
         <div className="grid grid-cols-2 gap-2.5 sm:flex sm:shrink-0 sm:items-center">
           <a
             href={`https://www.google.com/maps/search/?api=1&query=${match.lat},${match.lng}`}
