@@ -2,14 +2,14 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Avatar } from "@/components/app/avatar";
 import { EmptyState } from "@/components/app/empty-state";
-import { MatchCard } from "@/components/app/match-card";
+import { CardAction, MatchCard } from "@/components/app/match-card";
 import { PageHeader } from "@/components/app/page-header";
 import { APPLICATION_STATUS, StatusBadge } from "@/components/app/status-badge";
 import { Tabs } from "@/components/app/tabs";
 import { Button } from "@/components/platform/button";
-import { ListIcon, MapIcon } from "@/components/platform/icons";
+import { EyeIcon, ListIcon, MapIcon, PencilIcon } from "@/components/platform/icons";
 import { loadKeeperGames, loadPlayerMatches, TABS, type MatchTab } from "@/lib/data/matches";
-import { money } from "@/lib/format";
+import { isPast, money } from "@/lib/format";
 import { bookingListStatus, matchListStatus } from "@/lib/match-list-status";
 import { keeperNames } from "@/lib/slots";
 import { createClient } from "@/lib/supabase/server";
@@ -121,17 +121,28 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
             const status = matchListStatus(match.status, bookingStatuses);
             const full = keepers.length >= match.keepers_needed;
             const applied = pending > 0 ? `${pending} ${pending === 1 ? "keeper" : "keepers"} applied` : "No applications yet";
-            const action =
+            const newPill =
               fresh > 0 ? (
                 <span className="shrink-0 rounded-full bg-accent px-2.5 py-0.5 text-xs font-bold text-accent-ink">{fresh} new</span>
-              ) : (
-                <span className="font-semibold text-accent-strong">{pending > 0 ? "Review" : "View"}</span>
-              );
+              ) : null;
+            const canEdit = match.status === "open" && !isPast(match.ends_at);
             return (
               <li key={match.id}>
                 <MatchCard
                   match={match}
                   href={`/matches/${match.id}`}
+                  actions={
+                    <>
+                      <CardAction href={`/matches/${match.id}`} variant="primary" icon={<EyeIcon className="h-4 w-4" />}>
+                        View
+                      </CardAction>
+                      {canEdit && (
+                        <CardAction href={`/matches/${match.id}/edit`} icon={<PencilIcon className="h-4 w-4" />}>
+                          Edit
+                        </CardAction>
+                      )}
+                    </>
+                  }
                   footer={
                     keepers.length > 0 && (full || tab !== "open") ? (
                       <>
@@ -146,7 +157,7 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
                         <span className="min-w-0 truncate font-medium text-fg">
                           {keepers.length} of {match.keepers_needed} booked · {applied}
                         </span>
-                        {action}
+                        {newPill}
                       </>
                     ) : tab === "past" ? (
                       <>
@@ -155,8 +166,8 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
                       </>
                     ) : (
                       <>
-                        <span className={pending > 0 ? "font-medium text-warning" : "text-muted"}>{applied}</span>
-                        {action}
+                        <span className={`whitespace-nowrap ${pending > 0 ? "font-medium text-warning" : "text-muted"}`}>{applied}</span>
+                        {newPill}
                       </>
                     )
                   }

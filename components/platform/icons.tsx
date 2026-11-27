@@ -281,6 +281,24 @@ export function InfoIcon({ className = "h-5 w-5" }: IconProps) {
   );
 }
 
+export function PencilIcon({ className = "h-4 w-4" }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="m4.5 19.5 1-4.2L16.3 4.5a2.1 2.1 0 0 1 3 3L8.7 18.5Z" />
+      <path d="m14.6 6.2 3.2 3.2" />
+    </svg>
+  );
+}
+
+export function EyeIcon({ className = "h-4 w-4" }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M2.8 12S6.2 5.6 12 5.6 21.2 12 21.2 12 17.8 18.4 12 18.4 2.8 12 2.8 12Z" />
+      <circle cx="12" cy="12" r="2.8" />
+    </svg>
+  );
+}
+
 /** Logotipo de Stripe (marca registrada de Stripe, Inc.) para la fila de
  *  confianza. Se renderiza en `currentColor` para adaptarse a ambos temas. */
 export function StripeWordmark({ className = "h-4" }: IconProps) {

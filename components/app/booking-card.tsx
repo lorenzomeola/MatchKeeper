@@ -1,4 +1,5 @@
 import { CancelBookingButton, CheckInButton, TeamResponseActions } from "@/components/app/booking-actions";
+import { BookingProgress } from "@/components/app/booking-progress";
 import { CheckInPhotoUpload, RemoveCheckInPhotoButton } from "@/components/app/checkin-photo";
 import { StatusBadge } from "@/components/app/status-badge";
 import { moneyPence } from "@/lib/format";
@@ -67,6 +68,7 @@ export function BookingCard({
   startsAt,
   endsAt,
   compact,
+  embedded,
   photoUrl,
 }: {
   role: "owner" | "keeper";
@@ -75,6 +77,8 @@ export function BookingCard({
   endsAt: string;
   /** Dentro de la tarjeta de un portero, con menos separación. */
   compact?: boolean;
+  /** Sin marco propio: va dentro de otra tarjeta (la del portero reservado). */
+  embedded?: boolean;
   /** Enlace temporal a la foto del check-in, si la hay. */
   photoUrl?: string | null;
 }) {
@@ -82,7 +86,16 @@ export function BookingCard({
   const start = new Date(startsAt);
   const free = booking.payment_status === "none";
   const checkedIn = Boolean(booking.keeper_checked_in_at);
-  const shell = `pl-surface ${compact ? "mt-3" : "mt-8"} grid gap-4 rounded-[var(--r-xl)] p-5 sm:p-6`;
+  const shell = embedded ? "grid gap-4" : `pl-surface ${compact ? "mt-3" : "mt-8"} grid gap-4 rounded-[var(--r-xl)] p-5 sm:p-6`;
+  const progress = (
+    <BookingProgress
+      steps={[
+        { label: "Booked", state: "done" },
+        { label: "Check-in", state: checkedIn ? "done" : "current" },
+        { label: "Played", state: checkedIn ? "current" : "todo" },
+      ]}
+    />
+  );
   // El equipo puede cancelar hasta el final del partido; el portero, hasta el inicio.
   const canCancel = booking.status === "confirmed" && (role === "owner" ? now < new Date(endsAt) : now < start);
   const cancelButton = canCancel ? (
@@ -173,7 +186,7 @@ export function BookingCard({
     const closesAt = new Date(start.getTime() + CHECKIN_WINDOW_MIN * 60_000);
     return (
       <section className={shell}>
-        <StatusBadge tone={checkedIn ? "success" : "accent"}>{checkedIn ? "Checked in" : "Booked"}</StatusBadge>
+        {progress}
         {checkedIn ? (
           <>
             <p className="pl-prose text-[15px]">
@@ -222,7 +235,7 @@ export function BookingCard({
     !booking.team_response && booking.auto_release_at && teamCanRespond(now, start, new Date(booking.auto_release_at));
   return (
     <section className={shell}>
-      <StatusBadge tone="accent">Booked</StatusBadge>
+      {progress}
       {checkedIn && (
         <>
           <p className="pl-prose text-[15px]">Your keeper checked in at the pitch at {londonTime(new Date(booking.keeper_checked_in_at!))}.</p>
