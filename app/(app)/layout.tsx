@@ -57,10 +57,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     loadSupportUnread(isAdmin),
     isKeeper ? 0 : countNewApplications(user.id),
     isKeeper && profile?.approved ? hasNewOpenMatches(user.id, profile.category ?? null, profile.explore_seen_at ?? null) : false,
-    isKeeper ? supabase.from("support_threads").select("keeper_id").eq("keeper_id", user.id).maybeSingle() : null,
+    supabase.from("support_threads").select("keeper_id").eq("keeper_id", user.id).maybeSingle(),
   ]);
-  // Solo el portero con un hilo abierto por el equipo tiene chat de soporte; el resto escribe por email.
-  const supportHref = supportThread?.data ? "/messages/support" : `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent("MatchKeeper support")}`;
+  // Solo quien tiene un hilo abierto por el equipo tiene chat de soporte; el resto escribe por email.
+  const supportHref = supportThread.data ? "/messages/support" : `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent("MatchKeeper support")}`;
   const paymentMode = await getPaymentMode();
 
   return (

@@ -7,9 +7,12 @@ import { FORMATS, NOTES_MAX, SURFACES, isLevel } from "@/lib/match-options";
 import { isDuration } from "@/lib/pricing";
 import { isKeepersNeeded } from "@/lib/slots";
 import { AGE_RANGES, isAgeRange } from "@/lib/profile";
+import { isSamePlace } from "@/lib/match-duplicates";
 
 export type MatchActionState = {
   error: string | null;
+  /** Partido abierto que ya cubre esta hora y lugar, para enlazarlo desde el formulario. */
+  duplicateMatchId?: string;
   fieldErrors?: Partial<
     Record<"date" | "startTime" | "duration" | "address" | "format" | "surface" | "keepers" | "budget" | "notes" | "prefAgeMax", string>
   >;
@@ -70,6 +73,35 @@ export async function createMatchAction(
   if (Number.isNaN(lat) || Number.isNaN(lng)) return { error: "Set the pitch location on the map.", fieldErrors: fe };
   if (Object.keys(fe).length > 0) return { error: "Check the highlighted fields.", fieldErrors: fe };
 
+  // Puede tener varios partidos abiertos, pero no el mismo dos veces: mismo usuario, hora y lugar.
+  // Si lo que quiere es cambiar el partido (p. ej. subir el presupuesto), puede cancelar el anterior y publicar este.
+  const { data: sameTime } = await supabase
+    .from("matches")
+    .select("id, address, lat, lng")
+    .eq("created_by", user.id)
+    .eq("status", "open")
+    .eq("starts_at", startsIso);
+  const duplicates = (sameTime ?? []).filter((m) => isSamePlace(m, { address, lat, lng }));
+  if (duplicates.length > 0) {
+    if (text("replaceMatchId") !== duplicates[0].id) {
+      return {
+        error: "You already have an open match at this pitch and time.",
+        duplicateMatchId: duplicates[0].id,
+      };
+    }
+    for (const d of duplicates) {
+      const { error: cancelError } = await supabase.rpc("cancel_open_match", { p_match_id: d.id });
+      if (cancelError) {
+        console.error("cancel_open_match failed", cancelError);
+        return {
+          error: cancelError.message.includes("booked keeper")
+            ? "The earlier match already has a keeper booked, so it can't be replaced."
+            : "We couldn't cancel the earlier match. Please try again.",
+        };
+      }
+    }
+  }
+
   // Si el jugador tiene equipo, el partido se publica a su nombre.
   const { data: team } = await supabase
     .from("teams")
@@ -102,6 +134,10 @@ export async function createMatchAction(
     .select("id")
     .single();
 
+  // 23505: el índice único de db/duplicate-matches.sql frena el doble envío simultáneo.
+  if (error?.code === "23505") {
+    return { error: "You already have an open match at this pitch and time." };
+  }
   if (error || !created) {
     console.error("createMatchAction failed", error);
     return { error: "We couldn't post your match. Please try again." };

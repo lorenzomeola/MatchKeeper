@@ -42,7 +42,7 @@ export default async function SupportThreadPage() {
           </span>
           <div className="min-w-0 flex-1">
             <p className="truncate text-[15px] font-semibold text-fg">MatchKeeper team</p>
-            <p className="truncate text-xs text-muted">Questions about your profile and new matches</p>
+            <p className="truncate text-xs text-muted">Questions, ideas and news from the team</p>
           </div>
         </header>
       }

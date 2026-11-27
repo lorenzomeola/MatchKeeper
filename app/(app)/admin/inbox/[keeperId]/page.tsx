@@ -7,7 +7,7 @@ import { SupportChat } from "@/components/app/support-chat";
 import { ArrowLeftIcon } from "@/components/platform/icons";
 import { profileRating, withPhones, type AdminProfile } from "@/lib/data/admin";
 import { loadOpenMatchOptions, loadSupportMessages } from "@/lib/data/support";
-import { firstName } from "@/lib/format";
+import { firstName, longDate, splitAddress, timeRange } from "@/lib/format";
 import { appUrl } from "@/lib/payments/app-url";
 import { createClient } from "@/lib/supabase/server";
 import { missingPhrase, openMatchesPhrase } from "@/lib/support-templates";
@@ -22,12 +22,29 @@ export default async function AdminSupportThreadPage({ params }: { params: Promi
 
   // El layout de /admin ya comprobó que es admin; RLS deja leer el perfil y el hilo solo a admins.
   const supabase = await createClient();
-  const { data: keeper } = await supabase.from("profiles").select("*").eq("id", keeperId).eq("role", "goalkeeper").maybeSingle();
+  const { data: keeper } = await supabase.from("profiles").select("*").eq("id", keeperId).in("role", ["goalkeeper", "player"]).maybeSingle();
   if (!keeper) notFound();
   const [p] = await withPhones(supabase, [keeper as AdminProfile]);
+  const isKeeper = p.role === "goalkeeper";
 
   const origin = appUrl();
-  const [{ messages, keeperReadAt }, open] = await Promise.all([loadSupportMessages(keeperId), loadOpenMatchOptions(origin)]);
+  const [{ messages, keeperReadAt }, open, playerMatch] = await Promise.all([
+    loadSupportMessages(keeperId),
+    loadOpenMatchOptions(origin),
+    // Para los jugadores, las plantillas de partido se rellenan con su próximo partido abierto.
+    isKeeper
+      ? null
+      : supabase
+          .from("matches")
+          .select("id, starts_at, ends_at, address")
+          .eq("created_by", keeperId)
+          .eq("status", "open")
+          .gt("starts_at", new Date().toISOString())
+          .order("starts_at", { ascending: true })
+          .limit(1)
+          .maybeSingle(),
+  ]);
+  const m = playerMatch?.data;
 
   return (
     <SupportChat
@@ -45,8 +62,14 @@ export default async function AdminSupportThreadPage({ params }: { params: Promi
           profileLink: `${origin}/profile`,
           browseLink: `${origin}/map`,
           openMatches: openMatchesPhrase(open.count),
+          ...(m && {
+            pitch: splitAddress(m.address).name,
+            when: `${longDate(m.starts_at)}, ${timeRange(m.starts_at, m.ends_at)}`,
+            matchLink: `${origin}/matches/${m.id}`,
+          }),
         },
         urgentMatches: open.options,
+        audience: isKeeper ? "keeper" : "player",
       }}
       header={
         <header className="flex items-center gap-3 border-b border-line px-3 py-3 lg:px-5">
@@ -61,7 +84,9 @@ export default async function AdminSupportThreadPage({ params }: { params: Promi
           <div className="min-w-0 flex-1">
             <p className="flex items-center gap-2 text-[15px] font-semibold text-fg">
               <span className="truncate">{p.display_name}</span>
-              <StatusBadge tone={p.approved ? "success" : "warning"}>{p.approved ? "Approved" : "In review"}</StatusBadge>
+              <StatusBadge tone={!isKeeper ? "neutral" : p.approved ? "success" : "warning"}>
+                {!isKeeper ? (p.player_kind === "team" ? "Team" : "Player") : p.approved ? "Approved" : "In review"}
+              </StatusBadge>
             </p>
             <Link href={`/admin/users/${p.id}`} className="text-xs text-muted underline-offset-4 hover:underline">
               Open profile

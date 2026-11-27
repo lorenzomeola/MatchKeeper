@@ -50,7 +50,7 @@ export function SupportChat({
   origin: string;
   header: ReactNode;
   className: string;
-  templates?: { vars: SupportVars; urgentMatches: UrgentMatchOption[] };
+  templates?: { vars: SupportVars; urgentMatches: UrgentMatchOption[]; audience: "keeper" | "player" };
 }) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
@@ -157,7 +157,7 @@ export function SupportChat({
           <div className="grid place-items-center py-10 text-center">
             <p className="pl-display text-fg [font-size:var(--t-xl)]">No messages yet</p>
             <p className="pl-prose mt-2 max-w-[24rem] text-[15px]">
-              Pick a template or write your own message. The keeper sees it in their Messages and gets an email if they don&apos;t open it.
+              Pick a template or write your own message. The user sees it in their Messages and gets an email if they don&apos;t open it.
             </p>
           </div>
         )}
@@ -262,9 +262,11 @@ export function SupportChat({
         <>
           <Sheet open={sheet === "templates"} title="Templates" onClose={() => setSheet(null)}>
             <p className="pl-prose text-[15px]">The text goes into the message box so you can edit it before sending.</p>
-            {(["review", "approved"] as const).map((stage) => (
+            {(templates.audience === "player" ? (["player"] as const) : (["review", "approved"] as const)).map((stage) => (
               <div key={stage} className="mt-4">
-                <p className="text-xs font-medium text-muted">{stage === "review" ? "Before approval" : "After approval"}</p>
+                <p className="text-xs font-medium text-muted">
+                  {stage === "review" ? "Before approval" : stage === "approved" ? "After approval" : "For players"}
+                </p>
                 <ul className="mt-2 grid gap-1.5">
                   {SUPPORT_TEMPLATES.filter((t) => t.stage === stage).map((t) => (
                     <li key={t.id}>

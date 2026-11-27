@@ -17,10 +17,11 @@ export const metadata: Metadata = { title: "Inbox", robots: { index: false } };
 export default async function AdminInboxPage() {
   const supabase = await createClient();
   const origin = appUrl();
-  const [rows, open, { count: approved }] = await Promise.all([
+  const [rows, open, { count: approved }, { count: players }] = await Promise.all([
     loadSupportInbox(),
     loadOpenMatchOptions(origin),
     supabase.from("profiles").select("id", { count: "exact", head: true }).eq("role", "goalkeeper").eq("approved", true),
+    supabase.from("profiles").select("id", { count: "exact", head: true }).eq("role", "player").eq("is_admin", false),
   ]);
 
   return (
@@ -28,21 +29,23 @@ export default async function AdminInboxPage() {
       <PageHeader
         eyebrow="Admin"
         title="Inbox"
-        description="Your conversations with keepers. Every admin shares this inbox, and keepers see it as the MatchKeeper team."
+        description="Your conversations with keepers and players. Every admin shares this inbox, and users see it as the MatchKeeper team."
       />
-      <div className="mb-6">
+      <div className="mb-6 flex flex-wrap gap-3">
         <SupportBroadcast
-          approvedCount={approved ?? 0}
+          audience="keeper"
+          recipientCount={approved ?? 0}
           vars={{ openMatches: openMatchesPhrase(open.count), browseLink: `${origin}/map`, profileLink: `${origin}/profile` }}
           urgentMatches={open.options}
         />
+        <SupportBroadcast audience="player" recipientCount={players ?? 0} vars={{}} urgentMatches={[]} />
       </div>
 
       {rows.length === 0 ? (
         <EmptyState
           icon={ChatIcon}
           title="No conversations yet"
-          body="Start one from a keeper's card in Keepers, or message all approved keepers at once."
+          body="Start one from a user's page in Users, or message all approved keepers or all players at once."
         />
       ) : (
         <ul className="pl-surface divide-y divide-line overflow-hidden rounded-[var(--r-lg)]">
@@ -57,7 +60,11 @@ export default async function AdminInboxPage() {
                   <span className="flex items-baseline justify-between gap-2">
                     <span className={`flex min-w-0 items-center gap-2 text-[15px] text-fg ${r.unread > 0 ? "font-semibold" : "font-medium"}`}>
                       <span className="truncate">{r.name}</span>
-                      <StatusBadge tone={r.approved ? "success" : "warning"}>{r.approved ? "Approved" : "In review"}</StatusBadge>
+                      {r.role === "player" ? (
+                        <StatusBadge>Player</StatusBadge>
+                      ) : (
+                        <StatusBadge tone={r.approved ? "success" : "warning"}>{r.approved ? "Approved" : "In review"}</StatusBadge>
+                      )}
                     </span>
                     <span className="shrink-0 text-xs text-muted">{shortWhen(r.lastMessageAt)}</span>
                   </span>

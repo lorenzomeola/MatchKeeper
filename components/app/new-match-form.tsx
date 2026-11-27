@@ -2,6 +2,7 @@
 
 import { useActionState, useId, useState } from "react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { DateTile, MatchChips } from "@/components/app/match-card";
 import { LevelPicker } from "@/components/app/level-picker";
 import { CtaAction } from "@/components/platform/cta-button";
@@ -208,6 +209,26 @@ export function NewMatchForm({ initialDate = "", category = "men" }: { initialDa
         {state.error && step === 2 && (
           <FormError>
             {state.error}
+            {state.duplicateMatchId && (
+              <>
+                {" "}
+                <Link href={`/matches/${state.duplicateMatchId}`} className="font-semibold underline underline-offset-4">
+                  View that match
+                </Link>
+                <span className="mt-2 block">
+                  Changed something, like the budget? Cancel the earlier one and post this instead.
+                </span>
+                <button
+                  type="submit"
+                  name="replaceMatchId"
+                  value={state.duplicateMatchId}
+                  disabled={pending}
+                  className="mt-2 inline-flex min-h-11 items-center rounded-[var(--r-md)] border border-line-strong px-4 text-sm font-semibold text-fg transition-colors duration-200 hover:border-accent disabled:opacity-60"
+                >
+                  Cancel the earlier match and post this one
+                </button>
+              </>
+            )}
             {serverStepOne && (
               <>
                 {" "}

@@ -4,9 +4,18 @@ export type SupportVar = "name" | "missing" | "profileLink" | "browseLink" | "op
 export type SupportVars = Partial<Record<SupportVar, string>>;
 
 export type SupportTemplate = {
-  id: "complete_profile" | "question" | "welcome" | "open_matches" | "urgent_match" | "inactive";
+  id:
+    | "complete_profile"
+    | "question"
+    | "welcome"
+    | "open_matches"
+    | "urgent_match"
+    | "inactive"
+    | "community_thanks"
+    | "duplicate_match"
+    | "no_applications";
   label: string;
-  stage: "review" | "approved";
+  stage: "review" | "approved" | "player";
   body: string;
 };
 
@@ -46,6 +55,24 @@ export const SUPPORT_TEMPLATES: readonly SupportTemplate[] = [
     label: "Haven't seen you",
     stage: "approved",
     body: "Hi {name}, we haven't seen you apply for a while. Is there anything that's stopping you, like the area, the times or the rate? Tell us and we'll try to help.",
+  },
+  {
+    id: "community_thanks",
+    label: "Thank you",
+    stage: "player",
+    body: "Hi {name}, thank you for being part of MatchKeeper and for trusting us while we're still just getting started. Every match you post helps us grow a community of players and keepers. If you have a question, an idea or something that isn't working, write to us here. We read everything.",
+  },
+  {
+    id: "duplicate_match",
+    label: "Same match twice",
+    stage: "player",
+    body: "Hi {name}, we noticed the same match was posted twice: {pitch}, {when}. To keep things clear for keepers, you can only have one open match for the same pitch and time. If you want to change something, like the budget, the app now lets you cancel the earlier match and post the new one in one step. Your open match is here: {matchLink}. If you need a hand, reply here.",
+  },
+  {
+    id: "no_applications",
+    label: "No applications yet",
+    stage: "player",
+    body: "Hi {name}, your match at {pitch}, {when}, hasn't had keeper applications yet. We're still growing the keeper community and we're reaching out to keepers nearby. It can help to check the budget and level, or tell us anything that would make it easier for a keeper to say yes: {matchLink}",
   },
 ];
 

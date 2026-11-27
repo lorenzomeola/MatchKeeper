@@ -45,6 +45,7 @@ export type InboxRow = {
   keeperId: string;
   name: string;
   avatarUrl: string | null;
+  role: "goalkeeper" | "player";
   approved: boolean;
   lastMessageAt: string;
   last: { body: string; fromAdmin: boolean } | null;
@@ -64,7 +65,7 @@ export async function loadSupportInbox(): Promise<InboxRow[]> {
   const ids = rows.map((t) => t.keeper_id);
 
   const [{ data: people }, { data: msgs }] = await Promise.all([
-    supabase.from("profiles").select("id, display_name, avatar_url, approved").in("id", ids),
+    supabase.from("profiles").select("id, display_name, avatar_url, approved, role").in("id", ids),
     supabase
       .from("support_messages")
       .select("keeper_id, from_admin, body, created_at")
@@ -85,8 +86,9 @@ export async function loadSupportInbox(): Promise<InboxRow[]> {
     const p = byId.get(t.keeper_id);
     return {
       keeperId: t.keeper_id,
-      name: p?.display_name ?? "Unknown keeper",
+      name: p?.display_name ?? "Unknown user",
       avatarUrl: p?.avatar_url ?? null,
+      role: p?.role === "player" ? "player" : "goalkeeper",
       approved: p?.approved === true,
       lastMessageAt: t.last_message_at,
       last: lastOf.get(t.keeper_id) ?? null,
