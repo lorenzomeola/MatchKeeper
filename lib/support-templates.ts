@@ -66,7 +66,7 @@ export const SUPPORT_TEMPLATES: readonly SupportTemplate[] = [
     id: "duplicate_match",
     label: "Same match twice",
     stage: "player",
-    body: "Hi {name}, we noticed the same match was posted twice: {pitch}, {when}. To keep things clear for keepers, you can only have one open match for the same pitch and time. If you want to change something, like the budget, the app now lets you cancel the earlier match and post the new one in one step. Your open match is here: {matchLink}. If you need a hand, reply here.",
+    body: "Hi {name}, we noticed the same match was posted twice: {pitch}, {when}. To keep things clear for keepers, you can only have one open match for the same pitch and time. If you want to change something, like the budget, open your match and tap Edit: keepers who applied and nearby keepers get an email about the change, and nobody loses their application. Your open match is here: {matchLink}. If you need a hand, reply here.",
   },
   {
     id: "no_applications",

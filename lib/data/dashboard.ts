@@ -12,6 +12,8 @@ export type MatchRow = {
   surface: string | null;
   category?: string | null;
   created_at?: string;
+  /** Último cambio relevante del partido (no las notas); null si nunca se editó. */
+  updated_at?: string | null;
   applications_seen_at?: string | null;
   notes: string | null;
   budget_suggested: string | number | null;
