@@ -2,12 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
-import { Avatar } from "@/components/app/avatar";
 import { ApplicantList, ApplicantStatus, type Applicant } from "@/components/app/applicant-list";
 import { ApplyCard, WithdrawButton } from "@/components/app/apply-card";
+import { BookedKeeper } from "@/components/app/booked-keeper";
 import { BookingCard, type BookingForCard } from "@/components/app/booking-card";
 import { EmptyState } from "@/components/app/empty-state";
-import { DateTile, MatchChips } from "@/components/app/match-card";
+import { MatchHero } from "@/components/app/match-hero";
 import { Section } from "@/components/app/page-header";
 import { PaymentSetupCard } from "@/components/app/payment-setup-card";
 import { StandingCard } from "@/components/app/standing-card";
@@ -20,8 +20,8 @@ import { isNewSince } from "@/lib/match-list-status";
 import { PostedToast } from "@/components/app/posted-toast";
 import { ReviewCard } from "@/components/app/review-card";
 import { MATCH_STATUS, StatusBadge } from "@/components/app/status-badge";
-import { ArrowLeftIcon, ChatIcon, PinIcon, StarIcon, UsersIcon } from "@/components/platform/icons";
-import { daysAway, isPast, longDate, money, splitAddress, timeRange } from "@/lib/format";
+import { ArrowLeftIcon, ChatIcon, StarIcon, UsersIcon } from "@/components/platform/icons";
+import { daysAway, isPast, money } from "@/lib/format";
 import { sameCategory } from "@/lib/profile";
 import { matchMinutes } from "@/lib/pricing";
 import { getPaymentMode } from "@/lib/payments/mode";
@@ -207,63 +207,20 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
 
       {modeUnavailable && <PaymentModeNotice className="mb-6" />}
 
-      <section className="pl-surface relative overflow-hidden rounded-[var(--r-xl)] p-5 sm:p-7">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-accent opacity-[0.12] blur-3xl"
-        />
-        <div className="relative">
-          <div className="flex items-center justify-between gap-3">
-            <StatusBadge tone={status.tone} dot={match.status === "open" && !expired}>
-              {status.label}
-            </StatusBadge>
-            {match.status !== "cancelled" && !isPast(match.ends_at) && (
-              <span className="text-xs font-semibold text-accent-strong">{daysAway(match.starts_at)}</span>
-            )}
-          </div>
-
-          {isOwner && match.status === "open" && !expired && (
-            <Link
-              href={`/matches/${match.id}/edit`}
-              className="mt-4 inline-flex min-h-11 items-center rounded-[var(--r-md)] border border-line-strong px-4 text-sm font-semibold text-fg transition-colors duration-200 hover:border-accent"
-            >
-              Edit match
-            </Link>
-          )}
-
-          <div className="mt-5 flex items-start gap-4 sm:gap-5">
-            <DateTile iso={match.starts_at} large />
-            <div className="min-w-0 flex-1">
-              <h1 className="pl-display text-fg [font-size:var(--t-3xl)]">{splitAddress(match.address).name}</h1>
-              {splitAddress(match.address).rest && (
-                <p className="mt-1 text-sm text-muted">{splitAddress(match.address).rest}</p>
-              )}
-              <p className="mt-2 text-sm text-fg-2">
-                {longDate(match.starts_at)} · {timeRange(match.starts_at, match.ends_at)}
-              </p>
-              {!isOwner && <p className="mt-1 text-sm text-muted">Posted by {posterName}</p>}
-              <MatchChips match={match} />
-            </div>
-          </div>
-
-          {match.notes && (
-            <p className="mt-5 rounded-[var(--r-md)] bg-surface px-4 py-3 text-sm leading-relaxed text-fg-2">
-              <span className="mb-0.5 block text-xs font-medium text-muted">Notes</span>
-              {match.notes}
-            </p>
-          )}
-
-          <a
-            href={`https://www.google.com/maps/search/?api=1&query=${match.lat},${match.lng}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-5 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-accent-strong"
-          >
-            <PinIcon className="h-4 w-4" />
-            Open the pitch in Maps
-          </a>
-        </div>
-      </section>
+      <MatchHero
+        match={match}
+        status={status}
+        live={match.status === "open" && !expired}
+        countdown={match.status !== "cancelled" && !isPast(match.ends_at) ? daysAway(match.starts_at) : null}
+        posterName={isOwner ? undefined : posterName}
+        canEdit={isOwner && match.status === "open" && !expired}
+        editNote={
+          isOwner && match.status === "open" && !expired && acceptedApps.length > 0
+            ? "A keeper is booked, so only the notes can be edited."
+            : undefined
+        }
+        booked={acceptedApps.length}
+      />
 
       {!isOwner && myBooking && (
         <BookingCard role="keeper" booking={myBooking} startsAt={match.starts_at} endsAt={match.ends_at} photoUrl={photoOf(myBooking)} />
@@ -281,32 +238,17 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
                   const bk = latestFor(booked.id);
                   return (
                     <li key={booked.id}>
-                      <div className="pl-surface flex items-center gap-4 rounded-[var(--r-lg)] p-4 sm:p-5">
-                        <Link href={`/keepers/${booked.goalkeeper_id}`} aria-label="Keeper profile" className="shrink-0">
-                          <Avatar name={booked.profiles?.display_name ?? "Goalkeeper"} src={booked.profiles?.avatar_url} size="lg" />
-                        </Link>
-                        <div className="min-w-0 flex-1">
-                          <Link href={`/keepers/${booked.goalkeeper_id}`} className="-my-2.5 block truncate py-2.5 text-base font-semibold text-fg hover:text-accent-strong">
-                            {booked.profiles?.display_name ?? "Goalkeeper"}
-                          </Link>
-                          <p className="text-sm text-muted">
-                            {money(booked.rate)} {payments ? "for this match" : "asked for this match"}
-                          </p>
-                          {!bookingEnded && (
-                            <div className="mt-1.5">
-                              <ApplicantStatus status="accepted" />
-                            </div>
-                          )}
-                        </div>
-                        <Link
-                          href={`/messages/${booked.id}`}
-                          className="inline-flex min-h-12 shrink-0 items-center gap-2 rounded-[var(--r-md)] border border-line-strong px-4 text-[15px] font-medium text-fg transition-colors duration-200 hover:border-accent"
-                        >
-                          <ChatIcon className="h-[18px] w-[18px]" />
-                          Message
-                        </Link>
-                      </div>
-                      {bk && <BookingCard role="owner" booking={bk} startsAt={match.starts_at} endsAt={match.ends_at} photoUrl={photoOf(bk)} compact />}
+                      <BookedKeeper
+                        keeperId={booked.goalkeeper_id}
+                        name={booked.profiles?.display_name ?? "Goalkeeper"}
+                        avatarUrl={booked.profiles?.avatar_url}
+                        rate={Number(booked.rate)}
+                        free={!payments}
+                        chatHref={`/messages/${booked.id}`}
+                        ended={bookingEnded || bk?.status === "cancelled"}
+                      >
+                        {bk && <BookingCard role="owner" booking={bk} startsAt={match.starts_at} endsAt={match.ends_at} photoUrl={photoOf(bk)} embedded />}
+                      </BookedKeeper>
                     </li>
                   );
                 })}
@@ -315,7 +257,7 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
           )}
 
           {(acceptedApps.length === 0 || freeSlot) && (
-            <Section title={`Keepers who applied${applicants.length ? ` (${applicants.length})` : ""}`} className="mt-8">
+            <Section title="Keepers who applied" className="mt-8">
               {freeSlot && acceptedApps.length > 0 && (
                 <p className="pl-prose mb-4 text-[15px]">
                   You still need {needed - acceptedApps.length} more {needed - acceptedApps.length === 1 ? "keeper" : "keepers"}.
