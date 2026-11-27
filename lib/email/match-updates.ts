@@ -8,7 +8,7 @@ import { queueEmail } from "./outbox";
 
 // Un partido no avisa más de una vez por hora: evita inundar a los porteros si el equipo retoca varias veces.
 const THROTTLE_MS = 60 * 60_000;
-const BATCH = 10;
+const BATCH = 2;
 
 /**
  * Partido editado: los porteros que ya aplicaron reciben un aviso propio y el resto de porteros aprobados de la
