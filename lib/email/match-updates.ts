@@ -10,6 +10,31 @@ import { queueEmail } from "./outbox";
 const THROTTLE_MS = 60 * 60_000;
 const BATCH = 2;
 
+/** Partido cancelado por el equipo: los porteros que tenían candidatura pendiente saben que se cierra. */
+export async function notifyMatchCancelled(matchId: string, keeperIds: string[]) {
+  const admin = createAdminClient();
+  const { data: match } = await admin.from("matches").select("id, address, starts_at, ends_at, status").eq("id", matchId).maybeSingle();
+  if (!match || match.status !== "cancelled") return;
+
+  const pitch = splitAddress(match.address).name;
+  const when = `${longDate(match.starts_at)}, ${timeRange(match.starts_at, match.ends_at)}`;
+  for (let i = 0; i < keeperIds.length; i += BATCH) {
+    await Promise.all(
+      keeperIds.slice(i, i + BATCH).map(async (id) => {
+        const email = (await admin.auth.admin.getUserById(id)).data.user?.email;
+        if (!email) return;
+        await queueEmail({
+          template: "match_cancelled_applicant",
+          toEmail: email,
+          toUserId: id,
+          dedupe: `match_cancelled:${matchId}:${id}`,
+          data: { pitch, when, browseUrl: `${appUrl()}/map` },
+        });
+      }),
+    );
+  }
+}
+
 /**
  * Partido editado: los porteros que ya aplicaron reciben un aviso propio y el resto de porteros aprobados de la
  * categoría (que no han desactivado los emails de partidos) otro, distinto según qué cambió.

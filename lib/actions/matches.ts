@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { londonLocalToIso } from "@/lib/format";
 import { FORMATS, NOTES_MAX, SURFACES, isLevel } from "@/lib/match-options";
@@ -10,7 +11,44 @@ import { AGE_RANGES, isAgeRange } from "@/lib/profile";
 import { isSamePlace } from "@/lib/match-duplicates";
 import { diffMatch, updateKind, type MatchSnapshot } from "@/lib/match-changes";
 import { defer } from "@/lib/email/booking-emails";
-import { notifyMatchUpdated } from "@/lib/email/match-updates";
+import { notifyMatchCancelled, notifyMatchUpdated } from "@/lib/email/match-updates";
+
+type Supabase = Awaited<ReturnType<typeof createClient>>;
+
+/** Cancela (no borra) un partido abierto propio y avisa a los porteros con candidatura pendiente. Devuelve el error, si lo hay. */
+async function cancelOwnOpenMatch(supabase: Supabase, matchId: string): Promise<string | null> {
+  // Se leen antes: al cancelar, las candidaturas pendientes pasan a rechazadas.
+  const { data: pending } = await supabase.from("applications").select("goalkeeper_id").eq("match_id", matchId).eq("status", "pending");
+  const { error } = await supabase.rpc("cancel_open_match", { p_match_id: matchId });
+  if (error) {
+    console.error("cancel_open_match failed", error);
+    return error.message;
+  }
+  const keeperIds = (pending ?? []).map((a) => a.goalkeeper_id as string);
+  if (keeperIds.length > 0) defer(() => notifyMatchCancelled(matchId, keeperIds));
+  return null;
+}
+
+/** Cancelar un partido propio abierto y sin portero reservado; queda en el historial como cancelado. */
+export async function cancelMatchAction(matchId: string): Promise<{ error: string | null }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You need to be logged in." };
+
+  const error = await cancelOwnOpenMatch(supabase, matchId);
+  if (error) {
+    return {
+      error: error.includes("booked keeper")
+        ? "A keeper is booked for this match. Cancel the booking first."
+        : "We couldn't cancel the match. Please try again.",
+    };
+  }
+  revalidatePath("/matches");
+  revalidatePath(`/matches/${matchId}`);
+  return { error: null };
+}
 
 export type MatchActionState = {
   error: string | null;
@@ -139,11 +177,10 @@ export async function createMatchAction(
       };
     }
     for (const d of duplicates) {
-      const { error: cancelError } = await supabase.rpc("cancel_open_match", { p_match_id: d.id });
+      const cancelError = await cancelOwnOpenMatch(supabase, d.id);
       if (cancelError) {
-        console.error("cancel_open_match failed", cancelError);
         return {
-          error: cancelError.message.includes("booked keeper")
+          error: cancelError.includes("booked keeper")
             ? "The earlier match already has a keeper booked, so it can't be replaced."
             : "We couldn't cancel the earlier match. Please try again.",
         };
