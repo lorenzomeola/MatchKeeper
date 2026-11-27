@@ -222,6 +222,15 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
             )}
           </div>
 
+          {isOwner && match.status === "open" && !expired && (
+            <Link
+              href={`/matches/${match.id}/edit`}
+              className="mt-4 inline-flex min-h-11 items-center rounded-[var(--r-md)] border border-line-strong px-4 text-sm font-semibold text-fg transition-colors duration-200 hover:border-accent"
+            >
+              Edit match
+            </Link>
+          )}
+
           <div className="mt-5 flex items-start gap-4 sm:gap-5">
             <DateTile iso={match.starts_at} large />
             <div className="min-w-0 flex-1">

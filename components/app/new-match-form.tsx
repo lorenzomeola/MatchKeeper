@@ -7,7 +7,7 @@ import { DateTile, MatchChips } from "@/components/app/match-card";
 import { LevelPicker } from "@/components/app/level-picker";
 import { CtaAction } from "@/components/platform/cta-button";
 import { Field, FormError, RequirementTag, SelectField, SubmitButton, TextField } from "@/components/platform/form-fields";
-import { createMatchAction, type MatchActionState } from "@/lib/actions/matches";
+import { createMatchAction, updateMatchAction, type MatchActionState } from "@/lib/actions/matches";
 import { londonLocalToIso, timeRange, todayLondon } from "@/lib/format";
 import { searchPlaces, type Place } from "@/lib/geocode";
 import { FORMAT_OPTIONS, NOTES_MAX, SURFACE_OPTIONS } from "@/lib/match-options";
@@ -56,31 +56,49 @@ function validateStepOne(v: Values, today: string): Errors {
   return e;
 }
 
-export function NewMatchForm({ initialDate = "", category = "men" }: { initialDate?: string; category?: string }) {
-  const [state, formAction, pending] = useActionState(createMatchAction, initialState);
+export type MatchFormInitial = Values & { lat: number; lng: number };
+
+export function NewMatchForm({
+  initialDate = "",
+  category = "men",
+  edit,
+}: {
+  initialDate?: string;
+  category?: string;
+  /** Editar un partido ya publicado; con `notesOnly` (portero reservado) solo se cambian las notas. */
+  edit?: { matchId: string; initial: MatchFormInitial; notesOnly: boolean };
+}) {
+  const notesOnly = edit?.notesOnly ?? false;
+  const [state, formAction, pending] = useActionState(edit ? updateMatchAction : createMatchAction, initialState);
   const [, startTransition] = useTransition();
   const [today] = useState(todayLondon);
   const [placeholderIso] = useState(() => new Date().toISOString());
-  const [step, setStep] = useState<1 | 2>(1);
-  const [v, setV] = useState<Values>({
-    date: initialDate,
-    startTime: "19:00",
-    duration: "60",
-    address: "",
-    format: "",
-    surface: "",
-    level: "",
-    keepers: "1",
-    budget: "",
-    prefAgeMin: "",
-    prefAgeMax: "",
-    notes: "",
-  });
-  const [pos, setPos] = useState(LONDON);
-  // El presupuesto sigue a formato y duración hasta que el jugador lo edita.
-  const [budgetTouched, setBudgetTouched] = useState(false);
+  const [step, setStep] = useState<1 | 2>(edit ? 2 : 1);
+  const [v, setV] = useState<Values>(
+    edit
+      ? edit.initial
+      : {
+          date: initialDate,
+          startTime: "19:00",
+          duration: "60",
+          address: "",
+          format: "",
+          surface: "",
+          level: "",
+          keepers: "1",
+          budget: "",
+          prefAgeMin: "",
+          prefAgeMax: "",
+          notes: "",
+        },
+  );
+  const [pos, setPos] = useState(edit ? { lat: edit.initial.lat, lng: edit.initial.lng } : LONDON);
+  // El presupuesto sigue a formato y duración hasta que el jugador lo edita; al editar parte del que ya tiene.
+  const [budgetTouched, setBudgetTouched] = useState(Boolean(edit));
   // La ubicación solo cuenta como puesta si salió de un resultado de búsqueda o el usuario movió el pin.
-  const [placed, setPlaced] = useState<{ by: "search" | "map"; label: string } | null>(null);
+  const [placed, setPlaced] = useState<{ by: "search" | "map"; label: string } | null>(
+    edit ? { by: "search", label: edit.initial.address } : null,
+  );
   const addressId = useId();
   const [errors, setErrors] = useState<Errors>({});
   const [finding, setFinding] = useState(false);
@@ -171,6 +189,19 @@ export function NewMatchForm({ initialDate = "", category = "men" }: { initialDa
     pref_age_max: v.prefAgeMax || null,
   };
 
+  const editHref = state.duplicateMatchId
+    ? `/matches/${state.duplicateMatchId}/edit?${new URLSearchParams({
+        format: v.format,
+        surface: v.surface,
+        level: v.level,
+        keepers: v.keepers,
+        budget,
+        prefAgeMin: v.prefAgeMin,
+        prefAgeMax: v.prefAgeMax,
+        notes: v.notes,
+      }).toString()}`
+    : null;
+
   return (
     <div className="grid grid-cols-1 gap-10 xl:grid-cols-[minmax(0,34rem)_minmax(0,1fr)] xl:gap-14">
       <form
@@ -186,7 +217,7 @@ export function NewMatchForm({ initialDate = "", category = "men" }: { initialDa
           const e2: Errors = {};
           if (!v.format) e2.format = "Choose the format.";
           if (!v.surface) e2.surface = "Choose the surface.";
-          const all = { ...e1, ...e2 };
+          const all: Errors = notesOnly ? {} : { ...e1, ...e2 };
           if (Object.keys(all).length > 0) {
             setErrors(all);
             if (Object.keys(e1).length > 0) setStep(1);
@@ -212,25 +243,42 @@ export function NewMatchForm({ initialDate = "", category = "men" }: { initialDa
         {state.error && step === 2 && (
           <FormError>
             {state.error}
-            {state.duplicateMatchId && (
+            {state.duplicateMatchId && edit && (
               <>
                 {" "}
                 <Link href={`/matches/${state.duplicateMatchId}`} className="font-semibold underline underline-offset-4">
                   View that match
                 </Link>
-                <span className="mt-2 block">
-                  Changed something, like the budget? Cancel the earlier one and post this instead.
+              </>
+            )}
+            {state.duplicateMatchId && !edit && editHref && (
+              <span className="mt-3 grid gap-2">
+                <span>
+                  Want to change something, like the budget? Edit your existing match instead. Keepers who applied, and nearby
+                  keepers, get an email about the change.
+                </span>
+                <Link
+                  href={editHref}
+                  className="inline-flex min-h-11 items-center justify-center rounded-[var(--r-md)] bg-accent px-4 text-sm font-semibold text-accent-ink transition-colors duration-200 hover:bg-accent-strong"
+                >
+                  Edit my existing match with these details
+                </Link>
+                <span className="mt-2 text-[13px]">
+                  Or start over: this cancels the earlier match, its applications are lost, and this one is posted as new.
                 </span>
                 <button
                   type="submit"
                   name="replaceMatchId"
                   value={state.duplicateMatchId}
                   disabled={pending}
-                  className="mt-2 inline-flex min-h-11 items-center rounded-[var(--r-md)] border border-line-strong px-4 text-sm font-semibold text-fg transition-colors duration-200 hover:border-accent disabled:opacity-60"
+                  className="inline-flex min-h-11 items-center justify-center rounded-[var(--r-md)] border border-line-strong px-4 text-sm font-semibold text-fg transition-colors duration-200 hover:border-accent disabled:opacity-60"
                 >
                   Cancel the earlier match and post this one
                 </button>
-              </>
+                <Link href={`/matches/${state.duplicateMatchId}`} className="text-[13px] font-semibold underline underline-offset-4">
+                  View the existing match
+                </Link>
+              </span>
             )}
             {serverStepOne && (
               <>
@@ -245,6 +293,7 @@ export function NewMatchForm({ initialDate = "", category = "men" }: { initialDa
 
         <input type="hidden" name="lat" value={pos.lat} />
         <input type="hidden" name="lng" value={pos.lng} />
+        {edit && <input type="hidden" name="matchId" value={edit.matchId} />}
 
         {/* Los dos pasos permanecen montados para que ambos viajen en el formulario. */}
         <div className={step === 1 ? "grid grid-cols-1 gap-6" : "hidden"}>
@@ -355,6 +404,13 @@ export function NewMatchForm({ initialDate = "", category = "men" }: { initialDa
         </div>
 
         <div className={step === 2 ? "grid min-w-0 grid-cols-1 gap-6" : "hidden"}>
+          {notesOnly && (
+            <p className="rounded-[var(--r-md)] bg-accent-soft px-4 py-3 text-[13px] leading-relaxed text-fg-2">
+              A keeper is already booked for this match, so you can only edit the notes. To change anything else, cancel the
+              booking first.
+            </p>
+          )}
+          <fieldset disabled={notesOnly} className="contents">
           <div className="flex items-center gap-4 rounded-[var(--r-lg)] border border-line bg-surface p-4 xl:hidden">
             <DateTile iso={preview.starts_at} />
             <div className="min-w-0 flex-1">
@@ -464,6 +520,7 @@ export function NewMatchForm({ initialDate = "", category = "men" }: { initialDa
             }}
             error={err("budget")}
           />
+          </fieldset>
 
           <Field
             label="Notes for the keeper"
@@ -487,16 +544,31 @@ export function NewMatchForm({ initialDate = "", category = "men" }: { initialDa
           </Field>
 
           <div className="grid gap-3">
-            <SubmitButton pending={pending} pendingLabel="Posting…">
-              Post match
+            {edit && !notesOnly && (
+              <p className="rounded-[var(--r-md)] bg-surface px-4 py-3 text-[13px] leading-relaxed text-muted">
+                Saving keeps this same match. If you change the date, pitch, format, budget or other details, the keepers who
+                applied and nearby keepers get an email about the update. Changing only the notes doesn&apos;t email anyone.
+              </p>
+            )}
+            <SubmitButton pending={pending} pendingLabel={edit ? "Saving…" : "Posting…"}>
+              {edit ? "Save changes" : "Post match"}
             </SubmitButton>
-            <button
-              type="button"
-              onClick={() => setStep(1)}
-              className="inline-flex min-h-11 items-center justify-center text-sm font-medium text-muted underline underline-offset-4 hover:text-fg"
-            >
-              Back to step 1
-            </button>
+            {edit ? (
+              <Link
+                href={`/matches/${edit.matchId}`}
+                className="inline-flex min-h-11 items-center justify-center text-sm font-medium text-muted underline underline-offset-4 hover:text-fg"
+              >
+                Discard changes
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                className="inline-flex min-h-11 items-center justify-center text-sm font-medium text-muted underline underline-offset-4 hover:text-fg"
+              >
+                Back to step 1
+              </button>
+            )}
           </div>
         </div>
       </form>

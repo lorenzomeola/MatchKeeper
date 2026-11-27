@@ -35,7 +35,7 @@ const pin = (m: MatchWithCoords, kind: PinKind, by: string): ExploreMatch => ({
   format: m.format,
   surface: m.surface,
   category: m.category ?? null,
-  created_at: m.created_at,
+  created_at: m.updated_at && m.updated_at > (m.created_at ?? "") ? m.updated_at : m.created_at,
   level: m.level,
   budget_suggested: m.budget_suggested,
   pref_age_min: m.pref_age_min ?? null,

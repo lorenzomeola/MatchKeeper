@@ -1,5 +1,6 @@
 // Plantillas de los emails de marketplace (candidaturas, aprobación, reseñas, chat). Las fechas e importes llegan formateados.
 import type { LayoutInput } from "./templates.ts";
+import type { UpdateKind } from "../match-changes.ts";
 
 export type MarketplaceTemplateData = {
   application_received_team: { keeperName: string; rate: string; pitch: string; when: string; matchUrl: string };
@@ -12,6 +13,8 @@ export type MarketplaceTemplateData = {
   keeper_info_request: { question: string; replyTo: string; profileUrl: string };
   support_unread: { chatUrl: string };
   match_digest_keeper: { count: number; matches: string[]; browseUrl: string; profileUrl: string };
+  match_updated_applicant: { pitch: string; when: string; kind: UpdateKind; changes: string[]; matchUrl: string };
+  match_updated_keeper: { pitch: string; when: string; kind: UpdateKind; changes: string[]; matchUrl: string; profileUrl: string };
 };
 
 type Ctx = { siteUrl: string };
@@ -133,4 +136,34 @@ export const MARKETPLACE_BUILDERS: { [K in keyof MarketplaceTemplateData]: Build
       note: `You get this email on Wednesdays when there are matches you haven't applied to. You can turn it off in your profile: ${d.profileUrl}`,
     };
   },
+
+  match_updated_applicant: (d) => ({
+    title: d.kind === "budget_up" ? "The budget went up" : d.kind === "budget" ? "The budget changed" : "A match you applied to changed",
+    subject:
+      d.kind === "budget_up"
+        ? `${d.pitch}: the budget went up`
+        : d.kind === "budget"
+          ? `${d.pitch}: the budget changed`
+          : `${d.pitch}: the match details changed`,
+    paragraphs: [
+      `The team changed the match you applied to at ${d.pitch} (${d.when}).`,
+      { label: "What changed", quote: d.changes },
+      d.kind === "details"
+        ? "Your application is still active. If the new details don't work for you, you can withdraw it from the match page."
+        : "Your application is still active, and you can keep your rate or withdraw from the match page.",
+    ],
+    cta: { label: "View the match", url: d.matchUrl },
+  }),
+
+  match_updated_keeper: (d) => ({
+    title: d.kind === "budget_up" ? "A match raised its budget" : "A match was updated",
+    subject: d.kind === "budget_up" ? `Budget raised: ${d.pitch} still needs a keeper` : `Updated: ${d.pitch} still needs a keeper`,
+    paragraphs: [
+      `${d.pitch} (${d.when}) was updated and still needs a keeper.`,
+      { label: "What changed", quote: d.changes },
+      "If it suits you now, you can apply with your own rate.",
+    ],
+    cta: { label: "View the match", url: d.matchUrl },
+    note: `You get this because you're an approved keeper. You can turn match emails off in your profile: ${d.profileUrl}`,
+  }),
 };

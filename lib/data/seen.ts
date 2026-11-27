@@ -21,12 +21,15 @@ export async function hasNewOpenMatches(userId: string, category: string | null,
   const supabase = await createClient();
   let query = supabase
     .from("matches")
-    .select("id, category, created_at")
+    .select("id, category, created_at, updated_at")
     .eq("status", "open")
     .gte("ends_at", new Date().toISOString())
     .neq("created_by", userId)
     .limit(100);
-  if (seenAt) query = query.gt("created_at", seenAt);
+  if (seenAt) {
+    const iso = new Date(seenAt).toISOString();
+    query = query.or(`created_at.gt.${iso},updated_at.gt.${iso}`);
+  }
   const [{ data: open }, { data: applied }] = await Promise.all([
     query,
     supabase.from("applications").select("match_id").eq("goalkeeper_id", userId),
