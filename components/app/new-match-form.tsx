@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useId, useState } from "react";
+import { useActionState, useId, useState, useTransition } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { DateTile, MatchChips } from "@/components/app/match-card";
@@ -58,6 +58,7 @@ function validateStepOne(v: Values, today: string): Errors {
 
 export function NewMatchForm({ initialDate = "", category = "men" }: { initialDate?: string; category?: string }) {
   const [state, formAction, pending] = useActionState(createMatchAction, initialState);
+  const [, startTransition] = useTransition();
   const [today] = useState(todayLondon);
   const [placeholderIso] = useState(() => new Date().toISOString());
   const [step, setStep] = useState<1 | 2>(1);
@@ -173,11 +174,10 @@ export function NewMatchForm({ initialDate = "", category = "men" }: { initialDa
   return (
     <div className="grid grid-cols-1 gap-10 xl:grid-cols-[minmax(0,34rem)_minmax(0,1fr)] xl:gap-14">
       <form
-        action={formAction}
         noValidate
         onSubmit={(e) => {
+          e.preventDefault();
           if (step === 1) {
-            e.preventDefault();
             goNext();
             return;
           }
@@ -188,10 +188,13 @@ export function NewMatchForm({ initialDate = "", category = "men" }: { initialDa
           if (!v.surface) e2.surface = "Choose the surface.";
           const all = { ...e1, ...e2 };
           if (Object.keys(all).length > 0) {
-            e.preventDefault();
             setErrors(all);
             if (Object.keys(e1).length > 0) setStep(1);
+            return;
           }
+          // Sin action={}: React reiniciaría el formulario tras un error del servidor y vaciaría los selects.
+          const data = new FormData(e.currentTarget, (e.nativeEvent as SubmitEvent).submitter);
+          startTransition(() => formAction(data));
         }}
         className="grid min-w-0 grid-cols-1 gap-7"
       >
