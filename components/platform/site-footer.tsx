@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FacebookIcon, InstagramIcon, Logo } from "@/components/logo";
+import { CookieSettingsButton } from "@/components/platform/meta-pixel";
 import { CONTACT_EMAIL, SITE_TAGLINE, SOCIALS } from "@/lib/site";
 
 /**
@@ -40,6 +41,7 @@ export function SiteFooter({ payments = true }: { payments?: boolean }) {
               <FooterLink href="/privacy">Privacy Policy</FooterLink>
               <FooterLink href="/safety">Safety</FooterLink>
               <FooterLink href={`mailto:${CONTACT_EMAIL}`}>Contact</FooterLink>
+              <CookieSettingsButton className="pl-focus inline-flex min-h-10 w-fit items-center rounded-[var(--r-xs)] text-left text-muted transition-colors duration-200 hover:text-accent-strong" />
             </FooterColumn>
           </div>
         </div>

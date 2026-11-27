@@ -13,7 +13,7 @@ export const revalidate = 60;
 
 export default function PrivacyPage() {
   return (
-    <LegalShell eyebrow="Legal" title="Privacy Policy" updated="2026-11-26">
+    <LegalShell eyebrow="Legal" title="Privacy Policy" updated="2026-11-27">
       {(payments) => (
         <>
       <p>
@@ -151,6 +151,10 @@ export default function PrivacyPage() {
           protecting accounts, keeping the service reliable and understanding how it is used.
           Handling data-rights requests and legally required records: compliance with legal obligations.
         </li>
+        <li>
+          Measuring our Meta ads with the Meta Pixel: your consent, given in the cookie banner. You
+          can withdraw it at any time from &quot;Cookie settings&quot; in the footer.
+        </li>
       </ul>
       <p>
         {payments
@@ -177,6 +181,10 @@ export default function PrivacyPage() {
           and sends authentication emails through the configured SMTP provider.
         </li>
         <li>Vercel, which hosts the site and provides page-view analytics.</li>
+        <li>
+          Meta, only if you accept advertising cookies, to measure which of our ads bring people to
+          MatchKeeper (see section 4). Meta also uses this data under its own privacy policy.
+        </li>
         <li>Resend, which receives recipients and email content to send account and service emails.</li>
         <li>
           Mapbox, which provides maps and place search. Your browser sends map requests and the
@@ -197,24 +205,37 @@ export default function PrivacyPage() {
         by emailing us; an admin can waive a strike made in error. We do not sell your data.
       </p>
 
-      <h2>4. Cookies and similar storage</h2>
+      <h2 id="cookies">4. Cookies and similar storage</h2>
       <p>
         We use a cookie to keep you logged in, and your browser&apos;s local storage to remember
         whether you prefer the light or the dark theme. Login cookies support authentication;
         theme storage remembers your display preference. Vercel&apos;s analytics counts page views
         without using cookies. Cookie-free analytics still involves processing technical data.
       </p>
+      <p>
+        Advertising cookies are off unless you accept them. If you accept in the cookie banner, we
+        load the Meta Pixel on our public pages (home, the London landing pages, the sign-up and
+        login pages, and these legal pages), never inside your account area. It sets Meta cookies (_fbp, and _fbc
+        when you arrive from one of our ads) and tells Meta which of those pages you visit, with
+        your IP address and browser information, and when you create an account, with the role you
+        chose (goalkeeper or player). We do not send Meta your name, email or phone number. If you
+        reject or make no choice, the pixel is not loaded. Your choice is kept in your
+        browser&apos;s local storage; you can change it at any time from &quot;Cookie
+        settings&quot; in the footer, and rejecting deletes those Meta cookies from this site.
+      </p>
 
       <h2>5. Transfers outside the UK and the EU</h2>
       <p>
         The Production Supabase database is hosted in London. This does not mean that all data
-        stays in the UK: hosting, maps, email, analytics and provider support may involve processing
-        outside the UK or the European Economic Area. Provider information is available in the{" "}
+        stays in the UK: hosting, maps, email, analytics, advertising measurement and provider
+        support may involve processing outside the UK or the European Economic Area. Provider
+        information is available in the{" "}
         <a href="https://supabase.com/privacy">Supabase privacy policy</a>,{" "}
         <a href="https://vercel.com/legal/privacy-policy">Vercel privacy policy</a>,{" "}
         <a href="https://resend.com/legal/privacy-policy">Resend privacy policy</a>,{" "}
         <a href="https://www.mapbox.com/legal/privacy">Mapbox privacy policy</a>,{" "}
-        <a href="https://www.cloudflare.com/privacypolicy/">Cloudflare privacy policy</a> and{" "}
+        <a href="https://www.cloudflare.com/privacypolicy/">Cloudflare privacy policy</a>,{" "}
+        <a href="https://www.facebook.com/privacy/policy/">Meta privacy policy</a> and{" "}
         <a href="https://policies.google.com/privacy">Google privacy policy</a>.
         Contact us to request details of the applicable transfer arrangements and safeguards.
       </p>

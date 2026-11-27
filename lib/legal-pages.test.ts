@@ -39,7 +39,7 @@ for (const payments of [false, true]) {
 
   test(`${mode}: privacy discloses searches, public photos and manual rights handling`, () => {
     const html = renderLegalPage("privacy", payments);
-    assert.match(html, /data-updated="2026-11-26"/);
+    assert.match(html, /data-updated="2026-11-27"/);
     assert.match(html, /men&#x27;s or women&#x27;s football|men's or women's football/);
     assert.match(html, /never shown to other users/);
     assert.match(html, /Only MatchKeeper admins can see it/);
@@ -60,6 +60,16 @@ for (const payments of [false, true]) {
     assert.match(html, /mailto:hello@matchkeeperuk.com/);
     assert.doesNotMatch(html, /This draft|must be\s+confirmed before/);
     assert.equal(html.includes("Stripe"), payments);
+  });
+
+  test(`${mode}: privacy discloses the consent-only Meta Pixel`, () => {
+    const html = renderLegalPage("privacy", payments);
+    assert.match(html, /id="cookies"/);
+    assert.match(html, /Advertising cookies are off unless you accept them/);
+    assert.match(html, /never inside your account area/);
+    assert.match(html, /We do not send Meta your name, email or phone number/);
+    assert.match(html, /Cookie\s+settings(&quot;|")\s+in the footer/);
+    assert.match(html, /https:\/\/www\.facebook\.com\/privacy\/policy\//);
   });
 
   test(`${mode}: terms explain closure separately from bookings and support deadlines`, () => {
