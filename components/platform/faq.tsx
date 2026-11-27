@@ -95,7 +95,7 @@ const TEAM_FAQ: QA[] = [
         You get a full refund and the goalkeeper receives a strike. Report it within three days of
         the match so we can sort the refund. A no-show suspends the goalkeeper from new matches,
         and a second one within 12 months can get them removed from the platform. The full rules
-        are in the <a href="#cancellations">cancellation table</a> above
+        are in the <Link href="/home#cancellations">cancellation table</Link>
         and on the <Link href="/safety">Safety page</Link>.
       </>
     ),
@@ -390,6 +390,20 @@ export function Faq({ payments = true }: { payments?: boolean }) {
       </div>
     </div>
   );
+}
+
+export function AudienceFaq({
+  audience,
+  title,
+  payments = true,
+}: {
+  audience: "team" | "keeper";
+  title: string;
+  payments?: boolean;
+}) {
+  const items =
+    audience === "team" ? (payments ? TEAM_FAQ : TEAM_FAQ_BETA) : payments ? KEEPER_FAQ : KEEPER_FAQ_BETA;
+  return <FaqGroup title={title} items={items} />;
 }
 
 /* ── Cancelaciones ─────────────────────────────────────────────────────────

@@ -30,6 +30,11 @@ export function SiteFooter({ payments = true }: { payments?: boolean }) {
               <FooterLink href="/login">Log in</FooterLink>
             </FooterColumn>
 
+            <FooterColumn title="London">
+              <FooterLink href="/hire-a-goalkeeper-london">Hire a goalkeeper</FooterLink>
+              <FooterLink href="/goalkeeper-matches-london">Matches for goalkeepers</FooterLink>
+            </FooterColumn>
+
             <FooterColumn title="Legal">
               <FooterLink href="/terms">Terms of Service</FooterLink>
               <FooterLink href="/privacy">Privacy Policy</FooterLink>
