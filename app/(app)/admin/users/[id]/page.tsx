@@ -96,10 +96,19 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
             </div>
           </div>
 
-          {isKeeper && (
+          {isKeeper ? (
             <div className="sm:w-56 sm:shrink-0">
               <ApprovalControl profileId={p.id} name={p.display_name} approved={p.approved} missing={rating.requiredMissing.map((i) => i.label)} />
             </div>
+          ) : (
+            !p.is_admin && (
+              <Link
+                href={`/admin/inbox/${p.id}`}
+                className="inline-flex min-h-12 items-center justify-center rounded-[var(--r-md)] bg-accent px-5 text-[15px] font-semibold text-accent-ink transition-[transform,background-color] duration-150 hover:bg-accent-strong active:scale-[0.98] sm:w-56 sm:shrink-0"
+              >
+                Message in the app
+              </Link>
+            )
           )}
         </div>
 

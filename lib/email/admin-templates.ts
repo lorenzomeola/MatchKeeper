@@ -115,11 +115,11 @@ export const ADMIN_BUILDERS: { [K in keyof AdminTemplateData]: Builder<K> } = {
   }),
 
   admin_support_reply: (d) => ({
-    title: "A keeper replied",
+    title: "A user replied",
     subject: `[Admin] ${d.keeperName} replied in the inbox`,
     paragraphs: [`${d.keeperName} replied to the MatchKeeper team in the app.`],
     cta: { label: "Open the conversation", url: d.adminUrl },
-    note: "Only sent if no admin has read the reply after 10 minutes, at most once an hour per keeper.",
+    note: "Only sent if no admin has read the reply after 10 minutes, at most once an hour per user.",
   }),
 
   admin_deletion_request: (d) => ({

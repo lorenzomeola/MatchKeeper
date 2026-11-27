@@ -43,8 +43,11 @@ export async function markSupportReadAction(keeperId: string): Promise<{ error: 
   return { error: null };
 }
 
-/** El mismo mensaje a todos los porteros aprobados, cada uno en su hilo; {name} se cambia por su nombre. */
-export async function broadcastSupportMessageAction(body: string): Promise<{ error: string | null; sent?: number; failed?: number }> {
+/** El mismo mensaje a todos los porteros aprobados, o a todos los jugadores, cada uno en su hilo; {name} se cambia por su nombre. */
+export async function broadcastSupportMessageAction(
+  body: string,
+  audience: "keeper" | "player",
+): Promise<{ error: string | null; sent?: number; failed?: number }> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -56,14 +59,13 @@ export async function broadcastSupportMessageAction(body: string): Promise<{ err
   const text = body.trim();
   if (text.length < 10) return { error: "Write the message first (at least 10 characters)." };
 
-  const { data: keepers, error } = await supabase
-    .from("profiles")
-    .select("id, display_name")
-    .eq("role", "goalkeeper")
-    .eq("approved", true)
-    .neq("id", user.id);
-  if (error) return { error: "We couldn't load the keepers. Try again." };
-  if (!keepers?.length) return { error: "There are no approved keepers yet." };
+  const base = supabase.from("profiles").select("id, display_name").neq("id", user.id);
+  const { data: keepers, error } =
+    audience === "keeper"
+      ? await base.eq("role", "goalkeeper").eq("approved", true)
+      : await base.eq("role", "player").eq("is_admin", false);
+  if (error) return { error: "We couldn't load the recipients. Try again." };
+  if (!keepers?.length) return { error: audience === "keeper" ? "There are no approved keepers yet." : "There are no players yet." };
 
   const drafts = keepers.map((k) => ({ id: k.id, body: fillTemplate(text, { name: firstName(k.display_name) }) }));
   if (drafts.some((d) => d.body.length > 1000)) return { error: "The message is too long once names are added. Keep it under 1000 characters." };

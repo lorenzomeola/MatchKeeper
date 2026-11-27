@@ -10,37 +10,46 @@ import { SUPPORT_TEMPLATES, fillTemplate, type SupportVars } from "@/lib/support
 
 const template = (id: string) => SUPPORT_TEMPLATES.find((t) => t.id === id)!.body;
 
-type BroadcastTemplate = "open_matches" | "urgent_match" | "inactive";
+type BroadcastTemplate = "open_matches" | "urgent_match" | "inactive" | "community_thanks";
+type Audience = "keeper" | "player";
 
 // "Welcome" no está aquí: se envía solo al aprobar a cada portero.
-const OPTIONS: { id: BroadcastTemplate; label: string; hint: string }[] = [
-  { id: "open_matches", label: "Open matches", hint: "Tells them how many matches need a keeper right now, with a link to the map." },
-  { id: "urgent_match", label: "Urgent match", hint: "Announces one specific match that needs a keeper soon." },
-  { id: "inactive", label: "Haven't seen you", hint: "Asks keepers who stopped applying what is getting in the way." },
+const OPTIONS: { id: BroadcastTemplate; audience: Audience; label: string; hint: string }[] = [
+  { id: "open_matches", audience: "keeper", label: "Open matches", hint: "Tells them how many matches need a keeper right now, with a link to the map." },
+  { id: "urgent_match", audience: "keeper", label: "Urgent match", hint: "Announces one specific match that needs a keeper soon." },
+  { id: "inactive", audience: "keeper", label: "Haven't seen you", hint: "Asks keepers who stopped applying what is getting in the way." },
+  { id: "community_thanks", audience: "player", label: "Thank you", hint: "Thanks players for being part of MatchKeeper and trusting it while it is just starting." },
 ];
 
-/** El mismo mensaje a todos los porteros aprobados, cada uno en su propio hilo. */
+const NOUN = { keeper: ["keeper", "keepers"], player: ["player", "players"] } as const;
+
+/** El mismo mensaje a todos los porteros aprobados, o a todos los jugadores, cada uno en su propio hilo. */
 export function SupportBroadcast({
-  approvedCount,
+  audience,
+  recipientCount,
   vars,
   urgentMatches,
 }: {
-  approvedCount: number;
-  /** Variables comunes; {name} se rellena en el servidor para cada portero. */
+  audience: Audience;
+  recipientCount: number;
+  /** Variables comunes; {name} se rellena en el servidor para cada destinatario. */
   vars: SupportVars;
   urgentMatches: UrgentMatchOption[];
 }) {
   const router = useRouter();
   const { toast } = useToast();
+  const choices = OPTIONS.filter((o) => o.audience === audience);
+  const [singular, plural] = NOUN[audience];
+  const audienceLabel = audience === "keeper" ? "all approved keepers" : "all players";
   const [open, setOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
-  const [templateId, setTemplateId] = useState<BroadcastTemplate>("open_matches");
+  const [templateId, setTemplateId] = useState<BroadcastTemplate>(choices[0].id);
   const [matchId, setMatchId] = useState("");
-  const [text, setText] = useState(() => fillTemplate(template("open_matches"), vars));
+  const [text, setText] = useState(() => fillTemplate(template(choices[0].id), vars));
   const [edited, setEdited] = useState(false);
   const [pending, startTransition] = useTransition();
 
-  const options = OPTIONS.filter((o) => o.id !== "urgent_match" || urgentMatches.length > 0);
+  const options = choices.filter((o) => o.id !== "urgent_match" || urgentMatches.length > 0);
   const selected = OPTIONS.find((o) => o.id === templateId)!;
 
   function draftFor(id: BroadcastTemplate, match: string) {
@@ -59,7 +68,7 @@ export function SupportBroadcast({
 
   function send() {
     startTransition(async () => {
-      const res = await broadcastSupportMessageAction(text);
+      const res = await broadcastSupportMessageAction(text, audience);
       if (res.error) {
         toast(res.error, "error");
         setConfirming(false);
@@ -67,7 +76,7 @@ export function SupportBroadcast({
       }
       setOpen(false);
       setConfirming(false);
-      toast(res.failed ? `Sent to ${res.sent} keepers. ${res.failed} failed.` : `Sent to ${res.sent} keepers.`, res.failed ? "error" : "success");
+      toast(res.failed ? `Sent to ${res.sent} ${plural}. ${res.failed} failed.` : `Sent to ${res.sent} ${plural}.`, res.failed ? "error" : "success");
       router.refresh();
     });
   }
@@ -77,15 +86,15 @@ export function SupportBroadcast({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        disabled={approvedCount === 0}
+        disabled={recipientCount === 0}
         className="inline-flex min-h-12 items-center justify-center rounded-[var(--r-md)] bg-accent px-5 text-[15px] font-semibold text-accent-ink transition-[transform,background-color] duration-150 hover:bg-accent-strong active:scale-[0.98] disabled:opacity-50"
       >
-        Message all approved keepers
+        Message {audienceLabel}
       </button>
 
       <Sheet
         open={open}
-        title="Message all approved keepers"
+        title={`Message ${audienceLabel}`}
         onClose={() => {
           if (pending) return;
           setOpen(false);
@@ -93,7 +102,7 @@ export function SupportBroadcast({
         }}
       >
         <p className="pl-prose text-[15px]">
-          Each keeper gets it in their own conversation with MatchKeeper. <code>{"{name}"}</code> becomes their first name.
+          Each {singular} gets it in their own conversation with MatchKeeper. <code>{"{name}"}</code> becomes their first name.
         </p>
 
         <label htmlFor="broadcast-template" className="mt-4 block text-sm font-medium text-fg">
@@ -168,7 +177,7 @@ export function SupportBroadcast({
               disabled={pending}
               className="inline-flex min-h-12 items-center justify-center rounded-[var(--r-md)] bg-accent px-5 text-[15px] font-semibold text-accent-ink transition-[transform,opacity] duration-150 active:scale-[0.98] disabled:opacity-50"
             >
-              {pending ? "Sending…" : `Yes, send to ${approvedCount} ${approvedCount === 1 ? "keeper" : "keepers"}`}
+              {pending ? "Sending…" : `Yes, send to ${recipientCount} ${recipientCount === 1 ? singular : plural}`}
             </button>
           ) : (
             <button
@@ -177,7 +186,7 @@ export function SupportBroadcast({
               disabled={text.trim().length < 10}
               className="inline-flex min-h-12 items-center justify-center rounded-[var(--r-md)] bg-accent px-5 text-[15px] font-semibold text-accent-ink transition-[transform,opacity] duration-150 active:scale-[0.98] disabled:opacity-50"
             >
-              Send to {approvedCount} {approvedCount === 1 ? "keeper" : "keepers"}
+              Send to {recipientCount} {recipientCount === 1 ? singular : plural}
             </button>
           )}
           <button
