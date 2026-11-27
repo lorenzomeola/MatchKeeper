@@ -62,7 +62,7 @@ export function ProfileMenu({
         <div
           role="menu"
           aria-label="Account"
-          className="pl-surface absolute right-0 top-full z-50 mt-2 w-64 rounded-[var(--r-lg)] p-2 shadow-[var(--shadow-4)]"
+          className="pl-surface pl-menu-in absolute right-0 top-full z-50 mt-2 w-64 rounded-[var(--r-lg)] p-2 shadow-[var(--shadow-4)]"
         >
           <div className="flex items-center gap-3 px-3 pb-3 pt-2">
             <Avatar name={user.name} src={user.avatarUrl} size="sm" />

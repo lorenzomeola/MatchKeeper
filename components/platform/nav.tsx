@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/platform/button";
 import { CloseIcon, MenuIcon } from "@/components/platform/icons";
@@ -25,6 +25,7 @@ export function PlatformNav({ payments = true, keeperFirst = false }: { payments
   const [primary, secondary] = keeperFirst ? [keeper, team] : [team, keeper];
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   // La cabecera solo "se materializa" cuando dejas el hero: en el tope, el
   // contenido manda; al hacer scroll, la navegación necesita su propio plano.
@@ -35,15 +36,18 @@ export function PlatformNav({ payments = true, keeperFirst = false }: { payments
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Bloquea el scroll de fondo y permite cerrar el menú con Escape.
+  // Se cierra al pulsar fuera o con Escape; el scroll de fondo sigue libre.
   useEffect(() => {
     if (!open) return;
+    const onDown = (e: PointerEvent) => {
+      if (!menuRef.current?.contains(e.target as Node)) setOpen(false);
+    };
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("pointerdown", onDown);
     document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
     return () => {
+      document.removeEventListener("pointerdown", onDown);
       document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
     };
   }, [open]);
 
@@ -92,65 +96,58 @@ export function PlatformNav({ payments = true, keeperFirst = false }: { payments
             {secondary.label}
           </Button>
 
-          <button
-            type="button"
-            onClick={() => setOpen((v) => !v)}
-            aria-expanded={open}
-            aria-controls="mk-mobile-nav"
-            aria-label={open ? "Close menu" : "Open menu"}
-            className="pl-focus grid h-10 w-10 place-items-center rounded-full border border-line bg-surface text-fg-2 transition-colors duration-200 hover:text-fg xl:hidden"
-          >
-            {open ? <CloseIcon /> : <MenuIcon />}
-          </button>
-        </div>
-      </div>
+          <div ref={menuRef} className="relative xl:hidden">
+            <button
+              type="button"
+              onClick={() => setOpen((v) => !v)}
+              aria-expanded={open}
+              aria-haspopup="menu"
+              aria-controls="mk-mobile-nav"
+              aria-label={open ? "Close menu" : "Open menu"}
+              className="pl-focus grid h-10 w-10 place-items-center rounded-full border border-line bg-surface text-fg-2 transition-colors duration-200 hover:text-fg"
+            >
+              {open ? <CloseIcon /> : <MenuIcon />}
+            </button>
 
-      {/* Panel móvil: se despliega en su propio plano, no empuja el contenido. */}
-      <div
-        id="mk-mobile-nav"
-        hidden={!open}
-        className="border-t border-line bg-[color-mix(in_oklab,var(--bg)_92%,transparent)] backdrop-blur-xl xl:hidden"
-      >
-        <nav aria-label="Mobile" className="mx-auto max-w-[1240px] px-5 py-4">
-          <ul className="space-y-1">
-            {LINKS.map((l, i) => (
-              <li
-                key={l.href}
-                className="pl-reveal pl-reveal--soft"
-                data-visible={open}
-                style={{ "--pl-delay": `${i * 55}ms` } as React.CSSProperties}
+            {open && (
+              <div
+                id="mk-mobile-nav"
+                role="menu"
+                aria-label="Menu"
+                className="pl-surface pl-menu-in absolute right-0 top-full z-50 mt-2 w-[min(18rem,calc(100vw-2.5rem))] rounded-[var(--r-lg)] p-2 shadow-[var(--shadow-4)]"
               >
-                <a
-                  href={l.href}
-                  onClick={() => setOpen(false)}
-                  className="pl-focus block rounded-[var(--r-md)] px-3 py-3 text-base font-medium text-fg-2 transition-colors duration-200 hover:bg-surface hover:text-fg"
-                >
-                  {l.label}
-                </a>
-              </li>
-            ))}
-          </ul>
+                {LINKS.map((l) => (
+                  <a
+                    key={l.href}
+                    href={l.href}
+                    role="menuitem"
+                    onClick={() => setOpen(false)}
+                    className="flex min-h-12 w-full items-center rounded-[var(--r-md)] px-3 text-[15px] font-medium text-fg transition-colors duration-150 hover:bg-surface focus-visible:bg-surface"
+                  >
+                    {l.label}
+                  </a>
+                ))}
 
-          <div className="mt-4 grid gap-2 border-t border-line pt-4">
-            <Button href="/signup?role=player" size="lg" withArrow onClick={() => setOpen(false)}>
-              Find a goalkeeper
-            </Button>
-            <Button
-              href="/signup?role=goalkeeper"
-              variant="secondary"
-              size="lg"
-              onClick={() => setOpen(false)}
-            >
-              Join as a goalkeeper
-            </Button>
-            <Link
-              href="/login"
-              className="pl-focus mt-1 rounded-[var(--r-md)] py-2 text-center text-sm font-semibold text-muted transition-colors hover:text-fg"
-            >
-              Log in
-            </Link>
+                <div className="mt-1 grid gap-2 border-t border-line px-1 pb-1 pt-3">
+                  <Button href={primary.href} size="md" withArrow onClick={() => setOpen(false)}>
+                    {primary.label}
+                  </Button>
+                  <Button href={secondary.href} variant="secondary" size="md" onClick={() => setOpen(false)}>
+                    {secondary.label}
+                  </Button>
+                  <Link
+                    href="/login"
+                    role="menuitem"
+                    onClick={() => setOpen(false)}
+                    className="flex min-h-11 items-center justify-center rounded-[var(--r-md)] text-sm font-semibold text-muted transition-colors hover:text-fg"
+                  >
+                    Log in
+                  </Link>
+                </div>
+              </div>
+            )}
           </div>
-        </nav>
+        </div>
       </div>
     </header>
   );

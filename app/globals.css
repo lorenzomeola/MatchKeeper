@@ -148,6 +148,27 @@ body {
   transform: none;
 }
 
+/* Menús desplegables: nacen de la esquina que los abre. */
+@keyframes pl-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.pl-menu-in {
+  transform-origin: top right;
+  animation: pl-menu-in var(--d-2) var(--e-out);
+}
+@media (prefers-reduced-motion: reduce) {
+  .pl-menu-in {
+    animation: none;
+  }
+}
+
 /* ── Entrada del hero al cargar (stagger de arriba a abajo) ──────────────── */
 @keyframes rise-in {
   from {
