@@ -12,7 +12,6 @@ export type SupportTemplate = {
     | "urgent_match"
     | "inactive"
     | "community_thanks"
-    | "duplicate_match"
     | "no_applications";
   label: string;
   stage: "review" | "approved" | "player";
@@ -61,12 +60,6 @@ export const SUPPORT_TEMPLATES: readonly SupportTemplate[] = [
     label: "Thank you",
     stage: "player",
     body: "Hi {name}, thank you for being part of MatchKeeper and for trusting us while we're still just getting started. Every match you post helps us grow a community of players and keepers. If you have a question, an idea or something that isn't working, write to us here. We read everything.",
-  },
-  {
-    id: "duplicate_match",
-    label: "Same match twice",
-    stage: "player",
-    body: "Hi {name}, we noticed the same match was posted twice: {pitch}, {when}. To keep things clear for keepers, you can only have one open match for the same pitch and time. If you want to change something, like the budget, open your match and tap Edit: keepers who applied and nearby keepers get an email about the change, and nobody loses their application. Your open match is here: {matchLink}. If you need a hand, reply here.",
   },
   {
     id: "no_applications",
