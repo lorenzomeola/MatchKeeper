@@ -1,3 +1,4 @@
+import { MetaPixel } from "@/components/platform/meta-pixel";
 import { ThemeScope } from "@/components/platform/theme";
 
 /**
@@ -8,5 +9,10 @@ import { ThemeScope } from "@/components/platform/theme";
  * El script anti-flash vive en el <head> del layout raíz (app/layout.tsx).
  */
 export default function PlatformLayout({ children }: { children: React.ReactNode }) {
-  return <ThemeScope>{children}</ThemeScope>;
+  return (
+    <ThemeScope>
+      {children}
+      <MetaPixel />
+    </ThemeScope>
+  );
 }

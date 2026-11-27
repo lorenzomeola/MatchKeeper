@@ -1,3 +1,4 @@
+import { MetaPixel } from "@/components/platform/meta-pixel";
 import { ThemeScope } from "@/components/platform/theme";
 
 /**
@@ -5,5 +6,10 @@ import { ThemeScope } from "@/components/platform/theme";
  * para las páginas legales, sin afectar a la landing pública de "/".
  */
 export default function LegalLayout({ children }: { children: React.ReactNode }) {
-  return <ThemeScope>{children}</ThemeScope>;
+  return (
+    <ThemeScope>
+      {children}
+      <MetaPixel />
+    </ThemeScope>
+  );
 }

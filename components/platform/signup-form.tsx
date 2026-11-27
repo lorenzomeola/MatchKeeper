@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { signUpAction, type AuthActionState } from "@/lib/actions/auth";
+import { trackMetaEvent } from "@/lib/meta-pixel";
 import { FormError, PasswordField, SelectField, SubmitButton, TextField } from "@/components/platform/form-fields";
 import { ArrowRightIcon, ChatIcon } from "@/components/platform/icons";
 import { CATEGORIES, CATEGORY_COPY, CITY_OPTIONS, DEFAULT_CITY, type Category, type Role } from "@/lib/profile";
@@ -56,6 +57,14 @@ export function SignupForm({ role, initialCategory = null }: { role: Role; initi
   const copy = COPY[role];
   const [state, formAction, pending] = useActionState(signUpAction, initialState);
   const [category, setCategory] = useState<Category | null>(initialCategory);
+  const registrationTracked = useRef(false);
+
+  // Cuenta creada (falta confirmar el email): conversión para los anuncios de Meta. Sin consentimiento no se envía nada.
+  useEffect(() => {
+    if (!state.checkEmail || registrationTracked.current) return;
+    registrationTracked.current = true;
+    trackMetaEvent("CompleteRegistration", { content_name: role });
+  }, [state.checkEmail, role]);
 
   if (state.checkEmail) {
     return (
